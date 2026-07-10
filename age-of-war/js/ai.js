@@ -70,6 +70,7 @@ class AI {
       if (u.type === 'fast') w = 1.5;
       if (u.type === 'armored') w = 1;
       if (u.type === 'siege') w = 0.8;
+      if (u.type === 'elite') w = 0;
 
       const playerUnits = g.units.filter(u => u.side === 'player' && u.alive).length;
       if (playerUnits > 5) w *= 1.5;

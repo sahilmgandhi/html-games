@@ -107,6 +107,7 @@ const CONFIG = {
         { name: "God's Blade", type: 'melee', cost: 5000, hp: 1000, damage: 250, speed: 0.9, range: 35, attackSpeed: 0.8, goldReward: 6500, xpReward: 400 },
         { name: 'Blaster', type: 'ranged', cost: 6000, hp: 800, damage: 130, speed: 0.75, range: 200, attackSpeed: 1.0, projectileSpeed: 9, goldReward: 7800, xpReward: 500 },
         { name: 'War Machine', type: 'armored', cost: 20000, hp: 3000, damage: 600, speed: 0.35, range: 200, attackSpeed: 2.5, projectileSpeed: 8, goldReward: 26000, xpReward: 1000 },
+        { name: 'Super Soldier', type: 'elite', cost: 150000, hp: 4000, damage: 400, speed: 0.8, range: 150, attackSpeed: 1.0, projectileSpeed: 10, goldReward: 200000, xpReward: 0 },
       ],
       turrets: [
         { name: 'Titanium Shooter', cost: 24000, hp: 600, damage: 100, range: 250, attackSpeed: 1.0, projectileSpeed: 9 },

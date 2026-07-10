@@ -474,6 +474,30 @@ class Renderer {
         ctx.fillRect(6, 8, 6, 4);
         break;
 
+      case 'elite':
+        ctx.fillStyle = '#1a1a3a';
+        ctx.fillRect(-7, -14, 14, 20);
+        ctx.fillRect(-8, 6, 6, 8);
+        ctx.fillRect(2, 6, 6, 8);
+        ctx.fillStyle = '#00e5ff';
+        ctx.shadowColor = '#00e5ff';
+        ctx.shadowBlur = 8;
+        ctx.beginPath();
+        ctx.arc(0, -18, 7, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = '#ff4444';
+        ctx.shadowColor = '#ff4444';
+        ctx.shadowBlur = 4;
+        ctx.fillRect(8, -6, 14, 3);
+        ctx.fillRect(-22, -6, 14, 3);
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = '#00e5ff';
+        ctx.beginPath();
+        ctx.arc(0, -18, 3, 0, Math.PI * 2);
+        ctx.fill();
+        break;
+
       case 'armored':
         ctx.fillStyle = '#556B2F';
         ctx.fillRect(-14, -6, 28, 12);
