@@ -503,39 +503,4 @@ class Renderer {
     ctx.fillText(age.specialName, spX + 55, y + 18);
     ctx.fillText(spReady ? 'READY' : `${Math.ceil(game.specialCooldown)}s`, spX + 55, y + 30);
   }
-
-  drawMinimap(units, turrets, bases, cameraX) {
-    const ctx = this.ctx;
-    const mmW = CONFIG.VIEWPORT.WIDTH;
-    const mmH = 20;
-    const mmY = 0;
-
-    ctx.fillStyle = 'rgba(0,0,0,0.7)';
-    ctx.fillRect(0, mmY, mmW, mmH);
-
-    const viewLeft = cameraX / CONFIG.WORLD.WIDTH * mmW;
-    const viewW = CONFIG.VIEWPORT.WIDTH / CONFIG.WORLD.WIDTH * mmW;
-    ctx.strokeStyle = '#fff';
-    ctx.strokeRect(viewLeft, mmY, viewW, mmH);
-
-    for (const b of bases) {
-      const bx = b.x / CONFIG.WORLD.WIDTH * mmW;
-      ctx.fillStyle = b.side === 'player' ? '#4a8af4' : '#f44a4a';
-      ctx.fillRect(bx - 3, mmY + 4, 6, mmH - 8);
-    }
-
-    for (const u of units) {
-      if (!u.alive) continue;
-      const ux = u.x / CONFIG.WORLD.WIDTH * mmW;
-      ctx.fillStyle = u.side === 'player' ? '#4a8af4' : '#f44a4a';
-      ctx.fillRect(ux - 1, mmY + 8, 2, mmH - 16);
-    }
-
-    for (const t of turrets) {
-      if (!t.alive) continue;
-      const tx = t.x / CONFIG.WORLD.WIDTH * mmW;
-      ctx.fillStyle = t.side === 'player' ? '#4af' : '#f44';
-      ctx.fillRect(tx - 1, mmY + 6, 3, mmH - 12);
-    }
-  }
 }
