@@ -133,10 +133,6 @@ class AudioManager {
       this.musicNodes.push(osc);
     });
 
-    this.musicNodes = this.musicNodes.filter(n => {
-      try { return n.context.currentTime < n.stopTime; } catch (e) { return false; }
-    });
-
     this.musicTimer = setTimeout(() => {
       this.musicNodes = [];
       this.playMusicLoop(ageIndex);
