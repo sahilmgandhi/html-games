@@ -508,6 +508,11 @@ class Renderer {
     ctx.font = 'bold 13px sans-serif';
     ctx.fillText(age.name, 65, y + 54);
 
+    const diffName = CONFIG.DIFFICULTIES[game.difficulty].name;
+    ctx.fillStyle = game.difficulty === 0 ? '#888' : game.difficulty === 1 ? '#fa4' : '#f44';
+    ctx.font = '10px sans-serif';
+    ctx.fillText(diffName, 65, y + 66);
+
     const unitStartX = 120;
     for (let i = 0; i < age.units.length; i++) {
       const u = age.units[i];

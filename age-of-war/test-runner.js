@@ -286,6 +286,45 @@ function runTests() {
     assert('Reset clears timeline', balanceTracker.timeline.length === 0);
   }
 
+  console.log('\n--- Difficulty Selection ---');
+  {
+    const g = makeGame();
+    g.difficulty = 1;
+    g.enemyGold = 100000;
+    g.spawnEnemyUnit(0);
+    const e = g.units[0];
+    assert('Harder enemy has boosted HP', e.hp === Math.round(55 * 1.3), `hp=${e.hp}`);
+    assert('Harder enemy has boosted damage', e.damage === Math.round(16 * 1.3), `dmg=${e.damage}`);
+
+    const g2 = makeGame();
+    g2.difficulty = 2;
+    g2.enemyGold = 100000;
+    g2.spawnEnemyUnit(0);
+    const e2 = g2.units[0];
+    assert('Impossible enemy has 2x HP', e2.hp === 55 * 2, `hp=${e2.hp}`);
+    assert('Impossible enemy has 2x damage', e2.damage === 16 * 2, `dmg=${e2.damage}`);
+
+    g.ai = { update() {} };
+    runFrames(g, 1);
+    const goldBefore = g.gold;
+    g.gold += 0;
+    assert('Difficulty default is 0', makeGame().difficulty === 0);
+  }
+
+  console.log('\n--- Kill Reward ---');
+  {
+    const g = makeGame();
+    g.ai = { update() {} };
+    g.gold = 0;
+    g.enemyGold = 10000;
+    g.spawnEnemyUnit(0);
+    const enemy = g.units[0];
+    enemy.hp = 0;
+    enemy.alive = false;
+    runFrames(g, 0.1);
+    assert('Player gets gold from kill', g.gold > 0, `gold=${Math.floor(g.gold)}`);
+  }
+
   console.log('\n--- Game Time ---');
   {
     const g = makeGame();

@@ -6,6 +6,17 @@ canvas.height = CONFIG.VIEWPORT.HEIGHT;
 
 let gameState = 'title';
 let game = null;
+let selectedDifficulty = 0;
+
+const DIFF_BTN_W = 140;
+const DIFF_BTN_H = 32;
+const DIFF_BTN_Y = 370;
+
+function getDiffBtnRect(i) {
+  const totalW = CONFIG.DIFFICULTIES.length * (DIFF_BTN_W + 10) - 10;
+  const startX = (canvas.width - totalW) / 2;
+  return { x: startX + i * (DIFF_BTN_W + 10), y: DIFF_BTN_Y, w: DIFF_BTN_W, h: DIFF_BTN_H };
+}
 
 function drawTitleScreen() {
   ctx.fillStyle = '#1a1a2e';
@@ -27,9 +38,30 @@ function drawTitleScreen() {
   ctx.font = '18px "Segoe UI", sans-serif';
   ctx.fillText('A Strategy Game', canvas.width / 2, 230);
 
+  ctx.fillStyle = '#888';
+  ctx.font = '14px "Segoe UI", sans-serif';
+  ctx.fillText('Select Difficulty', canvas.width / 2, DIFF_BTN_Y - 14);
+
+  for (let i = 0; i < CONFIG.DIFFICULTIES.length; i++) {
+    const d = CONFIG.DIFFICULTIES[i];
+    const r = getDiffBtnRect(i);
+    const sel = i === selectedDifficulty;
+
+    ctx.fillStyle = sel ? '#2a4a2a' : '#2a2a3a';
+    ctx.fillRect(r.x, r.y, r.w, r.h);
+    ctx.strokeStyle = sel ? '#4a8' : '#555';
+    ctx.lineWidth = sel ? 2 : 1;
+    ctx.strokeRect(r.x, r.y, r.w, r.h);
+
+    ctx.fillStyle = sel ? '#fff' : '#aaa';
+    ctx.font = `${sel ? 'bold ' : ''}14px "Segoe UI", sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.fillText(d.name, r.x + r.w / 2, r.y + 21);
+  }
+
+  const pulse = 0.7 + Math.sin(Date.now() / 500) * 0.3;
   ctx.fillStyle = '#e6a817';
   ctx.font = '22px "Segoe UI", sans-serif';
-  const pulse = 0.7 + Math.sin(Date.now() / 500) * 0.3;
   ctx.globalAlpha = pulse;
   ctx.fillText('Click to Start', canvas.width / 2, 440);
   ctx.globalAlpha = 1;
@@ -114,8 +146,20 @@ function titleLoop() {
   }
 }
 
-canvas.addEventListener('click', () => {
+canvas.addEventListener('click', (e) => {
   if (gameState === 'title') {
+    const rect = canvas.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    const my = e.clientY - rect.top;
+
+    for (let i = 0; i < CONFIG.DIFFICULTIES.length; i++) {
+      const r = getDiffBtnRect(i);
+      if (mx >= r.x && mx <= r.x + r.w && my >= r.y && my <= r.y + r.h) {
+        selectedDifficulty = i;
+        return;
+      }
+    }
+
     gameState = 'playing';
     startGame();
   }
@@ -123,6 +167,7 @@ canvas.addEventListener('click', () => {
 
 function startGame() {
   game = new Game(canvas, ctx);
+  game.difficulty = selectedDifficulty;
   game.start();
 }
 

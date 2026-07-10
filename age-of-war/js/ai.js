@@ -2,7 +2,7 @@ class AI {
   constructor(game) {
     this.game = game;
     this.thinkTimer = 0;
-    this.thinkInterval = CONFIG.AI_THINK_INTERVAL / 1000;
+    this.thinkInterval = CONFIG.AI_THINK_INTERVAL / 1000 * CONFIG.DIFFICULTIES[game.difficulty].aiThinkMult;
   }
 
   update(dt) {

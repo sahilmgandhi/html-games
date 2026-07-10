@@ -33,6 +33,12 @@ const CONFIG = {
 
   AI_THINK_INTERVAL: 2500,
 
+  DIFFICULTIES: [
+    { name: 'Normal', enemyHpMult: 1.0, enemyDmgMult: 1.0, enemyGoldMult: 1.0, aiThinkMult: 1.0 },
+    { name: 'Harder', enemyHpMult: 1.3, enemyDmgMult: 1.3, enemyGoldMult: 1.3, aiThinkMult: 0.8 },
+    { name: 'Impossible', enemyHpMult: 2.0, enemyDmgMult: 2.0, enemyGoldMult: 2.0, aiThinkMult: 0.6 },
+  ],
+
   AGES: [
     {
       name: 'Stone Age',

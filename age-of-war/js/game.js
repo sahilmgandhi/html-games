@@ -41,6 +41,7 @@ class Game {
     this.debugOpen = false;
     this.invincible = false;
     this.gameSpeed = 1;
+    this.difficulty = 0;
     this.started = false;
     this.flashTimer = 0;
     this.gameTime = 0;
@@ -161,7 +162,7 @@ class Game {
         this.particles.emitGoldNumber(u.x, u.y, u.goldReward);
 
         if (u.side === 'player') {
-          this.enemyGold += u.goldReward;
+          this.enemyGold += u.goldReward * CONFIG.DIFFICULTIES[this.difficulty].enemyGoldMult;
           this.enemyXp += u.xpReward;
         } else {
           this.gold += u.goldReward;
@@ -299,6 +300,7 @@ class Game {
     this.gameOver = false;
     this.winner = null;
     this.renderer.camera.x = 0;
+    this.difficulty = 0;
     this.ai = new AI(this);
   }
 
@@ -562,6 +564,11 @@ class Game {
     const slotIdx = occupiedCount;
     const pos = this.enemyTurretSlotPositions[slotIdx];
     const t = new Turret(pos.x, pos.y, 'enemy', this.enemyAge, turretIndex);
+
+    const diff = CONFIG.DIFFICULTIES[this.difficulty];
+    t.hp = Math.round(data.hp * diff.enemyHpMult);
+    t.maxHp = t.hp;
+
     this.turrets.push(t);
   }
 
@@ -585,6 +592,12 @@ class Game {
     this.enemyGold -= data.cost;
     const spawnX = CONFIG.WORLD.WIDTH - CONFIG.BASE_X_OFFSET - 30;
     const u = new Unit(spawnX, CONFIG.GROUND_Y, 'enemy', this.enemyAge, unitIndex);
+
+    const diff = CONFIG.DIFFICULTIES[this.difficulty];
+    u.hp = Math.round(data.hp * diff.enemyHpMult);
+    u.maxHp = u.hp;
+    u.damage = Math.round(data.damage * diff.enemyDmgMult);
+
     this.units.push(u);
   }
 
