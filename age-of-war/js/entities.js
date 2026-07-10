@@ -201,6 +201,7 @@ class Projectile {
     this.side = side;
     this.splashRadius = splashRadius || 0;
     this.alive = true;
+    this.ttl = 3;
 
     const dx = tx - x;
     const dy = ty - y;
@@ -212,6 +213,10 @@ class Projectile {
   update(dt) {
     this.x += this.vx * dt * 60;
     this.y += this.vy * dt * 60;
+    this.ttl -= dt;
+    if (this.ttl <= 0 || this.x < -200 || this.x > CONFIG.WORLD.WIDTH + 200) {
+      this.alive = false;
+    }
   }
 
   checkHit(units, turrets, bases) {
