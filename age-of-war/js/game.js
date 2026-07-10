@@ -229,7 +229,7 @@ class Game {
     if (this.gold < data.cost) return;
 
     this.gold -= data.cost;
-    const spawnX = CONFIG.BASE_X_OFFSET + 80;
+    const spawnX = CONFIG.BASE_X_OFFSET + 30;
     const groundY = CONFIG.VIEWPORT.HEIGHT - 100;
     const u = new Unit(spawnX, groundY, 'player', this.currentAge, unitIndex);
     this.units.push(u);
@@ -258,6 +258,12 @@ class Game {
     this.playerBase.healFraction(CONFIG.EVOLVE_HEAL);
     this.audio.play('evolve');
 
+    let refund = 0;
+    for (const t of this.turrets) {
+      if (t.side === 'player') refund += Math.floor(CONFIG.AGES[this.currentAge - 1].turret.cost * 0.5);
+    }
+    this.gold += refund;
+    if (refund > 0) this.particles.emitGoldNumber(this.playerBase.x, this.playerBase.y, refund);
     this.turrets = this.turrets.filter(t => t.side !== 'player');
   }
 
@@ -285,6 +291,16 @@ class Game {
         this.particles.emit(u.x, u.y, '#ff8800', 6, 4, 0.4, 3);
       }
     }
+
+    for (const t of this.turrets) {
+      if (t.side === 'enemy' && t.alive) {
+        t.takeDamage(age.specialDamage);
+        this.particles.emit(t.x, t.y, '#ff8800', 6, 4, 0.4, 3);
+      }
+    }
+
+    this.enemyBase.takeDamage(age.specialDamage);
+    this.particles.emit(this.enemyBase.x, this.enemyBase.y, '#ff4400', 20, 6, 0.8, 3);
 
     this.particles.emit(CONFIG.VIEWPORT.WIDTH / 2 + this.renderer.camera.x, 100, '#ff4400', 30, 8, 1.0, 4);
   }

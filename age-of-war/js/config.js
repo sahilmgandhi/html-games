@@ -12,10 +12,10 @@ const CONFIG = {
 
   STARTING_GOLD: 200,
   STARTING_XP: 0,
-  GOLD_PER_SECOND: 2,
-  XP_PER_SECOND: 0.5,
+  GOLD_PER_SECOND: 3,
+  XP_PER_SECOND: 2,
 
-  EVOLVE_XP: [0, 500, 1500, 3500, 7000],
+  EVOLVE_XP: [0, 200, 600, 1200, 2500],
   EVOLVE_HEAL: 0.25,
 
   SPECIAL_COOLDOWN: 30,
@@ -34,7 +34,7 @@ const CONFIG = {
       units: [
         { name: 'Clubman', type: 'melee', cost: 50, hp: 120, damage: 25, speed: 0.8, range: 30, attackSpeed: 1.0, xpReward: 15, goldReward: 10 },
         { name: 'Slingshot', type: 'ranged', cost: 75, hp: 80, damage: 15, speed: 0.6, range: 180, attackSpeed: 1.5, projectileSpeed: 4, xpReward: 20, goldReward: 15 },
-        { name: 'Raptor Rider', type: 'fast', cost: 100, hp: 90, damage: 20, speed: 1.8, range: 25, attackSpeed: 0.8, xpReward: 20, goldReward: 15 },
+        { name: 'Raptor Rider', type: 'fast', cost: 90, hp: 130, damage: 30, speed: 2.2, range: 28, attackSpeed: 0.7, xpReward: 25, goldReward: 18 },
       ],
       turret: { name: 'Egg Turret', cost: 150, hp: 300, damage: 10, range: 200, attackSpeed: 2.0, projectileSpeed: 5 },
     },
@@ -49,7 +49,7 @@ const CONFIG = {
       units: [
         { name: 'Swordsman', type: 'melee', cost: 80, hp: 180, damage: 35, speed: 0.9, range: 28, attackSpeed: 1.0, xpReward: 25, goldReward: 18 },
         { name: 'Archer', type: 'ranged', cost: 100, hp: 100, damage: 22, speed: 0.65, range: 200, attackSpeed: 1.3, projectileSpeed: 5, xpReward: 30, goldReward: 22 },
-        { name: 'Cavalry', type: 'fast', cost: 150, hp: 150, damage: 30, speed: 2.0, range: 28, attackSpeed: 0.9, xpReward: 30, goldReward: 22 },
+        { name: 'Cavalry', type: 'fast', cost: 150, hp: 200, damage: 40, speed: 2.0, range: 28, attackSpeed: 0.9, xpReward: 35, goldReward: 28 },
       ],
       turret: { name: 'Arrow Tower', cost: 250, hp: 400, damage: 15, range: 220, attackSpeed: 1.5, projectileSpeed: 6 },
     },

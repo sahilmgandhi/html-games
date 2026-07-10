@@ -16,6 +16,7 @@ class Renderer {
   drawTerrain(ageIndex) {
     const ctx = this.ctx;
     const age = CONFIG.AGES[ageIndex];
+    const camX = this.camera.x;
 
     const grad = ctx.createLinearGradient(0, 0, 0, CONFIG.VIEWPORT.HEIGHT);
     grad.addColorStop(0, age.skyGradient[0]);
@@ -23,9 +24,89 @@ class Renderer {
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, CONFIG.VIEWPORT.WIDTH, CONFIG.VIEWPORT.HEIGHT);
 
+    const starCount = ageIndex >= 3 ? 40 : ageIndex >= 1 ? 15 : 5;
+    for (let i = 0; i < starCount; i++) {
+      const sx = ((i * 137 + 42) % CONFIG.VIEWPORT.WIDTH);
+      const sy = ((i * 89 + 17) % (CONFIG.VIEWPORT.HEIGHT * 0.4));
+      const flicker = 0.4 + Math.sin(Date.now() / 1000 + i) * 0.3;
+      ctx.fillStyle = `rgba(255,255,255,${flicker})`;
+      ctx.fillRect(sx, sy, 1.5, 1.5);
+    }
+
+    const cloudY = 40 + ageIndex * 8;
+    const cloudCount = 6;
+    for (let i = 0; i < cloudCount; i++) {
+      const cx = ((i * 400 + 80 - camX * 0.05) % (CONFIG.VIEWPORT.WIDTH + 300)) - 150;
+      const cy = cloudY + Math.sin(i * 1.7) * 20;
+      const alpha = 0.03 + ageIndex * 0.005;
+      ctx.fillStyle = `rgba(255,255,255,${alpha})`;
+      ctx.beginPath();
+      ctx.ellipse(cx, cy, 60 + i * 8, 18, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.ellipse(cx + 30, cy - 5, 40, 14, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    const mtnY = CONFIG.VIEWPORT.HEIGHT - 130;
+    ctx.fillStyle = this.darkenColor(age.skyGradient[1], 0.5);
+    for (let i = 0; i < 8; i++) {
+      const mx = ((i * 350 - camX * 0.1) % (CONFIG.VIEWPORT.WIDTH + 400)) - 200;
+      const mh = 60 + Math.sin(i * 2.3) * 30;
+      const mw = 100 + Math.sin(i * 1.1) * 40;
+      ctx.beginPath();
+      ctx.moveTo(mx - mw, mtnY + 30);
+      ctx.lineTo(mx, mtnY - mh);
+      ctx.lineTo(mx + mw, mtnY + 30);
+      ctx.fill();
+    }
+
+    ctx.fillStyle = this.darkenColor(age.skyGradient[1], 0.7);
+    for (let i = 0; i < 10; i++) {
+      const mx = ((i * 280 + 100 - camX * 0.2) % (CONFIG.VIEWPORT.WIDTH + 300)) - 150;
+      const mh = 35 + Math.sin(i * 3.1) * 15;
+      const mw = 70 + Math.sin(i * 1.9) * 25;
+      ctx.beginPath();
+      ctx.moveTo(mx - mw, mtnY + 20);
+      ctx.lineTo(mx, mtnY - mh);
+      ctx.lineTo(mx + mw, mtnY + 20);
+      ctx.fill();
+    }
+
     const groundY = CONFIG.VIEWPORT.HEIGHT - 100;
     ctx.fillStyle = age.groundColor;
-    ctx.fillRect(0, groundY, CONFIG.VIEWPORT.WIDTH, 100);
+    ctx.fillRect(0, groundY, CONFIG.VIEWPORT.HEIGHT, 100);
+
+    ctx.fillStyle = this.lightenColor(age.groundColor, 1.15);
+    for (let i = 0; i < 20; i++) {
+      const gx = ((i * 130 - camX * 0.5) % CONFIG.VIEWPORT.WIDTH);
+      ctx.fillRect(gx, groundY + 5, 3, 2);
+      ctx.fillRect(gx + 50, groundY + 15, 4, 2);
+      ctx.fillRect(gx + 80, groundY + 8, 2, 3);
+    }
+
+    const treeCount = ageIndex <= 1 ? 8 : ageIndex <= 2 ? 5 : ageIndex === 3 ? 3 : 0;
+    for (let i = 0; i < treeCount; i++) {
+      const tx = ((i * 320 + 50 - camX * 0.35) % (CONFIG.VIEWPORT.WIDTH + 200)) - 100;
+      const ty = groundY;
+      this.drawTree(tx, ty, ageIndex);
+    }
+
+    if (ageIndex >= 3) {
+      for (let i = 0; i < 3; i++) {
+        const bx = ((i * 500 + 200 - camX * 0.3) % (CONFIG.VIEWPORT.WIDTH + 200)) - 100;
+        const by = groundY;
+        ctx.fillStyle = '#444';
+        ctx.fillRect(bx - 8, by - 35, 16, 35);
+        ctx.fillStyle = '#555';
+        ctx.fillRect(bx - 12, by - 40, 24, 8);
+        ctx.fillStyle = ageIndex === 4 ? '#00e5ff' : '#ff4444';
+        ctx.shadowColor = ctx.fillStyle;
+        ctx.shadowBlur = 4;
+        ctx.fillRect(bx - 2, by - 42, 4, 3);
+        ctx.shadowBlur = 0;
+      }
+    }
 
     ctx.strokeStyle = age.color;
     ctx.lineWidth = 2;
@@ -34,13 +115,54 @@ class Renderer {
     ctx.lineTo(CONFIG.VIEWPORT.WIDTH, groundY);
     ctx.stroke();
 
-    for (let wx = -this.camera.x % 80; wx < CONFIG.VIEWPORT.WIDTH; wx += 80) {
+    for (let wx = -camX % 80; wx < CONFIG.VIEWPORT.WIDTH; wx += 80) {
       ctx.strokeStyle = 'rgba(255,255,255,0.05)';
       ctx.beginPath();
       ctx.moveTo(wx, groundY);
       ctx.lineTo(wx, CONFIG.VIEWPORT.HEIGHT);
       ctx.stroke();
     }
+  }
+
+  drawTree(x, groundY, ageIndex) {
+    const ctx = this.ctx;
+    ctx.fillStyle = ageIndex <= 1 ? '#4a3520' : '#555';
+    ctx.fillRect(x - 3, groundY - 30, 6, 30);
+
+    if (ageIndex <= 1) {
+      ctx.fillStyle = '#2a5a1a';
+      ctx.beginPath();
+      ctx.arc(x, groundY - 35, 14, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#1a4a0a';
+      ctx.beginPath();
+      ctx.arc(x - 5, groundY - 30, 10, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (ageIndex === 2) {
+      ctx.fillStyle = '#3a6a2a';
+      ctx.beginPath();
+      ctx.arc(x, groundY - 35, 12, 0, Math.PI * 2);
+      ctx.fill();
+    } else {
+      ctx.fillStyle = '#5a5a3a';
+      ctx.beginPath();
+      ctx.arc(x, groundY - 32, 10, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  darkenColor(hex, factor) {
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return `rgb(${Math.floor(r * factor)},${Math.floor(g * factor)},${Math.floor(b * factor)})`;
+  }
+
+  lightenColor(hex, factor) {
+    const r = Math.min(255, parseInt(hex.slice(1, 3), 16) * factor);
+    const g = Math.min(255, parseInt(hex.slice(3, 5), 16) * factor);
+    const b = Math.min(255, parseInt(hex.slice(5, 7), 16) * factor);
+    return `rgb(${Math.floor(r)},${Math.floor(g)},${Math.floor(b)})`;
   }
 
   drawBase(base, ageIndex) {

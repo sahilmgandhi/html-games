@@ -25,10 +25,6 @@ class AI {
       }
     }
 
-    if (g.enemySpecialCooldown <= 0 && Math.random() < 0.3) {
-      g.useEnemySpecial();
-    }
-
     const costs = age.units.map(u => u.cost);
     const affordable = costs.filter(c => g.enemyGold >= c);
     if (affordable.length === 0) return;
