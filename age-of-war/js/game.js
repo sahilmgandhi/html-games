@@ -67,10 +67,7 @@ class Game {
 
     this.input.update();
 
-    this.gold += CONFIG.GOLD_PER_SECOND * dt;
-    this.xp += CONFIG.XP_PER_SECOND * dt;
-    this.enemyGold += CONFIG.GOLD_PER_SECOND * dt;
-    this.enemyXp += CONFIG.XP_PER_SECOND * dt;
+
 
     if (this.specialCooldown > 0) this.specialCooldown -= dt;
     if (this.enemySpecialCooldown > 0) this.enemySpecialCooldown -= dt;
