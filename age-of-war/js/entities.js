@@ -131,14 +131,16 @@ class Unit {
 }
 
 class Turret {
-  constructor(x, y, side, ageIndex) {
+  constructor(x, y, side, ageIndex, turretIndex) {
     this.x = x;
     this.y = y;
     this.side = side;
     this.ageIndex = ageIndex;
+    this.turretIndex = turretIndex;
 
-    const data = CONFIG.AGES[ageIndex].turret;
+    const data = CONFIG.AGES[ageIndex].turrets[turretIndex];
     this.name = data.name;
+    this.cost = data.cost;
     this.hp = data.hp;
     this.maxHp = data.hp;
     this.damage = data.damage;

@@ -20,6 +20,9 @@ const CONFIG = {
 
   SPECIAL_COOLDOWN: 40,
 
+  TURRET_SLOTS: 4,
+  TURRET_SLOT_COST: 250,
+
   AI_THINK_INTERVAL: 2500,
 
   AGES: [
@@ -30,13 +33,16 @@ const CONFIG = {
       skyGradient: ['#2c1810', '#5a3a2a'],
       specialName: 'Meteor Shower',
       specialDamage: 250,
-      turretCost: 100,
       units: [
         { name: 'Clubman', type: 'melee', cost: 15, hp: 55, damage: 16, speed: 0.8, range: 28, attackSpeed: 1.0, goldReward: 20, xpReward: 10 },
         { name: 'Slingshot', type: 'ranged', cost: 25, hp: 42, damage: 12, speed: 0.6, range: 150, attackSpeed: 1.2, projectileSpeed: 4, goldReward: 33, xpReward: 15 },
         { name: 'Dino Rider', type: 'fast', cost: 100, hp: 160, damage: 40, speed: 1.8, range: 30, attackSpeed: 0.8, goldReward: 130, xpReward: 40 },
       ],
-      turret: { name: 'Egg Turret', cost: 100, hp: 200, damage: 8, range: 200, attackSpeed: 1.5, projectileSpeed: 5 },
+      turrets: [
+        { name: 'Rock Slingshot', cost: 100, hp: 150, damage: 12, range: 200, attackSpeed: 0.75, projectileSpeed: 5 },
+        { name: 'Egg Automatic', cost: 200, hp: 200, damage: 5, range: 180, attackSpeed: 0.28, projectileSpeed: 6 },
+        { name: 'Primit. Catapult', cost: 500, hp: 300, damage: 25, range: 250, attackSpeed: 1.75, projectileSpeed: 4, splashRadius: 30 },
+      ],
     },
     {
       name: 'Castle Age',
@@ -45,13 +51,16 @@ const CONFIG = {
       skyGradient: ['#1a1a3e', '#2a2a5e'],
       specialName: 'Arrow Volley',
       specialDamage: 400,
-      turretCost: 250,
       units: [
         { name: 'Swordsman', type: 'melee', cost: 50, hp: 100, damage: 32, speed: 0.9, range: 25, attackSpeed: 1.0, goldReward: 65, xpReward: 20 },
         { name: 'Archer', type: 'ranged', cost: 75, hp: 80, damage: 20, speed: 0.65, range: 170, attackSpeed: 1.3, projectileSpeed: 5, goldReward: 98, xpReward: 25 },
         { name: 'Knight', type: 'fast', cost: 500, hp: 300, damage: 60, speed: 1.4, range: 30, attackSpeed: 1.1, goldReward: 650, xpReward: 80 },
       ],
-      turret: { name: 'Arrow Tower', cost: 250, hp: 300, damage: 15, range: 220, attackSpeed: 1.5, projectileSpeed: 6 },
+      turrets: [
+        { name: 'Catapult', cost: 500, hp: 250, damage: 40, range: 250, attackSpeed: 1.75, projectileSpeed: 5 },
+        { name: 'Fire Catapult', cost: 750, hp: 350, damage: 50, range: 250, attackSpeed: 1.75, projectileSpeed: 5, splashRadius: 25 },
+        { name: 'Oil', cost: 1000, hp: 400, damage: 4, range: 180, attackSpeed: 0.5, projectileSpeed: 3, splashRadius: 50 },
+      ],
     },
     {
       name: 'Renaissance',
@@ -60,13 +69,16 @@ const CONFIG = {
       skyGradient: ['#2a2010', '#5a4a20'],
       specialName: 'Artillery Strike',
       specialDamage: 550,
-      turretCost: 350,
       units: [
         { name: 'Dueler', type: 'melee', cost: 200, hp: 200, damage: 79, speed: 0.85, range: 28, attackSpeed: 1.0, goldReward: 260, xpReward: 40 },
         { name: 'Musketeer', type: 'ranged', cost: 400, hp: 160, damage: 40, speed: 0.6, range: 180, attackSpeed: 1.5, projectileSpeed: 6, goldReward: 520, xpReward: 60 },
         { name: 'Cannoneer', type: 'siege', cost: 1000, hp: 600, damage: 120, speed: 0.4, range: 200, attackSpeed: 2.5, projectileSpeed: 4, splashRadius: 40, goldReward: 1300, xpReward: 100 },
       ],
-      turret: { name: 'Cannon Emplacement', cost: 350, hp: 400, damage: 30, range: 240, attackSpeed: 2.0, projectileSpeed: 5, splashRadius: 30 },
+      turrets: [
+        { name: 'Small Cannon', cost: 1500, hp: 350, damage: 30, range: 300, attackSpeed: 1.75, projectileSpeed: 6 },
+        { name: 'Large Cannon', cost: 3000, hp: 500, damage: 70, range: 300, attackSpeed: 1.75, projectileSpeed: 6, splashRadius: 20 },
+        { name: 'Explos. Cannon', cost: 6000, hp: 600, damage: 100, range: 300, attackSpeed: 1.75, projectileSpeed: 6, splashRadius: 35 },
+      ],
     },
     {
       name: 'Modern Age',
@@ -75,13 +87,16 @@ const CONFIG = {
       skyGradient: ['#1a2a1a', '#2a3a2a'],
       specialName: 'Airstrike',
       specialDamage: 700,
-      turretCost: 500,
       units: [
         { name: 'Melee Infantry', type: 'melee', cost: 1500, hp: 350, damage: 100, speed: 0.8, range: 28, attackSpeed: 0.9, goldReward: 1950, xpReward: 150 },
         { name: 'Infantry', type: 'ranged', cost: 2000, hp: 300, damage: 60, speed: 0.7, range: 170, attackSpeed: 1.2, projectileSpeed: 7, goldReward: 2600, xpReward: 200 },
         { name: 'Tank', type: 'armored', cost: 7000, hp: 1200, damage: 300, speed: 0.4, range: 180, attackSpeed: 2.0, projectileSpeed: 8, goldReward: 9100, xpReward: 500 },
       ],
-      turret: { name: 'Machine Gun Nest', cost: 500, hp: 500, damage: 40, range: 260, attackSpeed: 0.5, projectileSpeed: 8 },
+      turrets: [
+        { name: 'Single Turret', cost: 7000, hp: 500, damage: 70, range: 300, attackSpeed: 1.0, projectileSpeed: 8 },
+        { name: 'Rocket Turret', cost: 9000, hp: 600, damage: 100, range: 300, attackSpeed: 1.25, projectileSpeed: 8 },
+        { name: 'Double Turret', cost: 14000, hp: 700, damage: 70, range: 300, attackSpeed: 0.55, projectileSpeed: 8 },
+      ],
     },
     {
       name: 'Future Age',
@@ -90,13 +105,16 @@ const CONFIG = {
       skyGradient: ['#0a0a2a', '#1a1a4a'],
       specialName: 'Orbital Laser',
       specialDamage: 1000,
-      turretCost: 750,
       units: [
         { name: "God's Blade", type: 'melee', cost: 5000, hp: 1000, damage: 250, speed: 0.9, range: 35, attackSpeed: 0.8, goldReward: 6500, xpReward: 400 },
         { name: 'Blaster', type: 'ranged', cost: 6000, hp: 800, damage: 130, speed: 0.75, range: 200, attackSpeed: 1.0, projectileSpeed: 9, goldReward: 7800, xpReward: 500 },
         { name: 'War Machine', type: 'armored', cost: 20000, hp: 3000, damage: 600, speed: 0.35, range: 200, attackSpeed: 2.5, projectileSpeed: 8, goldReward: 26000, xpReward: 1000 },
       ],
-      turret: { name: 'Energy Turret', cost: 750, hp: 700, damage: 60, range: 280, attackSpeed: 0.6, projectileSpeed: 9 },
+      turrets: [
+        { name: 'Titanium Shooter', cost: 24000, hp: 600, damage: 100, range: 250, attackSpeed: 1.0, projectileSpeed: 9 },
+        { name: 'Lazer Cannon', cost: 40000, hp: 800, damage: 40, range: 300, attackSpeed: 0.25, projectileSpeed: 10 },
+        { name: 'Ion Ray', cost: 100000, hp: 1000, damage: 60, range: 400, attackSpeed: 0.25, projectileSpeed: 10 },
+      ],
     },
   ],
 };

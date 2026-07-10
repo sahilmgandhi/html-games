@@ -257,7 +257,7 @@ class Game {
 
     let refund = 0;
     for (const t of this.turrets) {
-      if (t.side === 'player') refund += Math.floor(CONFIG.AGES[this.currentAge - 1].turret.cost * 0.5);
+      if (t.side === 'player') refund += Math.floor(t.cost * 0.5);
     }
     this.gold += refund;
     if (refund > 0) this.particles.emitGoldNumber(this.playerBase.x, this.playerBase.y, refund);
