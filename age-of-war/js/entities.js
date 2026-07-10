@@ -84,7 +84,7 @@ class Unit {
   }
 
   update(dt, allUnits, allTurrets, enemyBase, projectiles) {
-    if (!this.alive) return;
+    if (!this.alive) return null;
 
     if (this.hitFlash > 0) this.hitFlash -= dt;
     if (this.attackCooldown > 0) this.attackCooldown -= dt;
@@ -94,13 +94,15 @@ class Unit {
 
     if (info.dist <= this.range) {
       if (this.attackCooldown <= 0) {
-        this.attack(target, info.type, projectiles);
+        const isRanged = this.attack(target, info.type, projectiles);
         this.attackCooldown = this.attackSpeed;
+        return isRanged ? 'ranged' : 'melee';
       }
     } else {
       const dir = this.side === 'player' ? 1 : -1;
       this.x += this.speed * dir * dt * 60;
     }
+    return null;
   }
 
   attack(target, type, projectiles) {
@@ -116,6 +118,7 @@ class Unit {
     } else {
       target.takeDamage(this.damage);
     }
+    return this.type !== 'melee' && this.type !== 'fast';
   }
 
   takeDamage(amount) {

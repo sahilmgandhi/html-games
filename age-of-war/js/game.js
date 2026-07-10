@@ -78,17 +78,28 @@ class Game {
     this.ai.update(dt);
 
     for (const u of this.units) {
-      u.update(dt, this.units, this.turrets, u.side === 'player' ? this.enemyBase : this.playerBase, this.projectiles);
+      const prevProjCount = this.projectiles.length;
+      const attackResult = u.update(dt, this.units, this.turrets, u.side === 'player' ? this.enemyBase : this.playerBase, this.projectiles);
+      if (this.projectiles.length > prevProjCount) {
+        this.audio.play('fire');
+      } else if (attackResult === 'melee') {
+        this.audio.play('hit');
+      }
     }
 
     for (const t of this.turrets) {
+      const prevProjCount = this.projectiles.length;
       t.update(dt, this.units, this.projectiles);
+      if (this.projectiles.length > prevProjCount) {
+        this.audio.play('fire');
+      }
     }
 
     for (const p of this.projectiles) {
       p.update(dt);
       const hits = p.checkHit(this.units, this.turrets, [this.playerBase, this.enemyBase]);
       if (hits.length > 0) {
+        this.audio.play('hit');
         for (const hit of hits) {
           const color = hit.entity instanceof Unit ? (hit.entity.side === 'player' ? '#4a8af4' : '#f44a4a') : '#ff8800';
           this.particles.emitDamageNumber(hit.entity.x, hit.entity.y, hit.damage, color);
