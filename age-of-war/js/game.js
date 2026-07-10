@@ -87,7 +87,7 @@ class Game {
 
     for (const p of this.projectiles) {
       p.update(dt);
-      p.checkHit(this.units);
+      p.checkHit(this.units, this.turrets, [this.playerBase, this.enemyBase]);
     }
 
     for (let i = this.units.length - 1; i >= 0; i--) {

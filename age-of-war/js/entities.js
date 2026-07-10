@@ -209,7 +209,7 @@ class Projectile {
     this.y += this.vy * dt * 60;
   }
 
-  checkHit(units) {
+  checkHit(units, turrets, bases) {
     for (const u of units) {
       if (u.side !== this.side && u.alive) {
         if (dist(this.x, this.y, u.x, u.y) < 15) {
@@ -226,6 +226,26 @@ class Projectile {
           }
           this.alive = false;
           return true;
+        }
+      }
+    }
+    for (const t of turrets) {
+      if (t.side !== this.side && t.alive) {
+        if (dist(this.x, this.y, t.x, t.y) < 15) {
+          t.takeDamage(this.damage);
+          this.alive = false;
+          return true;
+        }
+      }
+    }
+    if (bases) {
+      for (const b of bases) {
+        if (b.side !== this.side) {
+          if (dist(this.x, this.y, b.x, b.y) < 25) {
+            b.takeDamage(this.damage);
+            this.alive = false;
+            return true;
+          }
         }
       }
     }
