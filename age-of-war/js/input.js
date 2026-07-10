@@ -51,30 +51,48 @@ class InputHandler {
   }
 
   handleClick(game) {
-    const y = CONFIG.VIEWPORT.HEIGHT - 70;
+    const hudH = 100;
+    const y = CONFIG.VIEWPORT.HEIGHT - hudH;
     if (this.mouseY < y) return;
 
     const age = CONFIG.AGES[game.currentAge];
     const unitStartX = 120;
 
     for (let i = 0; i < age.units.length; i++) {
-      const bx = unitStartX + i * 100;
-      if (pointInRect(this.mouseX, this.mouseY, bx, y + 5, 85, 30)) {
+      const bx = unitStartX + i * 90;
+      if (pointInRect(this.mouseX, this.mouseY, bx, y + 5, 80, 28)) {
         game.spawnUnit(i);
         return;
       }
     }
 
-    const evoX = unitStartX + age.units.length * 100 + 20;
-    if (pointInRect(this.mouseX, this.mouseY, evoX, y + 5, 100, 30)) {
-      game.evolve();
+    const evoNeeded = CONFIG.EVOLVE_XP[game.currentAge + 1];
+    if (evoNeeded !== undefined) {
+      const evoX = unitStartX + age.units.length * 90 + 10;
+      if (pointInRect(this.mouseX, this.mouseY, evoX, y + 5, 90, 28)) {
+        game.evolve();
+        return;
+      }
+    }
+
+    const spX = CONFIG.VIEWPORT.WIDTH - 110;
+    if (pointInRect(this.mouseX, this.mouseY, spX, y + 5, 100, 28)) {
+      game.useSpecial();
       return;
     }
 
-    const spX = CONFIG.VIEWPORT.WIDTH - 120;
-    if (pointInRect(this.mouseX, this.mouseY, spX, y + 5, 110, 30)) {
-      game.useSpecial();
+    const row2Y = y + 38;
+    if (pointInRect(this.mouseX, this.mouseY, 10, row2Y, 90, 24)) {
+      game.buySlot();
       return;
+    }
+
+    for (let i = 0; i < age.turrets.length; i++) {
+      const bx = 110 + i * 100;
+      if (pointInRect(this.mouseX, this.mouseY, bx, row2Y, 90, 24)) {
+        game.spawnTurret(i);
+        return;
+      }
     }
   }
 }
