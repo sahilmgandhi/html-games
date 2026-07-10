@@ -36,7 +36,7 @@ function drawTitleScreen() {
 
   ctx.fillStyle = '#666';
   ctx.font = '14px "Segoe UI", sans-serif';
-  ctx.fillText('WASD or Arrow Keys to scroll  |  Click units in HUD to spawn', canvas.width / 2, 480);
+  ctx.fillText('WASD or Arrow Keys to scroll  |  Click units in HUD to spawn  |  ESC to pause', canvas.width / 2, 480);
 
   drawTitleUnits();
 }
