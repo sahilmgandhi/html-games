@@ -15,6 +15,9 @@ class AudioManager {
     if (this.initialized) return;
     try {
       this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+      if (this.ctx.state === 'suspended') {
+        this.ctx.resume();
+      }
       this.initialized = true;
     } catch (e) {
       console.warn('Web Audio not available');
