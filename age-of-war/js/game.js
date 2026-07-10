@@ -36,13 +36,37 @@ class Game {
     this.running = false;
     this.gameOver = false;
     this.winner = null;
+    this.paused = false;
+    this.settingsOpen = false;
 
     this.canvas.addEventListener('click', () => {
       this.audio.init();
       if (this.gameOver) {
         this.restart();
+      } else if (this.settingsOpen) {
+        this.handleSettingsClick();
+      } else if (this.paused) {
+        const cx = CONFIG.VIEWPORT.WIDTH / 2;
+        const settingsX = cx - 50;
+        const settingsY = CONFIG.VIEWPORT.HEIGHT / 2 + 40;
+        if (pointInRect(this.input.mouseX, this.input.mouseY, settingsX, settingsY, 100, 36)) {
+          this.settingsOpen = true;
+        } else {
+          this.togglePause();
+        }
       } else {
         this.input.handleClick(this);
+      }
+    });
+
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' || e.key === 'p' || e.key === 'P') {
+        if (this.gameOver) return;
+        if (this.settingsOpen) {
+          this.settingsOpen = false;
+          return;
+        }
+        this.togglePause();
       }
     });
   }
@@ -52,6 +76,7 @@ class Game {
     this.running = true;
     this.lastTime = performance.now();
     this.audio.init();
+    this.audio.startMusic(this.currentAge);
     requestAnimationFrame((t) => this.loop(t));
   }
 
@@ -61,7 +86,9 @@ class Game {
     const dt = Math.min((timestamp - this.lastTime) / 1000, 0.05);
     this.lastTime = timestamp;
 
-    this.update(dt);
+    if (!this.paused) {
+      this.update(dt);
+    }
     this.render();
 
     requestAnimationFrame((t) => this.loop(t));
@@ -185,6 +212,12 @@ class Game {
     if (this.gameOver) {
       this.drawGameOver();
     }
+
+    if (this.settingsOpen) {
+      this.renderer.drawSettingsScreen(this);
+    } else if (this.paused) {
+      this.renderer.drawPauseScreen(this);
+    }
   }
 
   drawGameOver() {
@@ -223,10 +256,58 @@ class Game {
     this.particles = new ParticleSystem();
     this.playerSlotsBought = 0;
     this.enemySlotsBought = 0;
+    this.paused = false;
+    this.settingsOpen = false;
     this.gameOver = false;
     this.winner = null;
     this.renderer.camera.x = 0;
     this.ai = new AI(this);
+  }
+
+  togglePause() {
+    this.paused = !this.paused;
+    if (this.paused) {
+      this.audio.stopMusic();
+    } else if (this.audio.musicEnabled) {
+      this.audio.startMusic(this.currentAge);
+    }
+  }
+
+  toggleSettings() {
+    this.settingsOpen = !this.settingsOpen;
+  }
+
+  handleSettingsClick() {
+    const cx = CONFIG.VIEWPORT.WIDTH / 2;
+    const cy = CONFIG.VIEWPORT.HEIGHT / 2;
+    const panelW = 300;
+    const panelH = 260;
+    const panelY = cy - panelH / 2;
+
+    const musicBtnY = panelY + 90;
+    if (pointInRect(this.input.mouseX, this.input.mouseY, cx - 100, musicBtnY, 200, 36)) {
+      this.audio.toggleMusic();
+      return;
+    }
+
+    const sfxBtnY = panelY + 140;
+    if (pointInRect(this.input.mouseX, this.input.mouseY, cx - 100, sfxBtnY, 200, 36)) {
+      this.audio.toggleSfx();
+      return;
+    }
+
+    const muteBtnY = panelY + 190;
+    if (pointInRect(this.input.mouseX, this.input.mouseY, cx - 100, muteBtnY, 200, 36)) {
+      this.audio.toggleMute();
+      return;
+    }
+
+    const resumeBtnY = panelY + 235;
+    if (pointInRect(this.input.mouseX, this.input.mouseY, cx - 100, resumeBtnY, 200, 36)) {
+      this.settingsOpen = false;
+      this.togglePause();
+      return;
+    }
   }
 
   computeSlotPositions(baseX, dir) {
@@ -317,6 +398,7 @@ class Game {
     this.currentAge++;
     this.playerBase.healFraction(CONFIG.EVOLVE_HEAL);
     this.audio.play('evolve');
+    this.audio.updateMusicAge(this.currentAge);
 
     let refund = 0;
     for (const t of this.turrets) {
