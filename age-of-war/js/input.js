@@ -8,14 +8,19 @@ class InputHandler {
 
     canvas.addEventListener('mousemove', (e) => {
       const rect = canvas.getBoundingClientRect();
-      this.mouseX = e.clientX - rect.left;
-      this.mouseY = e.clientY - rect.top;
+      this.mouseX = (e.clientX - rect.left) * (canvas.width / rect.width);
+      this.mouseY = (e.clientY - rect.top) * (canvas.height / rect.height);
     });
 
     canvas.addEventListener('click', (e) => {
       const rect = canvas.getBoundingClientRect();
-      this.mouseX = e.clientX - rect.left;
-      this.mouseY = e.clientY - rect.top;
+      this.mouseX = (e.clientX - rect.left) * (canvas.width / rect.width);
+      this.mouseY = (e.clientY - rect.top) * (canvas.height / rect.height);
+    });
+
+    canvas.addEventListener('mouseleave', () => {
+      this.mouseX = CONFIG.VIEWPORT.WIDTH / 2;
+      this.mouseY = CONFIG.VIEWPORT.HEIGHT / 2;
     });
 
     window.addEventListener('keydown', (e) => {
