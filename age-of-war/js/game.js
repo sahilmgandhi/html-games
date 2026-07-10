@@ -469,13 +469,6 @@ class Game {
       }
     }
 
-    for (const t of this.turrets) {
-      if (t.side === 'enemy' && t.alive) {
-        t.takeDamage(age.specialDamage);
-        this.particles.emit(t.x, t.y, '#ff8800', 6, 4, 0.4, 3);
-      }
-    }
-
     this.enemyBase.takeDamage(age.specialDamage);
     this.particles.emit(this.enemyBase.x, this.enemyBase.y, '#ff4400', 20, 6, 0.8, 3);
 
@@ -493,13 +486,6 @@ class Game {
       if (u.side === 'player' && u.alive) {
         u.takeDamage(age.specialDamage);
         this.particles.emit(u.x, u.y, '#ff8800', 6, 4, 0.4, 3);
-      }
-    }
-
-    for (const t of this.turrets) {
-      if (t.side === 'player' && t.alive) {
-        t.takeDamage(age.specialDamage);
-        this.particles.emit(t.x, t.y, '#ff8800', 6, 4, 0.4, 3);
       }
     }
 

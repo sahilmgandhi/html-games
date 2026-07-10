@@ -215,6 +215,7 @@ class Renderer {
     ctx.save();
     ctx.translate(s.x, s.y + bob);
     ctx.rotate(lean);
+    ctx.scale(1.5, 1.5);
 
     if (unit.hitFlash > 0) {
       ctx.shadowColor = '#fff';
@@ -227,10 +228,10 @@ class Renderer {
 
     const hpFrac = unit.hp / unit.maxHp;
     if (hpFrac < 1) {
-      const barW = 24;
-      const barH = 4;
+      const barW = 30;
+      const barH = 5;
       const barX = s.x - barW / 2;
-      const barY = s.y - 32 + bob;
+      const barY = s.y - 52 + bob;
       ctx.fillStyle = '#333';
       ctx.fillRect(barX, barY, barW, barH);
       ctx.fillStyle = this.hpColor(hpFrac);
@@ -535,30 +536,35 @@ class Renderer {
   drawTurret(turret, ageIndex) {
     if (!turret.alive) return;
     const ctx = this.ctx;
-    const s = this.worldToScreen(turret.x - 15, turret.y - 25);
+    const s = this.worldToScreen(turret.x, turret.y);
     const age = CONFIG.AGES[ageIndex];
     const sideColor = turret.side === 'player' ? '#4a8af4' : '#f44a4a';
 
     ctx.fillStyle = age.color;
-    ctx.fillRect(s.x, s.y, 30, 25);
-    ctx.fillRect(s.x - 5, s.y + 25, 40, 10);
+    ctx.fillRect(s.x - 8, s.y - 38, 16, 38);
+    ctx.fillRect(s.x - 12, s.y, 24, 8);
+
+    ctx.fillStyle = '#555';
+    ctx.fillRect(s.x - 10, s.y - 42, 20, 6);
+    ctx.fillStyle = '#444';
+    ctx.fillRect(s.x - 6, s.y - 44, 12, 4);
 
     ctx.fillStyle = sideColor;
-    ctx.fillRect(s.x + 10, s.y - 8, 4, 12);
+    ctx.fillRect(s.x - 2, s.y - 52, 4, 10);
 
     if (turret.hitFlash > 0) {
       ctx.fillStyle = 'rgba(255,255,255,0.3)';
-      ctx.fillRect(s.x, s.y, 30, 25);
+      ctx.fillRect(s.x - 8, s.y - 38, 16, 38);
     }
 
     const hpFrac = turret.hp / turret.maxHp;
     if (hpFrac < 1) {
-      const barW = 30;
+      const barW = 20;
       const barH = 4;
       ctx.fillStyle = '#333';
-      ctx.fillRect(s.x, s.y - 8, barW, barH);
+      ctx.fillRect(s.x - barW / 2, s.y - 58, barW, barH);
       ctx.fillStyle = this.hpColor(hpFrac);
-      ctx.fillRect(s.x, s.y - 8, barW * hpFrac, barH);
+      ctx.fillRect(s.x - barW / 2, s.y - 58, barW * hpFrac, barH);
     }
   }
 
@@ -577,38 +583,38 @@ class Renderer {
 
     for (let i = 0; i < CONFIG.TURRET_SLOTS; i++) {
       const pos = game.turretSlotPositions[i];
-      const s = this.worldToScreen(pos.x - 15, pos.y - 25);
+      const s = this.worldToScreen(pos.x, pos.y);
 
       if (i < game.playerSlotsBought) {
         ctx.strokeStyle = 'rgba(74,138,244,0.3)';
         ctx.lineWidth = 1;
         ctx.setLineDash([4, 4]);
-        ctx.strokeRect(s.x, s.y, 30, 35);
+        ctx.strokeRect(s.x - 14, s.y - 50, 28, 58);
         ctx.setLineDash([]);
       } else {
         ctx.strokeStyle = 'rgba(255,255,255,0.15)';
         ctx.lineWidth = 1;
         ctx.setLineDash([4, 4]);
-        ctx.strokeRect(s.x, s.y, 30, 35);
+        ctx.strokeRect(s.x - 14, s.y - 50, 28, 58);
         ctx.setLineDash([]);
       }
     }
 
     for (let i = 0; i < CONFIG.TURRET_SLOTS; i++) {
       const pos = game.enemyTurretSlotPositions[i];
-      const s = this.worldToScreen(pos.x - 15, pos.y - 25);
+      const s = this.worldToScreen(pos.x, pos.y);
 
       if (i < game.enemySlotsBought) {
         ctx.strokeStyle = 'rgba(244,74,74,0.3)';
         ctx.lineWidth = 1;
         ctx.setLineDash([4, 4]);
-        ctx.strokeRect(s.x, s.y, 30, 35);
+        ctx.strokeRect(s.x - 14, s.y - 50, 28, 58);
         ctx.setLineDash([]);
       } else {
         ctx.strokeStyle = 'rgba(255,255,255,0.08)';
         ctx.lineWidth = 1;
         ctx.setLineDash([4, 4]);
-        ctx.strokeRect(s.x, s.y, 30, 35);
+        ctx.strokeRect(s.x - 14, s.y - 50, 28, 58);
         ctx.setLineDash([]);
       }
     }
