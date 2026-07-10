@@ -75,7 +75,7 @@ class Renderer {
 
     const groundY = CONFIG.VIEWPORT.HEIGHT - 100;
     ctx.fillStyle = age.groundColor;
-    ctx.fillRect(0, groundY, CONFIG.VIEWPORT.HEIGHT, 100);
+    ctx.fillRect(0, groundY, CONFIG.VIEWPORT.WIDTH, 100);
 
     ctx.fillStyle = this.lightenColor(age.groundColor, 1.15);
     for (let i = 0; i < 20; i++) {
