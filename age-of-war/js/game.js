@@ -38,8 +38,14 @@ class Game {
     this.winner = null;
     this.paused = false;
     this.settingsOpen = false;
+    this.debugMode = false;
+    this.debugOpen = false;
+    this.invincible = false;
+    this.gameSpeed = 1;
     this.started = false;
     this.flashTimer = 0;
+    this.musicWereOn = false;
+    this.sfxWereOn = false;
 
     this.canvas.addEventListener('click', () => {
       this.audio.init();
@@ -49,15 +55,10 @@ class Game {
         return;
       } else if (this.settingsOpen) {
         this.handleSettingsClick();
+      } else if (this.debugOpen) {
+        this.handleDebugClick();
       } else if (this.paused) {
-        const cx = CONFIG.VIEWPORT.WIDTH / 2;
-        const settingsX = cx - 50;
-        const settingsY = CONFIG.VIEWPORT.HEIGHT / 2 + 40;
-        if (pointInRect(this.input.mouseX, this.input.mouseY, settingsX, settingsY, 100, 36)) {
-          this.settingsOpen = true;
-        } else {
-          this.togglePause();
-        }
+        this.handlePauseClick();
       } else {
         const mx = this.input.mouseX;
         const my = this.input.mouseY;
@@ -80,6 +81,10 @@ class Game {
     window.addEventListener('keydown', (e) => {
       if (e.key === 'Escape' || e.key === 'p' || e.key === 'P') {
         if (this.gameOver) return;
+        if (this.debugOpen) {
+          this.debugOpen = false;
+          return;
+        }
         if (this.settingsOpen) {
           this.settingsOpen = false;
           return;
@@ -106,7 +111,7 @@ class Game {
     this.lastTime = timestamp;
 
     if (!this.paused) {
-      this.update(dt);
+      this.update(dt * this.gameSpeed);
     }
     this.render();
 
@@ -189,6 +194,10 @@ class Game {
       }
     }
 
+    if (this.invincible) {
+      this.playerBase.hp = this.playerBase.maxHp;
+    }
+
     if (this.playerBase.hp <= 0) {
       this.gameOver = true;
       this.winner = 'enemy';
@@ -236,6 +245,8 @@ class Game {
 
     if (this.settingsOpen) {
       this.renderer.drawSettingsScreen(this);
+    } else if (this.debugOpen) {
+      this.renderer.drawDebugScreen(this);
     } else if (this.paused) {
       this.renderer.drawPauseScreen(this);
     }
@@ -284,6 +295,10 @@ class Game {
     this.enemySlotsBought = 0;
     this.paused = false;
     this.settingsOpen = false;
+    this.debugMode = false;
+    this.debugOpen = false;
+    this.invincible = false;
+    this.gameSpeed = 1;
     this.gameOver = false;
     this.winner = null;
     this.renderer.camera.x = 0;
@@ -293,41 +308,154 @@ class Game {
   togglePause() {
     this.paused = !this.paused;
     if (this.paused) {
+      this.musicWereOn = this.audio.musicEnabled;
+      this.sfxWereOn = this.audio.sfxEnabled;
       this.audio.stopMusic();
-    } else if (this.audio.musicEnabled) {
-      this.audio.startMusic(this.currentAge);
+      this.audio.musicEnabled = false;
+      this.audio.sfxEnabled = false;
+    } else {
+      this.audio.musicEnabled = this.musicWereOn;
+      this.audio.sfxEnabled = this.sfxWereOn;
+      if (this.audio.musicEnabled) {
+        this.audio.startMusic(this.currentAge);
+      }
     }
   }
 
-  handleSettingsClick() {
+  handlePauseClick() {
+    const mx = this.input.mouseX;
+    const my = this.input.mouseY;
     const cx = CONFIG.VIEWPORT.WIDTH / 2;
     const cy = CONFIG.VIEWPORT.HEIGHT / 2;
-    const panelW = 300;
-    const panelH = 260;
+    const panelW = 340;
+    const panelH = 380;
+    const panelX = cx - panelW / 2;
     const panelY = cy - panelH / 2;
 
-    const musicBtnY = panelY + 90;
-    if (pointInRect(this.input.mouseX, this.input.mouseY, cx - 100, musicBtnY, 200, 36)) {
-      this.audio.toggleMusic();
+    const musicBtnY = panelY + 70;
+    if (pointInRect(mx, my, cx - 110, musicBtnY, 220, 30)) {
+      this.audio.musicEnabled = !this.audio.musicEnabled;
       return;
     }
 
-    const sfxBtnY = panelY + 140;
-    if (pointInRect(this.input.mouseX, this.input.mouseY, cx - 100, sfxBtnY, 200, 36)) {
-      this.audio.toggleSfx();
+    const sfxBtnY = panelY + 110;
+    if (pointInRect(mx, my, cx - 110, sfxBtnY, 220, 30)) {
+      this.audio.sfxEnabled = !this.audio.sfxEnabled;
       return;
     }
 
-    const muteBtnY = panelY + 190;
-    if (pointInRect(this.input.mouseX, this.input.mouseY, cx - 100, muteBtnY, 200, 36)) {
-      this.audio.toggleMute();
+    const debugBtnY = panelY + 170;
+    if (pointInRect(mx, my, cx - 110, debugBtnY, 220, 30)) {
+      this.debugOpen = true;
       return;
     }
 
-    const resumeBtnY = panelY + 235;
-    if (pointInRect(this.input.mouseX, this.input.mouseY, cx - 100, resumeBtnY, 200, 36)) {
-      this.settingsOpen = false;
+    const restartBtnY = panelY + 220;
+    if (pointInRect(mx, my, cx - 110, restartBtnY, 220, 30)) {
       this.togglePause();
+      this.restart();
+      return;
+    }
+
+    const resumeBtnY = panelY + 280;
+    if (pointInRect(mx, my, cx - 110, resumeBtnY, 220, 30)) {
+      this.togglePause();
+      return;
+    }
+  }
+
+  handleDebugClick() {
+    const mx = this.input.mouseX;
+    const my = this.input.mouseY;
+    const cx = CONFIG.VIEWPORT.WIDTH / 2;
+    const cy = CONFIG.VIEWPORT.HEIGHT / 2;
+    const panelW = 400;
+    const panelH = 420;
+    const panelX = cx - panelW / 2;
+    const panelY = cy - panelH / 2;
+    const bw = 180;
+    const bh = 28;
+
+    if (pointInRect(mx, my, panelX + 10, panelY + 60, bw, bh)) {
+      this.gold += 5000;
+      return;
+    }
+    if (pointInRect(mx, my, panelX + 10 + bw + 10, panelY + 60, bw, bh)) {
+      this.xp += 10000;
+      return;
+    }
+    if (pointInRect(mx, my, panelX + 10, panelY + 98, bw, bh)) {
+      this.gold += 50000;
+      return;
+    }
+    if (pointInRect(mx, my, panelX + 10 + bw + 10, panelY + 98, bw, bh)) {
+      this.xp += 100000;
+      return;
+    }
+    if (pointInRect(mx, my, panelX + 10, panelY + 136, bw, bh)) {
+      for (const u of this.units) {
+        if (u.side === 'enemy' && u.alive) {
+          u.alive = false;
+          this.particles.emit(u.x, u.y, '#f44', 8, 4, 0.5, 3);
+        }
+      }
+      return;
+    }
+    if (pointInRect(mx, my, panelX + 10 + bw + 10, panelY + 136, bw, bh)) {
+      for (const u of this.units) {
+        if (u.side === 'player' && u.alive) {
+          u.alive = false;
+          this.particles.emit(u.x, u.y, '#48f', 8, 4, 0.5, 3);
+        }
+      }
+      return;
+    }
+    if (pointInRect(mx, my, panelX + 10, panelY + 174, bw, bh)) {
+      if (this.currentAge < CONFIG.AGES.length - 1) {
+        this.currentAge++;
+        this.playerBase.healFraction(CONFIG.EVOLVE_HEAL);
+        this.turrets = this.turrets.filter(t => t.side !== 'player');
+        this.flashTimer = 0.5;
+        this.audio.updateMusicAge(this.currentAge);
+      }
+      return;
+    }
+    if (pointInRect(mx, my, panelX + 10 + bw + 10, panelY + 174, bw, bh)) {
+      if (this.enemyAge < CONFIG.AGES.length - 1) {
+        this.enemyAge++;
+        this.enemyBase.healFraction(CONFIG.EVOLVE_HEAL);
+        this.turrets = this.turrets.filter(t => t.side !== 'enemy');
+      }
+      return;
+    }
+    if (pointInRect(mx, my, panelX + 10, panelY + 212, bw, bh)) {
+      this.invincible = !this.invincible;
+      return;
+    }
+    if (pointInRect(mx, my, panelX + 10 + bw + 10, panelY + 212, bw, bh)) {
+      this.gameSpeed = this.gameSpeed === 1 ? 3 : this.gameSpeed === 3 ? 5 : 1;
+      return;
+    }
+    if (pointInRect(mx, my, panelX + 10, panelY + 250, bw, bh)) {
+      this.playerBase.hp = this.playerBase.maxHp;
+      return;
+    }
+    if (pointInRect(mx, my, panelX + 10 + bw + 10, panelY + 250, bw, bh)) {
+      for (const u of this.units) {
+        if (u.side === 'enemy' && u.alive) u.alive = false;
+      }
+      for (const t of this.turrets) {
+        if (t.side === 'enemy' && t.alive) t.alive = false;
+      }
+      this.enemyBase.hp = 0;
+      this.gameOver = true;
+      this.winner = 'player';
+      return;
+    }
+
+    const backBtnY = panelY + 380;
+    if (pointInRect(mx, my, cx - 90, backBtnY, 180, 30)) {
+      this.debugOpen = false;
       return;
     }
   }
@@ -335,7 +463,7 @@ class Game {
   computeSlotPositions(baseX, dir) {
     const positions = [];
     for (let i = 0; i < CONFIG.TURRET_SLOTS; i++) {
-      positions.push({ x: baseX + dir * (120 + i * 50), y: CONFIG.VIEWPORT.HEIGHT - 100 });
+      positions.push({ x: baseX + dir * 40, y: CONFIG.VIEWPORT.HEIGHT - 100 - i * 50 });
     }
     return positions;
   }
@@ -469,9 +597,6 @@ class Game {
       }
     }
 
-    this.enemyBase.takeDamage(age.specialDamage);
-    this.particles.emit(this.enemyBase.x, this.enemyBase.y, '#ff4400', 20, 6, 0.8, 3);
-
     this.particles.emit(CONFIG.VIEWPORT.WIDTH / 2 + this.renderer.camera.x, 100, '#ff4400', 30, 8, 1.0, 4);
   }
 
@@ -488,9 +613,6 @@ class Game {
         this.particles.emit(u.x, u.y, '#ff8800', 6, 4, 0.4, 3);
       }
     }
-
-    this.playerBase.takeDamage(age.specialDamage);
-    this.particles.emit(this.playerBase.x, this.playerBase.y, '#ff4400', 20, 6, 0.8, 3);
 
     this.particles.emit(CONFIG.VIEWPORT.WIDTH / 2 + this.renderer.camera.x, 100, '#ff4400', 30, 8, 1.0, 4);
   }
