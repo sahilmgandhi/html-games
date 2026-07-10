@@ -38,11 +38,14 @@ class Game {
     this.winner = null;
     this.paused = false;
     this.settingsOpen = false;
+    this.started = false;
 
     this.canvas.addEventListener('click', () => {
       this.audio.init();
       if (this.gameOver) {
         this.restart();
+      } else if (!this.started) {
+        return;
       } else if (this.settingsOpen) {
         this.handleSettingsClick();
       } else if (this.paused) {
@@ -77,6 +80,7 @@ class Game {
     this.lastTime = performance.now();
     this.audio.init();
     this.audio.startMusic(this.currentAge);
+    this.started = true;
     requestAnimationFrame((t) => this.loop(t));
   }
 
