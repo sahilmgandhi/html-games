@@ -493,25 +493,6 @@ class Renderer {
         ctx.fill();
         break;
 
-      case 'air':
-        ctx.fillStyle = '#666';
-        ctx.beginPath();
-        ctx.ellipse(0, -20, 12, 5, 0, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.strokeStyle = '#555';
-        ctx.lineWidth = 1;
-        for (let i = 0; i < 3; i++) {
-          const rx = -8 + i * 8;
-          ctx.beginPath();
-          ctx.ellipse(rx, -24, 6, 1.5, Date.now() / 50 + i, 0, Math.PI * 2);
-          ctx.stroke();
-        }
-        ctx.fillStyle = '#D2B48C';
-        ctx.beginPath();
-        ctx.arc(0, -16, 4, 0, Math.PI * 2);
-        ctx.fill();
-        break;
-
       default:
         ctx.fillRect(-5, -15, 10, 20);
         break;

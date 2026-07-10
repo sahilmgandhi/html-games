@@ -69,7 +69,6 @@ class AI {
       if (u.type === 'ranged') w = 2;
       if (u.type === 'fast') w = 1.5;
       if (u.type === 'armored') w = 1;
-      if (u.type === 'air') w = 1.5;
       if (u.type === 'siege') w = 0.8;
 
       const playerUnits = g.units.filter(u => u.side === 'player' && u.alive).length;

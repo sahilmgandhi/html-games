@@ -106,7 +106,7 @@ class Unit {
   }
 
   attack(target, type, projectiles) {
-    if (this.type === 'ranged' || this.type === 'siege' || this.type === 'armored' || this.type === 'air') {
+    if (this.type === 'ranged' || this.type === 'siege' || this.type === 'armored') {
       projectiles.push(new Projectile(
         this.x, this.y - 10,
         target.x, target.y,

@@ -277,10 +277,6 @@ class Game {
     }
   }
 
-  toggleSettings() {
-    this.settingsOpen = !this.settingsOpen;
-  }
-
   handleSettingsClick() {
     const cx = CONFIG.VIEWPORT.WIDTH / 2;
     const cy = CONFIG.VIEWPORT.HEIGHT / 2;
