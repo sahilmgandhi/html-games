@@ -460,5 +460,17 @@ class Game {
         this.particles.emit(u.x, u.y, '#ff8800', 6, 4, 0.4, 3);
       }
     }
+
+    for (const t of this.turrets) {
+      if (t.side === 'player' && t.alive) {
+        t.takeDamage(age.specialDamage);
+        this.particles.emit(t.x, t.y, '#ff8800', 6, 4, 0.4, 3);
+      }
+    }
+
+    this.playerBase.takeDamage(age.specialDamage);
+    this.particles.emit(this.playerBase.x, this.playerBase.y, '#ff4400', 20, 6, 0.8, 3);
+
+    this.particles.emit(CONFIG.VIEWPORT.WIDTH / 2 + this.renderer.camera.x, 100, '#ff4400', 30, 8, 1.0, 4);
   }
 }
