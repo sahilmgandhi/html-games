@@ -94,18 +94,18 @@ class Unit {
 
     if (info.dist <= this.range) {
       if (this.attackCooldown <= 0) {
-        const isRanged = this.attack(target, info.type, projectiles);
+        const isRanged = this.attack(target, projectiles);
         this.attackCooldown = this.attackSpeed;
         return isRanged ? 'ranged' : 'melee';
       }
     } else {
-      const dir = this.side === 'player' ? 1 : -1;
+      const dir = Math.sign(target.x - this.x);
       this.x += this.speed * dir * dt * 60;
     }
     return null;
   }
 
-  attack(target, type, projectiles) {
+  attack(target, projectiles) {
     if (this.type === 'ranged' || this.type === 'siege' || this.type === 'armored' || this.type === 'elite') {
       projectiles.push(new Projectile(
         this.x, this.y - 10,
@@ -122,7 +122,7 @@ class Unit {
   }
 
   takeDamage(amount) {
-    this.hp -= amount;
+    this.hp = Math.max(0, this.hp - amount);
     this.hitFlash = 0.1;
     if (this.hp <= 0) {
       this.alive = false;
@@ -141,8 +141,6 @@ class Turret {
     const data = CONFIG.AGES[ageIndex].turrets[turretIndex];
     this.name = data.name;
     this.cost = data.cost;
-    this.hp = data.hp;
-    this.maxHp = data.hp;
     this.damage = data.damage;
     this.range = data.range;
     this.attackSpeed = data.attackSpeed;
@@ -151,12 +149,10 @@ class Turret {
 
     this.attackCooldown = 0;
     this.alive = true;
-    this.hitFlash = 0;
   }
 
   update(dt, allUnits, projectiles) {
     if (!this.alive) return;
-    if (this.hitFlash > 0) this.hitFlash -= dt;
     if (this.attackCooldown > 0) this.attackCooldown -= dt;
 
     let closest = null;
@@ -181,14 +177,6 @@ class Turret {
         this.splashRadius
       ));
       this.attackCooldown = this.attackSpeed;
-    }
-  }
-
-  takeDamage(amount) {
-    this.hp -= amount;
-    this.hitFlash = 0.1;
-    if (this.hp <= 0) {
-      this.alive = false;
     }
   }
 }
@@ -237,16 +225,6 @@ class Projectile {
             u.takeDamage(this.damage);
             hits.push({ entity: u, damage: this.damage });
           }
-          this.alive = false;
-          return hits;
-        }
-      }
-    }
-    for (const t of turrets) {
-      if (t.side !== this.side && t.alive) {
-        if (dist(this.x, this.y, t.x, t.y) < 15) {
-          t.takeDamage(this.damage);
-          hits.push({ entity: t, damage: this.damage });
           this.alive = false;
           return hits;
         }

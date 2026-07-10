@@ -1,7 +1,6 @@
 class AudioManager {
   constructor() {
     this.ctx = null;
-    this.muted = false;
     this.musicEnabled = true;
     this.sfxEnabled = true;
     this.initialized = false;
@@ -24,31 +23,9 @@ class AudioManager {
     }
   }
 
-  toggleMute() {
-    this.muted = !this.muted;
-    if (this.muted) {
-      this.stopMusic();
-    } else if (this.musicEnabled) {
-      this.startMusic(this.currentAgeIndex);
-    }
-  }
-
-  toggleMusic() {
-    this.musicEnabled = !this.musicEnabled;
-    if (!this.musicEnabled) {
-      this.stopMusic();
-    } else if (!this.muted) {
-      this.startMusic(this.currentAgeIndex);
-    }
-  }
-
-  toggleSfx() {
-    this.sfxEnabled = !this.sfxEnabled;
-  }
-
   startMusic(ageIndex) {
     this.stopMusic();
-    if (this.muted || !this.ctx || !this.musicEnabled) return;
+    if (!this.ctx || !this.musicEnabled) return;
     this.currentAgeIndex = ageIndex;
     this.musicPlaying = true;
     this.playMusicLoop(ageIndex);
@@ -66,71 +43,164 @@ class AudioManager {
     this.musicNodes = [];
   }
 
+  updateMusicAge(ageIndex) {
+    if (this.musicPlaying && ageIndex !== this.currentAgeIndex) {
+      this.currentAgeIndex = ageIndex;
+      if (this.musicEnabled) {
+        this.stopMusic();
+        this.startMusic(ageIndex);
+      }
+    }
+  }
+
+  noteFreq(root, scale, degree) {
+    const oct = Math.floor(degree / scale.length);
+    const idx = ((degree % scale.length) + scale.length) % scale.length;
+    return root * Math.pow(2, (scale[idx] + oct * 12) / 12);
+  }
+
   playMusicLoop(ageIndex) {
-    if (!this.musicPlaying || this.muted || !this.ctx) return;
-
+    if (!this.musicPlaying || !this.ctx) return;
     const now = this.ctx.currentTime;
-    const baseFreqs = [65, 73, 82, 98, 110];
-    const melodyNotes = [
-      [0, 3, 5, 7, 5, 3],
-      [0, 4, 7, 9, 7, 4],
-      [0, 2, 5, 7, 5, 2],
-      [0, 3, 7, 10, 7, 3],
-      [0, 5, 9, 12, 9, 5],
+
+    const MUSIC = [
+      { // Age 0: Stone Age — Tribal, primal
+        bpm: 82, root: 55,
+        scale: [0, 3, 5, 7, 10],
+        bassWave: 'sine', padWave: 'sine', melWave: 'triangle',
+        bassVol: 0.04, padVol: 0.015, melVol: 0.03,
+        padCutoff: 350,
+        bass: [0,-1,-1,-1, 0,-1,-1,-1, 3,-1,-1,-1, 0,-1,-1,-1],
+        mel:  [4,-1,3,-1, 2,-1,0,-1, 4,-1,3,-1, 2,-1,0,-1],
+        pad:  [[0,2,4],[0,2,4],[1,3,4],[2,4,5]],
+        perc: [0,-1,-1,-1, 0,-1,-1,-1, 0,-1,-1,-1, 0,-1,-1,-1],
+      },
+      { // Age 1: Castle Age — Medieval, Dorian
+        bpm: 100, root: 73.4,
+        scale: [0, 2, 3, 5, 7, 9, 10],
+        bassWave: 'triangle', padWave: 'sine', melWave: 'triangle',
+        bassVol: 0.035, padVol: 0.015, melVol: 0.028,
+        padCutoff: 500,
+        bass: [0,-1,3,-1, 5,-1,3,-1, 0,-1,5,-1, 3,-1,0,-1],
+        mel:  [0,-1,2,-1, 3,-1,5,-1, 4,-1,3,-1, 2,-1,0,-1],
+        pad:  [[0,2,4],[1,3,5],[2,4,6],[0,2,4]],
+        perc: [0,-1,1,-1, 0,-1,1,-1, 0,-1,1,-1, 0,-1,0,-1],
+      },
+      { // Age 2: Renaissance — Baroque counterpoint
+        bpm: 108, root: 82.4,
+        scale: [0, 2, 3, 5, 7, 8, 10],
+        bassWave: 'triangle', padWave: 'sawtooth', melWave: 'sine',
+        bassVol: 0.03, padVol: 0.012, melVol: 0.025,
+        padCutoff: 600,
+        bass: [0,-1,3,-1, 5,-1,3,-1, 0,-1,5,-1, 3,-1,0,-1],
+        mel:  [6,-1,5,-1, 4,-1,2,-1, 3,-1,4,-1, 2,-1,0,-1],
+        pad:  [[0,2,4],[3,5,0],[1,3,5],[0,2,4]],
+        perc: [0,-1,2,1, 0,-1,2,-1, 0,-1,2,1, 0,-1,2,-1],
+      },
+      { // Age 3: Modern Age — Orchestral, harmonic minor
+        bpm: 118, root: 98,
+        scale: [0, 2, 3, 5, 7, 8, 11],
+        bassWave: 'sawtooth', padWave: 'sawtooth', melWave: 'square',
+        bassVol: 0.025, padVol: 0.01, melVol: 0.02,
+        padCutoff: 800,
+        bass: [0,-1,0,-1, 5,-1,3,-1, 0,-1,5,-1, 3,-1,0,-1],
+        mel:  [6,-1,5,-1, 4,-1,2,-1, 5,-1,4,-1, 3,-1,0,-1],
+        pad:  [[0,2,4],[3,5,0],[4,6,1],[0,2,4]],
+        perc: [0,-1,2,1, 0,-1,2,-1, 0,2,2,1, 0,-1,2,-1],
+      },
+      { // Age 4: Future Age — Electronic, Lydian
+        bpm: 128, root: 110,
+        scale: [0, 2, 4, 6, 7, 9, 11],
+        bassWave: 'sawtooth', padWave: 'sawtooth', melWave: 'sine',
+        bassVol: 0.025, padVol: 0.01, melVol: 0.022,
+        padCutoff: 1000,
+        bass: [0,-1,0,-1, 3,-1,0,-1, 5,-1,3,-1, 0,-1,0,-1],
+        mel:  [6,-1,5,-1, 4,-1,2,-1, 5,-1,4,-1, 3,-1,2,-1],
+        pad:  [[0,2,4],[3,5,1],[4,6,2],[0,2,4]],
+        perc: [0,2,1,2, 0,2,1,2, 0,2,1,2, 0,2,1,2],
+      },
     ];
-    const scales = [
-      [0, 2, 3, 5, 7, 8, 10],
-      [0, 2, 4, 5, 7, 9, 11],
-      [0, 2, 3, 5, 7, 8, 10],
-      [0, 2, 4, 5, 7, 9, 10],
-      [0, 2, 4, 6, 7, 9, 11],
-    ];
 
-    const baseFreq = baseFreqs[Math.min(ageIndex, baseFreqs.length - 1)];
-    const scale = scales[Math.min(ageIndex, scales.length - 1)];
-    const melodyPattern = melodyNotes[Math.min(ageIndex, melodyNotes.length - 1)];
-    const noteDur = 0.4;
-    const totalDur = melodyPattern.length * noteDur;
+    const cfg = MUSIC[ageIndex];
+    const beat = 60 / cfg.bpm;
+    const totalDur = 16 * beat;
 
-    const bassGain = this.ctx.createGain();
-    bassGain.gain.setValueAtTime(0.03, now);
-    bassGain.connect(this.ctx.destination);
-
-    const bassOsc = this.ctx.createOscillator();
-    bassOsc.type = 'sine';
-    bassOsc.frequency.setValueAtTime(baseFreq, now);
-    bassOsc.connect(bassGain);
-    bassOsc.start(now);
-    bassOsc.stop(now + totalDur);
-    this.musicNodes.push(bassOsc);
-
-    const bassOsc2 = this.ctx.createOscillator();
-    bassOsc2.type = 'triangle';
-    bassOsc2.frequency.setValueAtTime(baseFreq * 1.5, now);
-    const bass2Gain = this.ctx.createGain();
-    bass2Gain.gain.setValueAtTime(0.015, now);
-    bassOsc2.connect(bass2Gain);
-    bass2Gain.connect(this.ctx.destination);
-    bass2Gain.gain.setValueAtTime(0.015, now);
-    bassOsc2.start(now);
-    bassOsc2.stop(now + totalDur);
-    this.musicNodes.push(bassOsc2);
-
-    melodyPattern.forEach((interval, i) => {
-      const noteFreq = baseFreq * 4 * Math.pow(2, scale[interval % scale.length] / 12);
+    // — Bass voice —
+    cfg.bass.forEach((deg, i) => {
+      if (deg < 0) return;
+      const t = now + i * beat;
+      const freq = this.noteFreq(cfg.root, cfg.scale, deg);
       const osc = this.ctx.createOscillator();
       const gain = this.ctx.createGain();
-      osc.type = ageIndex >= 3 ? 'sine' : 'triangle';
-      osc.frequency.setValueAtTime(noteFreq, now + i * noteDur);
-      gain.gain.setValueAtTime(0, now + i * noteDur);
-      gain.gain.linearRampToValueAtTime(0.035, now + i * noteDur + 0.05);
-      gain.gain.linearRampToValueAtTime(0.02, now + i * noteDur + noteDur * 0.6);
-      gain.gain.linearRampToValueAtTime(0, now + i * noteDur + noteDur * 0.95);
+      osc.type = cfg.bassWave;
+      osc.frequency.setValueAtTime(freq, t);
+      gain.gain.setValueAtTime(0, t);
+      gain.gain.linearRampToValueAtTime(cfg.bassVol, t + 0.02);
+      gain.gain.setValueAtTime(cfg.bassVol, t + beat * 0.7);
+      gain.gain.linearRampToValueAtTime(0, t + beat * 0.95);
       osc.connect(gain);
       gain.connect(this.ctx.destination);
-      osc.start(now + i * noteDur);
-      osc.stop(now + i * noteDur + noteDur);
+      osc.start(t);
+      osc.stop(t + beat);
       this.musicNodes.push(osc);
+    });
+
+    // — Pad voice (4 bars, one chord each) —
+    cfg.pad.forEach((chord, bar) => {
+      const t = now + bar * 4 * beat;
+      const dur = 4 * beat;
+      chord.forEach(deg => {
+        const freq = this.noteFreq(cfg.root * 2, cfg.scale, deg);
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        const filter = this.ctx.createBiquadFilter();
+        osc.type = cfg.padWave;
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(cfg.padCutoff, t);
+        osc.frequency.setValueAtTime(freq, t);
+        gain.gain.setValueAtTime(0, t);
+        gain.gain.linearRampToValueAtTime(cfg.padVol, t + 0.4);
+        gain.gain.setValueAtTime(cfg.padVol, t + dur - 0.4);
+        gain.gain.linearRampToValueAtTime(0, t + dur);
+        osc.connect(filter);
+        filter.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(t);
+        osc.stop(t + dur);
+        this.musicNodes.push(osc);
+      });
+    });
+
+    // — Melody voice —
+    cfg.mel.forEach((deg, i) => {
+      if (deg < 0) return;
+      const t = now + i * beat;
+      const freq = this.noteFreq(cfg.root * 4, cfg.scale, deg);
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = cfg.melWave;
+      osc.frequency.setValueAtTime(freq, t);
+      gain.gain.setValueAtTime(0, t);
+      gain.gain.linearRampToValueAtTime(cfg.melVol, t + 0.03);
+      gain.gain.setValueAtTime(cfg.melVol * 0.6, t + beat * 0.5);
+      gain.gain.linearRampToValueAtTime(0, t + beat * 0.9);
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start(t);
+      osc.stop(t + beat);
+      this.musicNodes.push(osc);
+    });
+
+    // — Percussion voice —
+    cfg.perc.forEach((type, i) => {
+      const t = now + i * beat;
+      if (type === 0) {
+        this.scheduleKick(t);
+      } else if (type === 1) {
+        this.scheduleSnare(t);
+      } else if (type === 2) {
+        this.scheduleHihat(t);
+      }
     });
 
     this.musicTimer = setTimeout(() => {
@@ -139,14 +209,65 @@ class AudioManager {
     }, totalDur * 1000);
   }
 
-  updateMusicAge(ageIndex) {
-    if (this.musicPlaying && ageIndex !== this.currentAgeIndex) {
-      this.currentAgeIndex = ageIndex;
-      if (!this.muted && this.musicEnabled) {
-        this.stopMusic();
-        this.startMusic(ageIndex);
-      }
-    }
+  scheduleKick(t) {
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(150, t);
+    osc.frequency.exponentialRampToValueAtTime(30, t + 0.1);
+    gain.gain.setValueAtTime(0.12, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+    osc.start(t);
+    osc.stop(t + 0.18);
+    this.musicNodes.push(osc);
+  }
+
+  scheduleSnare(t) {
+    const noise = this.createNoise(0.08);
+    const nGain = this.ctx.createGain();
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.setValueAtTime(3500, t);
+    filter.Q.setValueAtTime(0.8, t);
+    noise.connect(filter);
+    filter.connect(nGain);
+    nGain.connect(this.ctx.destination);
+    nGain.gain.setValueAtTime(0.09, t);
+    nGain.gain.exponentialRampToValueAtTime(0.001, t + 0.08);
+    noise.start(t);
+    noise.stop(t + 0.08);
+    this.musicNodes.push(noise);
+
+    const osc = this.ctx.createOscillator();
+    const oGain = this.ctx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(200, t);
+    osc.frequency.exponentialRampToValueAtTime(80, t + 0.05);
+    oGain.gain.setValueAtTime(0.06, t);
+    oGain.gain.exponentialRampToValueAtTime(0.001, t + 0.06);
+    osc.connect(oGain);
+    oGain.connect(this.ctx.destination);
+    osc.start(t);
+    osc.stop(t + 0.06);
+    this.musicNodes.push(osc);
+  }
+
+  scheduleHihat(t) {
+    const noise = this.createNoise(0.03);
+    const gain = this.ctx.createGain();
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = 'highpass';
+    filter.frequency.setValueAtTime(8000, t);
+    noise.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.ctx.destination);
+    gain.gain.setValueAtTime(0.04, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.03);
+    noise.start(t);
+    noise.stop(t + 0.03);
+    this.musicNodes.push(noise);
   }
 
   createNoise(duration) {
@@ -163,7 +284,7 @@ class AudioManager {
   }
 
   play(type) {
-    if (this.muted || !this.ctx || !this.sfxEnabled) return;
+    if (!this.ctx || !this.sfxEnabled) return;
     try {
       const now = this.ctx.currentTime;
 
@@ -250,35 +371,6 @@ class AudioManager {
           gain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
           osc.start(now);
           osc.stop(now + 0.08);
-          break;
-        }
-
-        case 'explosion': {
-          const noise = this.createNoise(0.4);
-          const noiseGain = this.ctx.createGain();
-          const noiseFilter = this.ctx.createBiquadFilter();
-          noiseFilter.type = 'lowpass';
-          noiseFilter.frequency.setValueAtTime(1500, now);
-          noiseFilter.frequency.exponentialRampToValueAtTime(100, now + 0.4);
-          noise.connect(noiseFilter);
-          noiseFilter.connect(noiseGain);
-          noiseGain.connect(this.ctx.destination);
-          noiseGain.gain.setValueAtTime(0.25, now);
-          noiseGain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
-          noise.start(now);
-          noise.stop(now + 0.4);
-
-          const osc = this.ctx.createOscillator();
-          const gain = this.ctx.createGain();
-          osc.connect(gain);
-          gain.connect(this.ctx.destination);
-          osc.type = 'sawtooth';
-          osc.frequency.setValueAtTime(200, now);
-          osc.frequency.exponentialRampToValueAtTime(25, now + 0.4);
-          gain.gain.setValueAtTime(0.15, now);
-          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
-          osc.start(now);
-          osc.stop(now + 0.4);
           break;
         }
 

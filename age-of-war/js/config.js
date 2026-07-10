@@ -1,11 +1,22 @@
 const CONFIG = {
   VIEWPORT: { WIDTH: 1200, HEIGHT: 600 },
   WORLD: { WIDTH: 2400, HEIGHT: 600 },
+  GROUND_Y: 500,
+
+  COLORS: {
+    PLAYER: '#4a8af4',
+    ENEMY: '#f44a4a',
+    PLAYER_LIGHT: '#8af',
+    ENEMY_LIGHT: '#f88',
+  },
+
+  INCOME_GOLD_PER_SEC: 2,
+  INCOME_XP_PER_SEC: 0.5,
 
   CAMERA_SCROLL_SPEED: 12,
   CAMERA_EDGE_MARGIN: 50,
 
-  BASE_HP: 500,
+  BASE_HP: 5000,
   BASE_X_OFFSET: 100,
   BASE_WIDTH: 80,
   BASE_HEIGHT: 120,
@@ -37,9 +48,9 @@ const CONFIG = {
         { name: 'Dino Rider', type: 'fast', cost: 100, hp: 160, damage: 40, speed: 1.8, range: 30, attackSpeed: 0.8, goldReward: 130, xpReward: 40 },
       ],
       turrets: [
-        { name: 'Rock Slingshot', cost: 100, hp: 150, damage: 12, range: 200, attackSpeed: 0.75, projectileSpeed: 5 },
-        { name: 'Egg Automatic', cost: 200, hp: 200, damage: 5, range: 180, attackSpeed: 0.28, projectileSpeed: 6 },
-        { name: 'Primit. Catapult', cost: 500, hp: 300, damage: 25, range: 250, attackSpeed: 1.75, projectileSpeed: 4, splashRadius: 30 },
+        { name: 'Rock Slingshot', cost: 100, damage: 12, range: 200, attackSpeed: 0.75, projectileSpeed: 5 },
+        { name: 'Egg Automatic', cost: 200, damage: 5, range: 180, attackSpeed: 0.28, projectileSpeed: 6 },
+        { name: 'Primit. Catapult', cost: 500, damage: 25, range: 250, attackSpeed: 1.75, projectileSpeed: 4, splashRadius: 30 },
       ],
     },
     {
@@ -55,9 +66,9 @@ const CONFIG = {
         { name: 'Knight', type: 'fast', cost: 500, hp: 300, damage: 60, speed: 1.4, range: 30, attackSpeed: 1.1, goldReward: 650, xpReward: 80 },
       ],
       turrets: [
-        { name: 'Catapult', cost: 500, hp: 250, damage: 40, range: 250, attackSpeed: 1.75, projectileSpeed: 5 },
-        { name: 'Fire Catapult', cost: 750, hp: 350, damage: 50, range: 250, attackSpeed: 1.75, projectileSpeed: 5, splashRadius: 25 },
-        { name: 'Oil', cost: 1000, hp: 400, damage: 4, range: 180, attackSpeed: 0.5, projectileSpeed: 3, splashRadius: 50 },
+        { name: 'Catapult', cost: 500, damage: 40, range: 250, attackSpeed: 1.75, projectileSpeed: 5 },
+        { name: 'Fire Catapult', cost: 750, damage: 50, range: 250, attackSpeed: 1.75, projectileSpeed: 5, splashRadius: 25 },
+        { name: 'Oil', cost: 1000, damage: 4, range: 180, attackSpeed: 0.5, projectileSpeed: 3, splashRadius: 50 },
       ],
     },
     {
@@ -73,9 +84,9 @@ const CONFIG = {
         { name: 'Cannoneer', type: 'siege', cost: 1000, hp: 600, damage: 120, speed: 0.4, range: 200, attackSpeed: 2.5, projectileSpeed: 4, splashRadius: 40, goldReward: 1300, xpReward: 100 },
       ],
       turrets: [
-        { name: 'Small Cannon', cost: 1500, hp: 350, damage: 30, range: 300, attackSpeed: 1.75, projectileSpeed: 6 },
-        { name: 'Large Cannon', cost: 3000, hp: 500, damage: 70, range: 300, attackSpeed: 1.75, projectileSpeed: 6, splashRadius: 20 },
-        { name: 'Explos. Cannon', cost: 6000, hp: 600, damage: 100, range: 300, attackSpeed: 1.75, projectileSpeed: 6, splashRadius: 35 },
+        { name: 'Small Cannon', cost: 1500, damage: 30, range: 300, attackSpeed: 1.75, projectileSpeed: 6 },
+        { name: 'Large Cannon', cost: 3000, damage: 70, range: 300, attackSpeed: 1.75, projectileSpeed: 6, splashRadius: 20 },
+        { name: 'Explos. Cannon', cost: 6000, damage: 100, range: 300, attackSpeed: 1.75, projectileSpeed: 6, splashRadius: 35 },
       ],
     },
     {
@@ -91,9 +102,9 @@ const CONFIG = {
         { name: 'Tank', type: 'armored', cost: 7000, hp: 1200, damage: 300, speed: 0.4, range: 180, attackSpeed: 2.0, projectileSpeed: 8, goldReward: 9100, xpReward: 500 },
       ],
       turrets: [
-        { name: 'Single Turret', cost: 7000, hp: 500, damage: 70, range: 300, attackSpeed: 1.0, projectileSpeed: 8 },
-        { name: 'Rocket Turret', cost: 9000, hp: 600, damage: 100, range: 300, attackSpeed: 1.25, projectileSpeed: 8 },
-        { name: 'Double Turret', cost: 14000, hp: 700, damage: 70, range: 300, attackSpeed: 0.55, projectileSpeed: 8 },
+        { name: 'Single Turret', cost: 7000, damage: 70, range: 300, attackSpeed: 1.0, projectileSpeed: 8 },
+        { name: 'Rocket Turret', cost: 9000, damage: 100, range: 300, attackSpeed: 1.25, projectileSpeed: 8 },
+        { name: 'Double Turret', cost: 14000, damage: 70, range: 300, attackSpeed: 0.55, projectileSpeed: 8 },
       ],
     },
     {
@@ -110,9 +121,9 @@ const CONFIG = {
         { name: 'Super Soldier', type: 'elite', cost: 150000, hp: 4000, damage: 400, speed: 0.8, range: 150, attackSpeed: 1.0, projectileSpeed: 10, goldReward: 200000, xpReward: 0 },
       ],
       turrets: [
-        { name: 'Titanium Shooter', cost: 24000, hp: 600, damage: 100, range: 250, attackSpeed: 1.0, projectileSpeed: 9 },
-        { name: 'Lazer Cannon', cost: 40000, hp: 800, damage: 40, range: 300, attackSpeed: 0.25, projectileSpeed: 10 },
-        { name: 'Ion Ray', cost: 100000, hp: 1000, damage: 60, range: 400, attackSpeed: 0.25, projectileSpeed: 10 },
+        { name: 'Titanium Shooter', cost: 24000, damage: 100, range: 250, attackSpeed: 1.0, projectileSpeed: 9 },
+        { name: 'Lazer Cannon', cost: 40000, damage: 40, range: 300, attackSpeed: 0.25, projectileSpeed: 10 },
+        { name: 'Ion Ray', cost: 100000, damage: 60, range: 400, attackSpeed: 0.25, projectileSpeed: 10 },
       ],
     },
   ],

@@ -72,8 +72,8 @@ class AI {
       if (u.type === 'siege') w = 0.8;
       if (u.type === 'elite') w = 0;
 
-      const playerUnits = g.units.filter(u => u.side === 'player' && u.alive).length;
-      if (playerUnits > 5) w *= 1.5;
+      const playerUnitCount = g.units.filter(u => u.side === 'player' && u.alive).length;
+      if (playerUnitCount > 5) w *= 1.5;
 
       return w;
     });

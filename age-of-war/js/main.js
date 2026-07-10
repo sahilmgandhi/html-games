@@ -89,56 +89,22 @@ function drawTitleUnits() {
   const cx = canvas.width / 2;
   const groundY = 380;
 
-  drawTitleUnit(cx - 160, groundY, 1.8, t, 0, '#8B7355', function(s) {
-    ctx.fillStyle = '#D2B48C';
-    ctx.beginPath(); ctx.arc(0, -16, 8, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = '#8B7355';
-    ctx.fillRect(-5, -8, 10, 20);
-    ctx.strokeStyle = '#6B5335'; ctx.lineWidth = 3;
-    ctx.beginPath(); ctx.moveTo(8, -4); ctx.lineTo(16, -14); ctx.stroke();
-  });
+  const units = [
+    { type: 'melee', age: 0, x: -160 },
+    { type: 'melee', age: 1, x: -50 },
+    { type: 'armored', age: 3, x: 60 },
+    { type: 'ranged', age: 4, x: 170 },
+  ];
 
-  drawTitleUnit(cx - 50, groundY, 1.8, t, 1, '#4444aa', function(s) {
-    ctx.fillStyle = '#C0C0C0';
-    ctx.beginPath(); ctx.arc(0, -16, 7, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = '#444';
-    ctx.fillRect(-5, -8, 10, 20);
-    ctx.strokeStyle = '#888'; ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.moveTo(8, -4); ctx.lineTo(8, -20); ctx.stroke();
-    ctx.fillStyle = '#C0C0C0'; ctx.fillRect(-3, -24, 6, 6);
-  });
-
-  drawTitleUnit(cx + 60, groundY, 1.8, t, 2, '#556B2F', function(s) {
-    ctx.fillStyle = '#556B2F';
-    ctx.fillRect(-14, -4, 28, 10);
-    ctx.fillRect(-10, -12, 16, 10);
-    ctx.fillStyle = '#333';
-    ctx.fillRect(-14, 6, 6, 4); ctx.fillRect(8, 6, 6, 4);
-    ctx.strokeStyle = '#556B2F'; ctx.lineWidth = 3;
-    ctx.beginPath(); ctx.moveTo(0, -8); ctx.lineTo(20, -6); ctx.stroke();
-  });
-
-  drawTitleUnit(cx + 170, groundY, 1.8, t, 3, '#00e5ff', function(s) {
-    ctx.fillStyle = '#2a2a4a';
-    ctx.fillRect(-6, -10, 12, 24);
-    ctx.fillStyle = '#00e5ff';
-    ctx.shadowColor = '#00e5ff'; ctx.shadowBlur = 6;
-    ctx.beginPath(); ctx.arc(0, -18, 7, 0, Math.PI * 2); ctx.fill();
-    ctx.fillRect(8, -4, 16, 3);
-    ctx.shadowBlur = 0;
-  });
-}
-
-function drawTitleUnit(x, groundY, scale, t, index, color, drawFn) {
-  ctx.save();
-  ctx.translate(x, groundY);
-  ctx.scale(scale, scale);
-  const bob = Math.sin(t * 3 + index * 1.2) * 3;
-  ctx.translate(0, bob);
-
-  drawFn();
-
-  ctx.restore();
+  for (const u of units) {
+    ctx.save();
+    ctx.translate(cx + u.x, groundY);
+    ctx.scale(1.8, 1.8);
+    const bob = Math.sin(t * 3 + u.x * 0.01) * 3;
+    ctx.translate(0, bob);
+    spriteManager.draw(ctx, u.type, u.age, 0, 0, 1);
+    ctx.restore();
+  }
 }
 
 function titleLoop() {
