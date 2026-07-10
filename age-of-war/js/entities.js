@@ -210,6 +210,7 @@ class Projectile {
   }
 
   checkHit(units, turrets, bases) {
+    const hits = [];
     for (const u of units) {
       if (u.side !== this.side && u.alive) {
         if (dist(this.x, this.y, u.x, u.y) < 15) {
@@ -218,14 +219,16 @@ class Projectile {
               if (u2.side !== this.side && u2.alive) {
                 if (dist(this.x, this.y, u2.x, u2.y) <= this.splashRadius) {
                   u2.takeDamage(this.damage);
+                  hits.push({ entity: u2, damage: this.damage });
                 }
               }
             }
           } else {
             u.takeDamage(this.damage);
+            hits.push({ entity: u, damage: this.damage });
           }
           this.alive = false;
-          return true;
+          return hits;
         }
       }
     }
@@ -233,8 +236,9 @@ class Projectile {
       if (t.side !== this.side && t.alive) {
         if (dist(this.x, this.y, t.x, t.y) < 15) {
           t.takeDamage(this.damage);
+          hits.push({ entity: t, damage: this.damage });
           this.alive = false;
-          return true;
+          return hits;
         }
       }
     }
@@ -243,12 +247,13 @@ class Projectile {
         if (b.side !== this.side) {
           if (dist(this.x, this.y, b.x, b.y) < 25) {
             b.takeDamage(this.damage);
+            hits.push({ entity: b, damage: this.damage });
             this.alive = false;
-            return true;
+            return hits;
           }
         }
       }
     }
-    return false;
+    return hits;
   }
 }

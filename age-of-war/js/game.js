@@ -87,7 +87,13 @@ class Game {
 
     for (const p of this.projectiles) {
       p.update(dt);
-      p.checkHit(this.units, this.turrets, [this.playerBase, this.enemyBase]);
+      const hits = p.checkHit(this.units, this.turrets, [this.playerBase, this.enemyBase]);
+      if (hits.length > 0) {
+        for (const hit of hits) {
+          const color = hit.entity instanceof Unit ? (hit.entity.side === 'player' ? '#4a8af4' : '#f44a4a') : '#ff8800';
+          this.particles.emitDamageNumber(hit.entity.x, hit.entity.y, hit.damage, color);
+        }
+      }
     }
 
     for (let i = this.units.length - 1; i >= 0; i--) {
