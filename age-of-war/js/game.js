@@ -526,20 +526,41 @@ class Game {
   }
 
   spawnTurret(turretIndex) {
-    if (this.playerSlotsBought === 0) return;
-    const occupiedCount = this.turrets.filter(t => t.side === 'player').length;
-    if (occupiedCount >= this.playerSlotsBought) return;
+    this.spawnTurretForSide('player', turretIndex);
+  }
 
-    const age = CONFIG.AGES[this.currentAge];
+  spawnEnemyTurret(turretIndex) {
+    this.spawnTurretForSide('enemy', turretIndex);
+  }
+
+  spawnTurretForSide(side, turretIndex) {
+    const isPlayer = side === 'player';
+    const slotsBought = isPlayer ? this.playerSlotsBought : this.enemySlotsBought;
+    if (slotsBought === 0) return;
+
+    const occupiedCount = this.turrets.filter(t => t.side === side).length;
+    if (occupiedCount >= slotsBought) return;
+
+    const age = CONFIG.AGES[isPlayer ? this.currentAge : this.enemyAge];
     const data = age.turrets[turretIndex];
-    if (this.gold < data.cost) return;
+    const gold = isPlayer ? this.gold : this.enemyGold;
+    if (gold < data.cost) return;
 
-    this.gold -= data.cost;
-    const slotIdx = occupiedCount;
-    const pos = this.turretSlotPositions[slotIdx];
-    const t = new Turret(pos.x, pos.y, 'player', this.currentAge, turretIndex);
+    if (isPlayer) this.gold -= data.cost;
+    else this.enemyGold -= data.cost;
+
+    const slotPositions = isPlayer ? this.turretSlotPositions : this.enemyTurretSlotPositions;
+    const pos = slotPositions[occupiedCount];
+    const t = new Turret(pos.x, pos.y, side, isPlayer ? this.currentAge : this.enemyAge, turretIndex);
+
+    if (!isPlayer) {
+      const diff = CONFIG.DIFFICULTIES[this.difficulty];
+      t.hp = Math.round(data.hp * diff.enemyHpMult);
+      t.maxHp = t.hp;
+    }
+
     this.turrets.push(t);
-    this.audio.play('spawn');
+    if (isPlayer) this.audio.play('spawn');
   }
 
   sellTurret(turretIndex) {
@@ -559,110 +580,96 @@ class Game {
     this.enemySlotsBought++;
   }
 
-  spawnEnemyTurret(turretIndex) {
-    if (this.enemySlotsBought === 0) return;
-    const occupiedCount = this.turrets.filter(t => t.side === 'enemy').length;
-    if (occupiedCount >= this.enemySlotsBought) return;
-
-    const age = CONFIG.AGES[this.enemyAge];
-    const data = age.turrets[turretIndex];
-    if (this.enemyGold < data.cost) return;
-
-    this.enemyGold -= data.cost;
-    const slotIdx = occupiedCount;
-    const pos = this.enemyTurretSlotPositions[slotIdx];
-    const t = new Turret(pos.x, pos.y, 'enemy', this.enemyAge, turretIndex);
-
-    const diff = CONFIG.DIFFICULTIES[this.difficulty];
-    t.hp = Math.round(data.hp * diff.enemyHpMult);
-    t.maxHp = t.hp;
-
-    this.turrets.push(t);
-  }
-
   spawnUnit(unitIndex) {
-    const age = CONFIG.AGES[this.currentAge];
-    const data = age.units[unitIndex];
-    if (this.gold < data.cost) return;
-
-    this.gold -= data.cost;
-    const spawnX = CONFIG.BASE_X_OFFSET + 30;
-    const u = new Unit(spawnX, CONFIG.GROUND_Y, 'player', this.currentAge, unitIndex);
-    this.units.push(u);
-    this.audio.play('spawn');
+    this.spawnUnitForSide('player', unitIndex);
   }
 
   spawnEnemyUnit(unitIndex) {
-    const age = CONFIG.AGES[this.enemyAge];
+    this.spawnUnitForSide('enemy', unitIndex);
+  }
+
+  spawnUnitForSide(side, unitIndex) {
+    const isPlayer = side === 'player';
+    const age = CONFIG.AGES[isPlayer ? this.currentAge : this.enemyAge];
     const data = age.units[unitIndex];
-    if (this.enemyGold < data.cost) return;
+    const gold = isPlayer ? this.gold : this.enemyGold;
+    if (gold < data.cost) return;
 
-    this.enemyGold -= data.cost;
-    const spawnX = CONFIG.WORLD.WIDTH - CONFIG.BASE_X_OFFSET - 30;
-    const u = new Unit(spawnX, CONFIG.GROUND_Y, 'enemy', this.enemyAge, unitIndex);
+    if (isPlayer) this.gold -= data.cost;
+    else this.enemyGold -= data.cost;
 
-    const diff = CONFIG.DIFFICULTIES[this.difficulty];
-    u.hp = Math.round(data.hp * diff.enemyHpMult);
-    u.maxHp = u.hp;
-    u.damage = Math.round(data.damage * diff.enemyDmgMult);
+    const spawnX = isPlayer
+      ? CONFIG.BASE_X_OFFSET + 30
+      : CONFIG.WORLD.WIDTH - CONFIG.BASE_X_OFFSET - 30;
+    const u = new Unit(spawnX, CONFIG.GROUND_Y, side, isPlayer ? this.currentAge : this.enemyAge, unitIndex);
+
+    if (!isPlayer) {
+      const diff = CONFIG.DIFFICULTIES[this.difficulty];
+      u.hp = Math.round(data.hp * diff.enemyHpMult);
+      u.maxHp = u.hp;
+      u.damage = Math.round(data.damage * diff.enemyDmgMult);
+    }
 
     this.units.push(u);
+    if (isPlayer) this.audio.play('spawn');
   }
 
   evolve() {
-    if (this.currentAge >= CONFIG.AGES.length - 1) return;
-    const cost = CONFIG.EVOLVE_XP[this.currentAge + 1];
-    if (this.xp < cost) return;
-
-    this.xp -= cost;
-    this.currentAge++;
-    this.playerBase.healFraction(CONFIG.EVOLVE_HEAL);
-    this.audio.play('evolve');
-    this.audio.updateMusicAge(this.currentAge);
-    this.flashTimer = 0.8;
+    this.evolveSide('player');
   }
 
   evolveEnemy() {
-    if (this.enemyAge >= CONFIG.AGES.length - 1) return;
-    const cost = CONFIG.EVOLVE_XP[this.enemyAge + 1];
-    if (this.enemyXp < cost) return;
+    this.evolveSide('enemy');
+  }
 
-    this.enemyXp -= cost;
-    this.enemyAge++;
-    this.enemyBase.healFraction(CONFIG.EVOLVE_HEAL);
+  evolveSide(side) {
+    const isPlayer = side === 'player';
+    const age = isPlayer ? this.currentAge : this.enemyAge;
+    if (age >= CONFIG.AGES.length - 1) return;
+    const cost = CONFIG.EVOLVE_XP[age + 1];
+    const xp = isPlayer ? this.xp : this.enemyXp;
+    if (xp < cost) return;
+
+    if (isPlayer) {
+      this.xp -= cost;
+      this.currentAge++;
+      this.playerBase.healFraction(CONFIG.EVOLVE_HEAL);
+      this.audio.play('evolve');
+      this.audio.updateMusicAge(this.currentAge);
+      this.flashTimer = 0.8;
+    } else {
+      this.enemyXp -= cost;
+      this.enemyAge++;
+      this.enemyBase.healFraction(CONFIG.EVOLVE_HEAL);
+    }
   }
 
   useSpecial() {
-    if (this.specialCooldown > 0 || this.specialAnim) return;
-
-    this.specialCooldown = CONFIG.SPECIAL_COOLDOWN;
-    this.audio.play('special');
-
-    const duration = [2.0, 1.5, 2.0, 2.5, 1.5][this.currentAge];
-    this.specialAnim = {
-      ageIndex: this.currentAge,
-      side: 'player',
-      timer: 0,
-      duration,
-      damageDealt: false,
-      particles: this.generateSpecialParticles(this.currentAge),
-    };
+    this.useSpecialForSide('player');
   }
 
   useEnemySpecial() {
-    if (this.enemySpecialCooldown > 0 || this.specialAnim) return;
+    this.useSpecialForSide('enemy');
+  }
 
-    this.enemySpecialCooldown = CONFIG.SPECIAL_COOLDOWN;
+  useSpecialForSide(side) {
+    const isPlayer = side === 'player';
+    const cooldown = isPlayer ? this.specialCooldown : this.enemySpecialCooldown;
+    if (cooldown > 0 || this.specialAnim) return;
+
+    const ageIndex = isPlayer ? this.currentAge : this.enemyAge;
+    if (isPlayer) this.specialCooldown = CONFIG.SPECIAL_COOLDOWN;
+    else this.enemySpecialCooldown = CONFIG.SPECIAL_COOLDOWN;
     this.audio.play('special');
 
-    const duration = [2.0, 1.5, 2.0, 2.5, 1.5][this.enemyAge];
+    const duration = [2.0, 1.5, 2.0, 2.5, 1.5][ageIndex];
     this.specialAnim = {
-      ageIndex: this.enemyAge,
-      side: 'enemy',
+      ageIndex,
+      side,
       timer: 0,
       duration,
       damageDealt: false,
-      particles: this.generateSpecialParticles(this.enemyAge),
+      particles: this.generateSpecialParticles(ageIndex),
     };
   }
 
