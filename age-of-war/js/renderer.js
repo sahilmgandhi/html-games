@@ -698,4 +698,98 @@ class Renderer {
       ctx.fillText(`${t.cost}g`, bx + 45, row2Y + 20);
     }
   }
+
+  drawPauseScreen(game) {
+    const ctx = this.ctx;
+    const w = CONFIG.VIEWPORT.WIDTH;
+    const h = CONFIG.VIEWPORT.HEIGHT;
+
+    ctx.fillStyle = 'rgba(0,0,0,0.6)';
+    ctx.fillRect(0, 0, w, h);
+
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 48px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('PAUSED', w / 2, h / 2 - 40);
+
+    ctx.fillStyle = '#aaa';
+    ctx.font = '16px sans-serif';
+    ctx.fillText('Press ESC or P to resume', w / 2, h / 2 + 10);
+
+    const settingsX = w / 2 - 50;
+    const settingsY = h / 2 + 40;
+    ctx.fillStyle = '#3a3a5a';
+    ctx.fillRect(settingsX, settingsY, 100, 36);
+    ctx.strokeStyle = '#6a6aaa';
+    ctx.strokeRect(settingsX, settingsY, 100, 36);
+    ctx.fillStyle = '#fff';
+    ctx.font = '16px sans-serif';
+    ctx.fillText('Settings', w / 2, settingsY + 23);
+  }
+
+  drawSettingsScreen(game) {
+    const ctx = this.ctx;
+    const w = CONFIG.VIEWPORT.WIDTH;
+    const h = CONFIG.VIEWPORT.HEIGHT;
+    const cx = w / 2;
+    const cy = h / 2;
+
+    ctx.fillStyle = 'rgba(0,0,0,0.75)';
+    ctx.fillRect(0, 0, w, h);
+
+    const panelW = 300;
+    const panelH = 260;
+    const panelX = cx - panelW / 2;
+    const panelY = cy - panelH / 2;
+
+    ctx.fillStyle = '#1a1a2e';
+    ctx.fillRect(panelX, panelY, panelW, panelH);
+    ctx.strokeStyle = '#4a4a6a';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(panelX, panelY, panelW, panelH);
+
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 24px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Settings', cx, panelY + 35);
+
+    const musicBtnY = panelY + 90;
+    const musicOn = game.audio.musicEnabled;
+    ctx.fillStyle = musicOn ? '#2a4a2a' : '#4a2a2a';
+    ctx.fillRect(cx - 100, musicBtnY, 200, 36);
+    ctx.strokeStyle = musicOn ? '#4a8' : '#844';
+    ctx.strokeRect(cx - 100, musicBtnY, 200, 36);
+    ctx.fillStyle = '#fff';
+    ctx.font = '14px sans-serif';
+    ctx.fillText(`Music: ${musicOn ? 'ON' : 'OFF'}`, cx, musicBtnY + 22);
+
+    const sfxBtnY = panelY + 140;
+    const sfxOn = game.audio.sfxEnabled;
+    ctx.fillStyle = sfxOn ? '#2a4a2a' : '#4a2a2a';
+    ctx.fillRect(cx - 100, sfxBtnY, 200, 36);
+    ctx.strokeStyle = sfxOn ? '#4a8' : '#844';
+    ctx.strokeRect(cx - 100, sfxBtnY, 200, 36);
+    ctx.fillStyle = '#fff';
+    ctx.font = '14px sans-serif';
+    ctx.fillText(`Sound Effects: ${sfxOn ? 'ON' : 'OFF'}`, cx, sfxBtnY + 22);
+
+    const muteBtnY = panelY + 190;
+    const muted = game.audio.muted;
+    ctx.fillStyle = muted ? '#4a2a2a' : '#2a4a2a';
+    ctx.fillRect(cx - 100, muteBtnY, 200, 36);
+    ctx.strokeStyle = muted ? '#844' : '#4a8';
+    ctx.strokeRect(cx - 100, muteBtnY, 200, 36);
+    ctx.fillStyle = '#fff';
+    ctx.font = '14px sans-serif';
+    ctx.fillText(`Mute All: ${muted ? 'ON' : 'OFF'}`, cx, muteBtnY + 22);
+
+    const resumeBtnY = panelY + 235;
+    ctx.fillStyle = '#2a3a5a';
+    ctx.fillRect(cx - 100, resumeBtnY, 200, 36);
+    ctx.strokeStyle = '#4a6a8a';
+    ctx.strokeRect(cx - 100, resumeBtnY, 200, 36);
+    ctx.fillStyle = '#fff';
+    ctx.font = '14px sans-serif';
+    ctx.fillText('Resume', cx, resumeBtnY + 22);
+  }
 }
