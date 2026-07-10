@@ -94,7 +94,7 @@ const CONFIG = {
       units: [
         { name: 'Laser Mech', type: 'melee', cost: 250, hp: 400, damage: 80, speed: 1.0, range: 32, attackSpeed: 0.7, xpReward: 80, goldReward: 60 },
         { name: 'Super Soldier', type: 'ranged', cost: 300, hp: 250, damage: 65, speed: 0.8, range: 240, attackSpeed: 1.0, projectileSpeed: 8, xpReward: 90, goldReward: 70 },
-        { name: 'Drone', type: 'fast', cost: 350, hp: 180, damage: 55, speed: 2.2, range: 200, attackSpeed: 0.8, projectileSpeed: 9, xpReward: 100, goldReward: 80 },
+        { name: 'Drone', type: 'ranged', cost: 350, hp: 180, damage: 55, speed: 2.2, range: 200, attackSpeed: 0.8, projectileSpeed: 9, xpReward: 100, goldReward: 80 },
       ],
       turret: { name: 'Energy Turret', cost: 750, hp: 800, damage: 50, range: 280, attackSpeed: 0.6, projectileSpeed: 9 },
     },
