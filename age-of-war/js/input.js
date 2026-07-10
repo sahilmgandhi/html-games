@@ -94,5 +94,15 @@ class InputHandler {
         return;
       }
     }
+
+    const playerTurrets = game.turrets.filter(t => t.side === 'player');
+    const row3Y = row2Y + 28;
+    for (let i = 0; i < playerTurrets.length; i++) {
+      const bx = 110 + i * 100;
+      if (pointInRect(this.mouseX, this.mouseY, bx, row3Y, 90, 18)) {
+        game.sellTurret(i);
+        return;
+      }
+    }
   }
 }

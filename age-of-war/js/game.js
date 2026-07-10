@@ -343,6 +343,18 @@ class Game {
     this.audio.play('spawn');
   }
 
+  sellTurret(turretIndex) {
+    const playerTurrets = this.turrets.filter(t => t.side === 'player');
+    if (turretIndex >= playerTurrets.length) return;
+
+    const t = playerTurrets[turretIndex];
+    const refund = Math.floor(t.cost * 0.5);
+    this.gold += refund;
+    t.alive = false;
+    this.particles.emitGoldNumber(t.x, t.y, refund);
+    this.audio.play('gold');
+  }
+
   buyEnemySlot() {
     if (this.enemySlotsBought >= CONFIG.TURRET_SLOTS) return;
     this.enemySlotsBought++;

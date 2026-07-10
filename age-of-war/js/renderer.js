@@ -678,6 +678,23 @@ class Renderer {
       ctx.fillText(t.name, bx + 45, row2Y + 10);
       ctx.fillText(`${t.cost}g`, bx + 45, row2Y + 20);
     }
+
+    const playerTurrets = game.turrets.filter(t => t.side === 'player');
+    const row3Y = row2Y + 28;
+    for (let i = 0; i < playerTurrets.length; i++) {
+      const t = playerTurrets[i];
+      const bx = 110 + i * 100;
+      const refund = Math.floor(t.cost * 0.5);
+
+      ctx.fillStyle = '#4a2a2a';
+      ctx.fillRect(bx, row3Y, 90, 18);
+      ctx.strokeStyle = '#a44';
+      ctx.strokeRect(bx, row3Y, 90, 18);
+      ctx.fillStyle = '#faa';
+      ctx.font = '8px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(`Sell ${refund}g`, bx + 45, row3Y + 12);
+    }
   }
 
   drawPauseScreen(game) {
