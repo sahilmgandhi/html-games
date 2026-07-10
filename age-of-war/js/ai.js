@@ -17,6 +17,15 @@ class AI {
     const g = this.game;
     const age = CONFIG.AGES[g.enemyAge];
 
+    if (g.enemySpecialCooldown <= 0) {
+      const playerUnits = g.units.filter(u => u.side === 'player' && u.alive).length;
+      const playerTurrets = g.turrets.filter(t => t.side === 'player' && t.alive).length;
+      if (playerUnits >= 3 || playerTurrets >= 2 || g.enemyBase.hp < g.enemyBase.maxHp * 0.5) {
+        g.useEnemySpecial();
+        return;
+      }
+    }
+
     if (g.enemyAge < CONFIG.AGES.length - 1) {
       const evoCost = CONFIG.EVOLVE_XP[g.enemyAge + 1];
       if (g.enemyXp >= evoCost && Math.random() < 0.6) {
