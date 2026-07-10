@@ -139,15 +139,21 @@ function runTests() {
     assert('Enemy unit moves left', enemy.x < startX, `start=${startX} now=${enemy.x}`);
   }
 
-  console.log('\n--- Turret Indestructibility ---');
+  console.log('\n--- Turret Destructibility ---');
   {
     const g = makeGame();
     g.gold = 10000;
     g.playerSlotsBought = 4;
     g.spawnTurret(0);
     assert('Turret spawned', g.turrets.length === 1);
-    assert('Turret has no hp property', g.turrets[0].hp === undefined);
-    assert('Turret has no takeDamage', typeof g.turrets[0].takeDamage === 'undefined');
+    assert('Turret has hp', typeof g.turrets[0].hp === 'number');
+    assert('Turret has maxHp', g.turrets[0].maxHp === g.turrets[0].hp);
+    const hpBefore = g.turrets[0].hp;
+    g.turrets[0].takeDamage(10);
+    assert('Turret takes damage', g.turrets[0].hp === hpBefore - 10);
+    assert('Turret has hitFlash', g.turrets[0].hitFlash > 0);
+    g.turrets[0].takeDamage(hpBefore);
+    assert('Turret dies at 0 hp', g.turrets[0].alive === false);
   }
 
   console.log('\n--- Evolution ---');

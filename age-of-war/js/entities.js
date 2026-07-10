@@ -146,14 +146,26 @@ class Turret {
     this.attackSpeed = data.attackSpeed;
     this.projectileSpeed = data.projectileSpeed;
     this.splashRadius = data.splashRadius || 0;
+    this.hp = data.hp;
+    this.maxHp = data.hp;
 
     this.attackCooldown = 0;
     this.alive = true;
+    this.hitFlash = 0;
+  }
+
+  takeDamage(amount) {
+    this.hp = Math.max(0, this.hp - amount);
+    this.hitFlash = 0.1;
+    if (this.hp <= 0) {
+      this.alive = false;
+    }
   }
 
   update(dt, allUnits, projectiles) {
     if (!this.alive) return;
     if (this.attackCooldown > 0) this.attackCooldown -= dt;
+    if (this.hitFlash > 0) this.hitFlash -= dt;
 
     let closest = null;
     let closestDist = Infinity;
@@ -221,10 +233,28 @@ class Projectile {
                 }
               }
             }
+            for (const t of turrets) {
+              if (t.side !== this.side && t.alive) {
+                if (dist(this.x, this.y, t.x, t.y) <= this.splashRadius) {
+                  t.takeDamage(this.damage);
+                  hits.push({ entity: t, damage: this.damage });
+                }
+              }
+            }
           } else {
             u.takeDamage(this.damage);
             hits.push({ entity: u, damage: this.damage });
           }
+          this.alive = false;
+          return hits;
+        }
+      }
+    }
+    for (const t of turrets) {
+      if (t.side !== this.side && t.alive) {
+        if (dist(this.x, this.y, t.x, t.y) < 15) {
+          t.takeDamage(this.damage);
+          hits.push({ entity: t, damage: this.damage });
           this.alive = false;
           return hits;
         }

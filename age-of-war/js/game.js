@@ -148,7 +148,7 @@ class Game {
       if (hits.length > 0) {
         this.audio.play('hit');
         for (const hit of hits) {
-          const color = hit.entity instanceof Unit ? (hit.entity.side === 'player' ? CONFIG.COLORS.PLAYER : CONFIG.COLORS.ENEMY) : '#ff8800';
+          const color = hit.entity instanceof Unit ? (hit.entity.side === 'player' ? CONFIG.COLORS.PLAYER : CONFIG.COLORS.ENEMY) : hit.entity instanceof Turret ? (hit.entity.side === 'player' ? CONFIG.COLORS.PLAYER : CONFIG.COLORS.ENEMY) : '#ff8800';
           this.particles.emitDamageNumber(hit.entity.x, hit.entity.y, hit.damage, color);
         }
       }
@@ -177,6 +177,15 @@ class Game {
     for (let i = this.projectiles.length - 1; i >= 0; i--) {
       if (!this.projectiles[i].alive) {
         this.projectiles.splice(i, 1);
+      }
+    }
+
+    for (let i = this.turrets.length - 1; i >= 0; i--) {
+      const t = this.turrets[i];
+      if (!t.alive) {
+        this.particles.emit(t.x, t.y, t.side === 'player' ? CONFIG.COLORS.PLAYER : CONFIG.COLORS.ENEMY, 8, 3, 0.5, 2);
+        this.audio.play('death');
+        this.turrets.splice(i, 1);
       }
     }
 

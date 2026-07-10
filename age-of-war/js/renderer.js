@@ -403,6 +403,11 @@ class Renderer {
     const age = CONFIG.AGES[ageIndex];
     const sideColor = turret.side === 'player' ? CONFIG.COLORS.PLAYER : CONFIG.COLORS.ENEMY;
 
+    if (turret.hitFlash > 0) {
+      ctx.shadowColor = '#fff';
+      ctx.shadowBlur = 10;
+    }
+
     ctx.fillStyle = age.color;
     ctx.fillRect(s.x - 8, s.y - 38, 16, 38);
     ctx.fillRect(s.x - 12, s.y, 24, 8);
@@ -414,6 +419,20 @@ class Renderer {
 
     ctx.fillStyle = sideColor;
     ctx.fillRect(s.x - 2, s.y - 52, 4, 10);
+
+    ctx.shadowBlur = 0;
+
+    const hpFrac = turret.hp / turret.maxHp;
+    if (hpFrac < 1) {
+      const barW = 20;
+      const barH = 4;
+      const barX = s.x - barW / 2;
+      const barY = s.y - 58;
+      ctx.fillStyle = '#333';
+      ctx.fillRect(barX, barY, barW, barH);
+      ctx.fillStyle = this.hpColor(hpFrac);
+      ctx.fillRect(barX, barY, barW * hpFrac, barH);
+    }
   }
 
   drawProjectile(proj) {
