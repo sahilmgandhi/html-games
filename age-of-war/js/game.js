@@ -34,6 +34,11 @@ class Game {
 
     this.canvas.addEventListener('click', () => {
       this.audio.init();
+      if (this.gameOver) {
+        this.restart();
+      } else {
+        this.input.handleClick(this);
+      }
     });
   }
 
@@ -178,11 +183,6 @@ class Game {
     ctx.fillStyle = '#aaa';
     ctx.font = '20px sans-serif';
     ctx.fillText('Click to Restart', CONFIG.VIEWPORT.WIDTH / 2, CONFIG.VIEWPORT.HEIGHT / 2 + 30);
-
-    this.canvas.onclick = () => {
-      this.canvas.onclick = null;
-      this.restart();
-    };
   }
 
   restart() {
