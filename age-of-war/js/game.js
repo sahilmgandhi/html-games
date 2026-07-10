@@ -118,11 +118,6 @@ class Game {
     this.input.update();
     this.gameTime += dt;
 
-    this.gold += CONFIG.INCOME_GOLD_PER_SEC * dt;
-    this.xp += CONFIG.INCOME_XP_PER_SEC * dt;
-    this.enemyGold += CONFIG.INCOME_GOLD_PER_SEC * dt;
-    this.enemyXp += CONFIG.INCOME_XP_PER_SEC * dt;
-
     if (this.specialCooldown > 0) this.specialCooldown -= dt;
     if (this.enemySpecialCooldown > 0) this.enemySpecialCooldown -= dt;
     this.updateSpecialAnim(dt);

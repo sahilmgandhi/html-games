@@ -82,14 +82,19 @@ function runTests() {
   allResults = [];
   console.log('=== Age of War Headless Tests ===\n');
 
-  console.log('--- Passive Income (Player Only) ---');
+  console.log('--- No Passive Income ---');
   {
     const g = makeGame();
+    g.ai = { update() {} };
     const startGold = g.gold;
     const startXp = g.xp;
+    const startEnemyGold = g.enemyGold;
+    const startEnemyXp = g.enemyXp;
     runFrames(g, 10);
-    assert('Player gold increases', g.gold > startGold, `start=${startGold} now=${Math.floor(g.gold)}`);
-    assert('Player XP increases', g.xp > startXp, `start=${startXp} now=${Math.floor(g.xp)}`);
+    assert('Player gold stays flat', g.gold === startGold, `start=${startGold} now=${Math.floor(g.gold)}`);
+    assert('Player XP stays flat', g.xp === startXp, `start=${startXp} now=${Math.floor(g.xp)}`);
+    assert('Enemy gold stays flat', g.enemyGold === startEnemyGold);
+    assert('Enemy XP stays flat', g.enemyXp === startEnemyXp);
   }
 
   console.log('\n--- BASE_HP ---');
