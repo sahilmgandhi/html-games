@@ -447,43 +447,19 @@ class Renderer {
 
   drawTurretSlots(game) {
     const ctx = this.ctx;
+    this.drawSlotRow(ctx, game.turretSlotPositions, game.playerSlotsBought, 'rgba(74,138,244,0.3)', 'rgba(255,255,255,0.15)');
+    this.drawSlotRow(ctx, game.enemyTurretSlotPositions, game.enemySlotsBought, 'rgba(244,74,74,0.3)', 'rgba(255,255,255,0.08)');
+  }
 
+  drawSlotRow(ctx, positions, slotsBought, activeColor, inactiveColor) {
     for (let i = 0; i < CONFIG.TURRET_SLOTS; i++) {
-      const pos = game.turretSlotPositions[i];
+      const pos = positions[i];
       const s = this.worldToScreen(pos.x, pos.y);
-
-      if (i < game.playerSlotsBought) {
-        ctx.strokeStyle = 'rgba(74,138,244,0.3)';
-        ctx.lineWidth = 1;
-        ctx.setLineDash([4, 4]);
-        ctx.strokeRect(s.x - 14, s.y - 50, 28, 58);
-        ctx.setLineDash([]);
-      } else {
-        ctx.strokeStyle = 'rgba(255,255,255,0.15)';
-        ctx.lineWidth = 1;
-        ctx.setLineDash([4, 4]);
-        ctx.strokeRect(s.x - 14, s.y - 50, 28, 58);
-        ctx.setLineDash([]);
-      }
-    }
-
-    for (let i = 0; i < CONFIG.TURRET_SLOTS; i++) {
-      const pos = game.enemyTurretSlotPositions[i];
-      const s = this.worldToScreen(pos.x, pos.y);
-
-      if (i < game.enemySlotsBought) {
-        ctx.strokeStyle = 'rgba(244,74,74,0.3)';
-        ctx.lineWidth = 1;
-        ctx.setLineDash([4, 4]);
-        ctx.strokeRect(s.x - 14, s.y - 50, 28, 58);
-        ctx.setLineDash([]);
-      } else {
-        ctx.strokeStyle = 'rgba(255,255,255,0.08)';
-        ctx.lineWidth = 1;
-        ctx.setLineDash([4, 4]);
-        ctx.strokeRect(s.x - 14, s.y - 50, 28, 58);
-        ctx.setLineDash([]);
-      }
+      ctx.strokeStyle = i < slotsBought ? activeColor : inactiveColor;
+      ctx.lineWidth = 1;
+      ctx.setLineDash([4, 4]);
+      ctx.strokeRect(s.x - 14, s.y - 50, 28, 58);
+      ctx.setLineDash([]);
     }
   }
 
@@ -597,7 +573,7 @@ class Renderer {
     for (let i = 0; i < playerTurrets.length; i++) {
       const t = playerTurrets[i];
       const bx = 110 + i * 100;
-      const refund = Math.floor(t.cost * 0.5);
+      const refund = Math.floor(t.cost * CONFIG.TURRET_REFUND_RATE);
 
       ctx.fillStyle = '#4a2a2a';
       ctx.fillRect(bx, row3Y, 90, 18);
@@ -896,7 +872,6 @@ class Renderer {
     const groundY = H - 100;
     const age = CONFIG.AGES[anim.ageIndex];
     const isPlayer = anim.side === 'player';
-    const color = isPlayer ? CONFIG.COLORS.PLAYER : CONFIG.COLORS.ENEMY;
 
     switch (anim.ageIndex) {
       case 0: // Meteor Shower
@@ -933,6 +908,7 @@ class Renderer {
         break;
 
       case 1: // Arrow Volley
+        const arrowColor = isPlayer ? CONFIG.COLORS.PLAYER : CONFIG.COLORS.ENEMY;
         for (const p of anim.particles) {
           const sx = p.x - camX;
           const sy = p.y;
@@ -943,7 +919,7 @@ class Renderer {
           ctx.rotate(p.angle);
 
           // Arrow shaft
-          ctx.strokeStyle = color;
+          ctx.strokeStyle = arrowColor;
           ctx.lineWidth = 2;
           ctx.beginPath();
           ctx.moveTo(-p.size, 0);
@@ -951,7 +927,7 @@ class Renderer {
           ctx.stroke();
 
           // Arrowhead
-          ctx.fillStyle = color;
+          ctx.fillStyle = arrowColor;
           ctx.beginPath();
           ctx.moveTo(p.size + 4, 0);
           ctx.lineTo(p.size - 2, -3);

@@ -512,7 +512,7 @@ class Game {
   computeSlotPositions(baseX, dir) {
     const positions = [];
     for (let i = 0; i < CONFIG.TURRET_SLOTS; i++) {
-      positions.push({ x: baseX + dir * 40, y: CONFIG.GROUND_Y - i * 50 });
+      positions.push({ x: baseX + dir * CONFIG.TURRET_SLOT_OFFSET_X, y: CONFIG.GROUND_Y - i * CONFIG.TURRET_SLOT_SPACING });
     }
     return positions;
   }
@@ -568,7 +568,7 @@ class Game {
     if (turretIndex >= playerTurrets.length) return;
 
     const t = playerTurrets[turretIndex];
-    const refund = Math.floor(t.cost * 0.5);
+    const refund = Math.floor(t.cost * CONFIG.TURRET_REFUND_RATE);
     this.gold += refund;
     t.alive = false;
     this.particles.emitGoldNumber(t.x, t.y, refund);
