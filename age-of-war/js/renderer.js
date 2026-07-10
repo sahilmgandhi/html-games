@@ -165,6 +165,12 @@ class Renderer {
     return `rgb(${Math.floor(r)},${Math.floor(g)},${Math.floor(b)})`;
   }
 
+  hpColor(frac) {
+    const r = Math.round(255 * (1 - frac));
+    const g = Math.round(255 * frac);
+    return `rgb(${r},${g},30)`;
+  }
+
   drawBase(base, ageIndex) {
     const ctx = this.ctx;
     const s = this.worldToScreen(base.x - base.width / 2, base.y - base.height);
@@ -185,7 +191,7 @@ class Renderer {
 
     ctx.fillStyle = '#333';
     ctx.fillRect(s.x, barY, barW, barH);
-    ctx.fillStyle = hpFrac > 0.5 ? '#4a4' : hpFrac > 0.25 ? '#aa4' : '#a44';
+    ctx.fillStyle = this.hpColor(hpFrac);
     ctx.fillRect(s.x, barY, barW * hpFrac, barH);
     ctx.strokeStyle = '#000';
     ctx.strokeRect(s.x, barY, barW, barH);
@@ -202,10 +208,13 @@ class Renderer {
     const s = this.worldToScreen(unit.x, unit.y);
     const age = CONFIG.AGES[ageIndex];
     const sideColor = unit.side === 'player' ? '#4a8af4' : '#f44a4a';
-    const bob = Math.sin(Date.now() / 300 + unit.x) * 2;
+    const bobSpeed = unit.attackCooldown > 0 ? 0 : unit.speed * 600;
+    const bob = Math.sin(Date.now() / (bobSpeed || 300) + unit.x) * 2;
+    const lean = unit.attackCooldown > 0 ? 0.05 * (unit.side === 'player' ? 1 : -1) : 0;
 
     ctx.save();
     ctx.translate(s.x, s.y + bob);
+    ctx.rotate(lean);
 
     if (unit.hitFlash > 0) {
       ctx.shadowColor = '#fff';
@@ -224,7 +233,7 @@ class Renderer {
       const barY = s.y - 32 + bob;
       ctx.fillStyle = '#333';
       ctx.fillRect(barX, barY, barW, barH);
-      ctx.fillStyle = hpFrac > 0.5 ? '#4a4' : hpFrac > 0.25 ? '#aa4' : '#a44';
+      ctx.fillStyle = this.hpColor(hpFrac);
       ctx.fillRect(barX, barY, barW * hpFrac, barH);
     }
   }
@@ -548,7 +557,7 @@ class Renderer {
       const barH = 4;
       ctx.fillStyle = '#333';
       ctx.fillRect(s.x, s.y - 8, barW, barH);
-      ctx.fillStyle = hpFrac > 0.5 ? '#4a4' : hpFrac > 0.25 ? '#aa4' : '#a44';
+      ctx.fillStyle = this.hpColor(hpFrac);
       ctx.fillRect(s.x, s.y - 8, barW * hpFrac, barH);
     }
   }
