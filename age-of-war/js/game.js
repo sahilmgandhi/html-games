@@ -27,6 +27,11 @@ class Game {
     this.turrets = [];
     this.projectiles = [];
 
+    this.playerSlotsBought = 0;
+    this.enemySlotsBought = 0;
+    this.turretSlotPositions = this.computeSlotPositions(CONFIG.BASE_X_OFFSET, 1);
+    this.enemyTurretSlotPositions = this.computeSlotPositions(CONFIG.WORLD.WIDTH - CONFIG.BASE_X_OFFSET, -1);
+
     this.lastTime = 0;
     this.running = false;
     this.gameOver = false;
@@ -155,6 +160,8 @@ class Game {
 
     this.renderer.drawTerrain(this.currentAge);
 
+    this.renderer.drawTurretSlots(this);
+
     this.renderer.drawBase(this.playerBase, this.currentAge);
     this.renderer.drawBase(this.enemyBase, this.enemyAge);
 
@@ -214,10 +221,66 @@ class Game {
     this.turrets = [];
     this.projectiles = [];
     this.particles = new ParticleSystem();
+    this.playerSlotsBought = 0;
+    this.enemySlotsBought = 0;
     this.gameOver = false;
     this.winner = null;
     this.renderer.camera.x = 0;
     this.ai = new AI(this);
+  }
+
+  computeSlotPositions(baseX, dir) {
+    const positions = [];
+    for (let i = 0; i < CONFIG.TURRET_SLOTS; i++) {
+      positions.push({ x: baseX + dir * (120 + i * 50), y: CONFIG.VIEWPORT.HEIGHT - 100 });
+    }
+    return positions;
+  }
+
+  buySlot() {
+    if (this.playerSlotsBought >= CONFIG.TURRET_SLOTS) return;
+    if (this.gold < CONFIG.TURRET_SLOT_COST) return;
+    this.gold -= CONFIG.TURRET_SLOT_COST;
+    this.playerSlotsBought++;
+    this.audio.play('spawn');
+  }
+
+  spawnTurret(turretIndex) {
+    if (this.playerSlotsBought === 0) return;
+    const occupiedCount = this.turrets.filter(t => t.side === 'player').length;
+    if (occupiedCount >= this.playerSlotsBought) return;
+
+    const age = CONFIG.AGES[this.currentAge];
+    const data = age.turrets[turretIndex];
+    if (this.gold < data.cost) return;
+
+    this.gold -= data.cost;
+    const slotIdx = occupiedCount;
+    const pos = this.turretSlotPositions[slotIdx];
+    const t = new Turret(pos.x, pos.y, 'player', this.currentAge, turretIndex);
+    this.turrets.push(t);
+    this.audio.play('spawn');
+  }
+
+  buyEnemySlot() {
+    if (this.enemySlotsBought >= CONFIG.TURRET_SLOTS) return;
+    this.enemySlotsBought++;
+  }
+
+  spawnEnemyTurret(turretIndex) {
+    if (this.enemySlotsBought === 0) return;
+    const occupiedCount = this.turrets.filter(t => t.side === 'enemy').length;
+    if (occupiedCount >= this.enemySlotsBought) return;
+
+    const age = CONFIG.AGES[this.enemyAge];
+    const data = age.turrets[turretIndex];
+    if (this.enemyGold < data.cost) return;
+
+    this.enemyGold -= data.cost;
+    const slotIdx = occupiedCount;
+    const pos = this.enemyTurretSlotPositions[slotIdx];
+    const t = new Turret(pos.x, pos.y, 'enemy', this.enemyAge, turretIndex);
+    this.turrets.push(t);
   }
 
   spawnUnit(unitIndex) {
