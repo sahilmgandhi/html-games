@@ -25,6 +25,30 @@ class AI {
       }
     }
 
+    if (g.enemySlotsBought < CONFIG.TURRET_SLOTS && g.enemyGold >= CONFIG.TURRET_SLOT_COST && Math.random() < 0.15) {
+      g.buyEnemySlot();
+      return;
+    }
+
+    const occupiedCount = g.turrets.filter(t => t.side === 'enemy').length;
+    if (occupiedCount < g.enemySlotsBought && Math.random() < 0.2) {
+      const turretWeights = age.turrets.map((t, i) => {
+        if (g.enemyGold < t.cost) return 0;
+        return i === 0 ? 3 : i === 1 ? 2 : 1;
+      });
+      const totalW = turretWeights.reduce((s, w) => s + w, 0);
+      if (totalW > 0) {
+        let r = Math.random() * totalW;
+        for (let i = 0; i < age.turrets.length; i++) {
+          r -= turretWeights[i];
+          if (r <= 0) {
+            g.spawnEnemyTurret(i);
+            return;
+          }
+        }
+      }
+    }
+
     const costs = age.units.map(u => u.cost);
     const affordable = costs.filter(c => g.enemyGold >= c);
     if (affordable.length === 0) return;
