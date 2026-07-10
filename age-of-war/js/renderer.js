@@ -758,28 +758,148 @@ class Renderer {
     const ctx = this.ctx;
     const w = CONFIG.VIEWPORT.WIDTH;
     const h = CONFIG.VIEWPORT.HEIGHT;
+    const cx = w / 2;
+    const cy = h / 2;
+    const panelW = 340;
+    const panelH = 360;
+    const panelX = cx - panelW / 2;
+    const panelY = cy - panelH / 2;
 
     ctx.fillStyle = 'rgba(0,0,0,0.6)';
     ctx.fillRect(0, 0, w, h);
 
+    ctx.fillStyle = '#1a1a2e';
+    ctx.fillRect(panelX, panelY, panelW, panelH);
+    ctx.strokeStyle = '#4a4a6a';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(panelX, panelY, panelW, panelH);
+
     ctx.fillStyle = '#fff';
-    ctx.font = 'bold 48px sans-serif';
+    ctx.font = 'bold 32px sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('PAUSED', w / 2, h / 2 - 40);
+    ctx.fillText('PAUSED', cx, panelY + 40);
 
-    ctx.fillStyle = '#aaa';
-    ctx.font = '16px sans-serif';
-    ctx.fillText('Press ESC or P to resume', w / 2, h / 2 + 10);
+    const btnW = 220;
+    const btnH = 30;
+    const btnX = cx - btnW / 2;
 
-    const settingsX = w / 2 - 50;
-    const settingsY = h / 2 + 40;
-    ctx.fillStyle = '#3a3a5a';
-    ctx.fillRect(settingsX, settingsY, 100, 36);
-    ctx.strokeStyle = '#6a6aaa';
-    ctx.strokeRect(settingsX, settingsY, 100, 36);
+    const musicBtnY = panelY + 70;
+    const musicOn = game.audio.musicEnabled;
+    ctx.fillStyle = musicOn ? '#2a4a2a' : '#4a2a2a';
+    ctx.fillRect(btnX, musicBtnY, btnW, btnH);
+    ctx.strokeStyle = musicOn ? '#4a8' : '#844';
+    ctx.strokeRect(btnX, musicBtnY, btnW, btnH);
     ctx.fillStyle = '#fff';
-    ctx.font = '16px sans-serif';
-    ctx.fillText('Settings', w / 2, settingsY + 23);
+    ctx.font = '13px sans-serif';
+    ctx.fillText(`Music: ${musicOn ? 'ON' : 'OFF'}`, cx, musicBtnY + 19);
+
+    const sfxBtnY = panelY + 110;
+    const sfxOn = game.audio.sfxEnabled;
+    ctx.fillStyle = sfxOn ? '#2a4a2a' : '#4a2a2a';
+    ctx.fillRect(btnX, sfxBtnY, btnW, btnH);
+    ctx.strokeStyle = sfxOn ? '#4a8' : '#844';
+    ctx.strokeRect(btnX, sfxBtnY, btnW, btnH);
+    ctx.fillStyle = '#fff';
+    ctx.fillText(`Sound Effects: ${sfxOn ? 'ON' : 'OFF'}`, cx, sfxBtnY + 19);
+
+    const debugBtnY = panelY + 170;
+    ctx.fillStyle = '#3a2a4a';
+    ctx.fillRect(btnX, debugBtnY, btnW, btnH);
+    ctx.strokeStyle = '#8a6aaa';
+    ctx.strokeRect(btnX, debugBtnY, btnW, btnH);
+    ctx.fillStyle = '#fff';
+    ctx.fillText('Debug Mode', cx, debugBtnY + 19);
+
+    const restartBtnY = panelY + 220;
+    ctx.fillStyle = '#4a2a2a';
+    ctx.fillRect(btnX, restartBtnY, btnW, btnH);
+    ctx.strokeStyle = '#aa4444';
+    ctx.strokeRect(btnX, restartBtnY, btnW, btnH);
+    ctx.fillStyle = '#fff';
+    ctx.fillText('Restart Game', cx, restartBtnY + 19);
+
+    const resumeBtnY = panelY + 280;
+    ctx.fillStyle = '#2a3a5a';
+    ctx.fillRect(btnX, resumeBtnY, btnW, btnH);
+    ctx.strokeStyle = '#4a6a8a';
+    ctx.strokeRect(btnX, resumeBtnY, btnW, btnH);
+    ctx.fillStyle = '#fff';
+    ctx.fillText('Resume', cx, resumeBtnY + 19);
+
+    ctx.fillStyle = '#666';
+    ctx.font = '11px sans-serif';
+    ctx.fillText('Press ESC or P to resume', cx, panelY + 340);
+  }
+
+  drawDebugScreen(game) {
+    const ctx = this.ctx;
+    const w = CONFIG.VIEWPORT.WIDTH;
+    const h = CONFIG.VIEWPORT.HEIGHT;
+    const cx = w / 2;
+    const cy = h / 2;
+    const panelW = 400;
+    const panelH = 420;
+    const panelX = cx - panelW / 2;
+    const panelY = cy - panelH / 2;
+    const bw = 180;
+    const bh = 28;
+    const col1X = panelX + 10;
+    const col2X = panelX + 10 + bw + 10;
+
+    ctx.fillStyle = 'rgba(0,0,0,0.8)';
+    ctx.fillRect(0, 0, w, h);
+
+    ctx.fillStyle = '#1a1a2e';
+    ctx.fillRect(panelX, panelY, panelW, panelH);
+    ctx.strokeStyle = '#8a6aaa';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(panelX, panelY, panelW, panelH);
+
+    ctx.fillStyle = '#d4aaff';
+    ctx.font = 'bold 24px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('DEBUG MODE', cx, panelY + 30);
+
+    ctx.fillStyle = '#888';
+    ctx.font = '10px sans-serif';
+    ctx.fillText('Changes apply instantly', cx, panelY + 48);
+
+    const drawBtn = (x, y, label, highlight) => {
+      ctx.fillStyle = highlight ? '#2a4a2a' : '#2a2a3a';
+      ctx.fillRect(x, y, bw, bh);
+      ctx.strokeStyle = highlight ? '#4a8' : '#555';
+      ctx.strokeRect(x, y, bw, bh);
+      ctx.fillStyle = '#fff';
+      ctx.font = '11px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(label, x + bw / 2, y + 17);
+    };
+
+    drawBtn(col1X, panelY + 60, 'Gold +5,000', true);
+    drawBtn(col2X, panelY + 60, 'XP +10,000', true);
+    drawBtn(col1X, panelY + 98, 'Gold +50,000', true);
+    drawBtn(col2X, panelY + 98, 'XP +100,000', true);
+
+    drawBtn(col1X, panelY + 136, 'Kill Enemies', false);
+    drawBtn(col2X, panelY + 136, 'Kill Players', false);
+
+    drawBtn(col1X, panelY + 174, 'Evolve Player', true);
+    drawBtn(col2X, panelY + 174, 'Evolve Enemy', true);
+
+    drawBtn(col1X, panelY + 212, `Invincible: ${game.invincible ? 'ON' : 'OFF'}`, game.invincible);
+    drawBtn(col2X, panelY + 212, `Speed: ${game.gameSpeed}x`, game.gameSpeed > 1);
+
+    drawBtn(col1X, panelY + 250, 'Full Heal Base', true);
+    drawBtn(col2X, panelY + 250, 'Instant Win', false);
+
+    const backBtnY = panelY + 380;
+    ctx.fillStyle = '#2a3a5a';
+    ctx.fillRect(cx - 90, backBtnY, 180, 30);
+    ctx.strokeStyle = '#4a6a8a';
+    ctx.strokeRect(cx - 90, backBtnY, 180, 30);
+    ctx.fillStyle = '#fff';
+    ctx.font = '13px sans-serif';
+    ctx.fillText('Back', cx, backBtnY + 19);
   }
 
   drawSettingsScreen(game) {
