@@ -40,6 +40,8 @@ function drawTitleScreen() {
   ctx.font = '18px "Segoe UI", sans-serif';
   ctx.fillText('A Strategy Game', canvas.width / 2, 215);
 
+  drawTitleUnits();
+
   ctx.fillStyle = '#666';
   ctx.font = '14px "Segoe UI", sans-serif';
   ctx.fillText('Select Difficulty', canvas.width / 2, DIFF_BTN_Y - 14);
@@ -83,7 +85,6 @@ function drawTitleScreen() {
   ctx.font = '13px "Segoe UI", sans-serif';
   ctx.fillText('WASD or Arrow Keys to scroll  |  Click units in HUD to spawn  |  ESC to pause', canvas.width / 2, 470);
 
-  drawTitleUnits();
 }
 
 function drawTitleBackground(t) {

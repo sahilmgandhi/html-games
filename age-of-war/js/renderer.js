@@ -462,14 +462,6 @@ class Renderer {
         break;
     }
 
-    ctx.fillStyle = sideColor;
-    ctx.font = 'bold 14px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.shadowColor = '#000';
-    ctx.shadowBlur = 4;
-    ctx.fillText(base.side === 'player' ? 'YOUR BASE' : 'ENEMY BASE', s.x + bw / 2, topY - 12);
-    ctx.shadowBlur = 0;
-
     const hpFrac = base.hp / base.maxHp;
     const barW = bw + 10;
     const barH = 10;
@@ -493,14 +485,21 @@ class Renderer {
     ctx.shadowBlur = 2;
     ctx.fillText(`${Math.ceil(base.hp)}/${base.maxHp}`, barX + barW / 2, barY + barH - 2);
     ctx.shadowBlur = 0;
+
+    ctx.fillStyle = sideColor;
+    ctx.font = 'bold 14px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.shadowColor = '#000';
+    ctx.shadowBlur = 4;
+    ctx.fillText(base.side === 'player' ? 'YOUR BASE' : 'ENEMY BASE', s.x + bw / 2, topY - 46);
+    ctx.shadowBlur = 0;
   }
 
   drawUnit(unit, ageIndex) {
     if (!unit.alive) return;
     const ctx = this.ctx;
     const s = this.worldToScreen(unit.x, unit.y);
-    const bobSpeed = unit.attackCooldown > 0 ? 0 : unit.speed * 600;
-    const bob = Math.sin(Date.now() / (bobSpeed || 300) + unit.x) * 2;
+    const bob = unit.attackCooldown > 0 ? 0 : Math.sin(Date.now() / 300 + unit.x * 0.1) * 2;
     const lean = unit.attackCooldown > 0 ? 0.05 * (unit.side === 'player' ? 1 : -1) : 0;
 
     ctx.save();

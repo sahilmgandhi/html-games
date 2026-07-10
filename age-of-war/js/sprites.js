@@ -1,8 +1,7 @@
 class SpriteManager {
   constructor() {
     this.cache = {};
-    this.scale = 1.5;
-    this.size = 32;
+    this.size = 48;
   }
 
   getSprite(type, ageIndex) {
@@ -23,7 +22,7 @@ class SpriteManager {
 
   draw(ctx, type, ageIndex, x, y, facing) {
     const sprite = this.getSprite(type, ageIndex);
-    const s = this.size * this.scale;
+    const s = this.size;
     ctx.save();
     ctx.translate(x, y);
     if (facing === -1) {
@@ -33,290 +32,427 @@ class SpriteManager {
     ctx.restore();
   }
 
-  px(ctx, x, y, color) {
-    ctx.fillStyle = color;
-    ctx.fillRect(x, y, 1, 1);
-  }
-
   rect(ctx, x, y, w, h, color) {
     ctx.fillStyle = color;
     ctx.fillRect(x, y, w, h);
   }
 
-  // ── Stone Age melee: Clubman ──
+  // ── Melee units (5 ages) ──
   draw_melee(ctx, age) {
     const s = this.rect.bind(this, ctx);
-    const p = this.px.bind(this, ctx);
     if (age === 0) {
-      // Clubman: caveman with club
-      s(13, 2, 6, 6, '#D2B48C');   // head
-      s(14, 3, 4, 3, '#000');      // eyes
-      p(14, 4, '#fff'); p(17, 4, '#fff');
-      s(12, 8, 8, 10, '#8B7355');  // torso
-      s(12, 18, 3, 8, '#8B7355');  // left leg
-      s(17, 18, 3, 8, '#8B7355');  // right leg
-      s(10, 19, 2, 6, '#6B5335');  // left foot
-      s(19, 19, 2, 6, '#6B5335'); // right foot
-      s(20, 8, 2, 10, '#8B7355'); // right arm
-      s(21, 3, 2, 6, '#6B5335');  // club handle
-      s(20, 1, 4, 3, '#8B6535');  // club head
+      // Clubman — caveman
+      s(18, 4, 10, 10, '#D2B48C');   // head
+      s(19, 5, 8, 4, '#c4a070');     // face
+      s(20, 7, 3, 2, '#222');        // eyes
+      s(25, 7, 3, 2, '#222');
+      s(21, 8, 2, 1, '#c44');        // mouth
+      s(17, 14, 12, 14, '#8B7355');  // torso
+      s(18, 15, 10, 12, '#9a8365');  // torso highlight
+      s(17, 28, 5, 10, '#7a6345');   // left leg
+      s(24, 28, 5, 10, '#7a6345');   // right leg
+      s(17, 34, 5, 4, '#5a4325');    // left foot
+      s(24, 34, 5, 4, '#5a4325');    // right foot
+      s(28, 14, 4, 12, '#8B7355');   // right arm
+      s(29, 14, 3, 10, '#9a8365');   // arm highlight
+      s(31, 6, 3, 10, '#6B4325');    // club handle
+      s(29, 4, 7, 4, '#8a5520');     // club head
+      s(30, 3, 5, 2, '#9a6530');     // club highlight
+      s(16, 16, 3, 10, '#7a6345');   // left arm
     } else if (age === 1) {
-      // Swordsman: armored warrior with sword
-      s(13, 2, 6, 6, '#D2B48C');
-      s(13, 1, 6, 2, '#888');      // helmet
-      s(12, 8, 8, 10, '#666');     // chainmail
-      s(13, 9, 6, 3, '#4444aa');   // tabard
-      s(12, 18, 3, 8, '#555');
-      s(17, 18, 3, 8, '#555');
-      s(10, 19, 2, 6, '#444');
-      s(19, 19, 2, 6, '#444');
-      s(20, 9, 2, 9, '#C0C0C0');  // arm
-      s(22, 3, 1, 8, '#C0C0C0');  // sword blade
-      s(21, 3, 3, 1, '#8B7355');  // crossguard
+      // Swordsman — knight
+      s(18, 4, 10, 10, '#D2B48C');
+      s(17, 2, 12, 4, '#777');       // helmet
+      s(18, 3, 10, 2, '#888');       // helmet top
+      s(20, 7, 2, 2, '#222');        // eyes
+      s(25, 7, 2, 2, '#222');
+      s(17, 14, 12, 14, '#555');     // chainmail
+      s(18, 15, 10, 12, '#666');     // chainmail light
+      s(19, 16, 8, 4, '#4444aa');    // tabard
+      s(17, 28, 5, 10, '#444');      // left leg
+      s(24, 28, 5, 10, '#444');      // right leg
+      s(17, 34, 5, 4, '#333');       // feet
+      s(24, 34, 5, 4, '#333');
+      s(28, 14, 4, 12, '#666');      // right arm
+      s(31, 6, 2, 12, '#ddd');       // sword blade
+      s(32, 5, 1, 2, '#fff');        // blade tip
+      s(30, 14, 4, 2, '#8B7355');    // crossguard
+      s(16, 16, 3, 10, '#555');      // left arm
     } else if (age === 2) {
-      // Dueler: renaissance fencer
-      s(13, 2, 6, 6, '#D2B48C');
-      s(12, 1, 8, 2, '#333');      // hat
-      s(12, 8, 8, 10, '#8B6914');  // doublet
-      s(13, 9, 6, 3, '#5a4a10');
-      s(12, 18, 3, 8, '#444');
-      s(17, 18, 3, 8, '#444');
-      s(10, 19, 2, 6, '#333');
-      s(19, 19, 2, 6, '#333');
-      s(20, 8, 2, 10, '#D2B48C');
-      s(22, 2, 1, 9, '#C0C0C0');  // rapier
-      s(21, 2, 1, 2, '#8B7355');  // hilt
+      // Dueler — fencer
+      s(18, 4, 10, 10, '#D2B48C');
+      s(16, 2, 14, 3, '#222');       // wide-brim hat
+      s(17, 3, 12, 1, '#333');
+      s(20, 7, 2, 2, '#222');
+      s(25, 7, 2, 2, '#222');
+      s(17, 14, 12, 14, '#8B6914');  // doublet
+      s(18, 15, 10, 12, '#9a7924');  // highlight
+      s(19, 17, 8, 3, '#6a4a10');    // belt
+      s(17, 28, 5, 10, '#333');      // left leg
+      s(24, 28, 5, 10, '#333');      // right leg
+      s(17, 34, 5, 4, '#222');       // feet
+      s(24, 34, 5, 4, '#222');
+      s(28, 14, 4, 12, '#D2B48C');   // right arm
+      s(31, 6, 1, 14, '#ccc');       // rapier
+      s(32, 5, 1, 2, '#eee');        // tip
+      s(30, 14, 3, 2, '#8B7355');    // hilt
+      s(16, 16, 3, 10, '#D2B48C');   // left arm
     } else if (age === 3) {
-      // Melee Infantry: modern soldier
-      s(13, 3, 6, 5, '#D2B48C');   // head
-      s(12, 2, 8, 2, '#556B2F');   // helmet
-      s(12, 8, 8, 10, '#556B2F');  // uniform
-      s(14, 9, 4, 3, '#3a4a2a');   // vest
-      s(12, 18, 3, 8, '#4a5a2a');
-      s(17, 18, 3, 8, '#4a5a2a');
-      s(10, 22, 2, 4, '#333');
-      s(19, 22, 2, 4, '#333');
-      s(20, 9, 6, 2, '#333');      // rifle
-      s(20, 8, 2, 3, '#556B2F');
+      // Melee Infantry — modern soldier
+      s(18, 5, 10, 9, '#D2B48C');    // head
+      s(17, 3, 12, 4, '#4a5a2a');    // helmet
+      s(18, 4, 10, 2, '#556B2F');
+      s(20, 8, 2, 2, '#222');
+      s(25, 8, 2, 2, '#222');
+      s(17, 14, 12, 14, '#556B2F');  // uniform
+      s(18, 15, 10, 12, '#607030');  // highlight
+      s(19, 16, 8, 5, '#3a4a2a');    // vest
+      s(17, 28, 5, 10, '#4a5a2a');   // legs
+      s(24, 28, 5, 10, '#4a5a2a');
+      s(17, 34, 5, 4, '#333');       // boots
+      s(24, 34, 5, 4, '#333');
+      s(28, 14, 4, 12, '#556B2F');   // arm
+      s(30, 12, 10, 3, '#333');      // rifle
+      s(30, 11, 8, 2, '#444');       // rifle top
+      s(39, 12, 2, 2, '#555');       // muzzle
+      s(16, 16, 3, 10, '#4a5a2a');   // left arm
     } else {
-      // God's Blade: futuristic warrior with energy blade
-      s(13, 3, 6, 5, '#1a1a3a');   // head
-      s(14, 4, 4, 3, '#00e5ff');   // visor glow
-      s(12, 8, 8, 10, '#1a1a3a');  // armor
-      s(13, 9, 6, 3, '#00e5ff');   // chest glow
-      s(12, 18, 3, 8, '#1a1a3a');
-      s(17, 18, 3, 8, '#1a1a3a');
-      s(10, 22, 2, 4, '#00e5ff');
-      s(19, 22, 2, 4, '#00e5ff');
-      s(20, 6, 2, 12, '#00e5ff');  // blade
-      s(20, 5, 1, 2, '#fff');      // blade tip glow
-      s(21, 4, 1, 2, '#00e5ff');
+      // God's Blade — futuristic warrior
+      s(18, 4, 10, 10, '#0a0a2a');   // head
+      s(19, 5, 8, 4, '#1a1a3a');     // visor area
+      s(20, 7, 6, 2, '#00e5ff');     // visor glow
+      s(21, 6, 4, 1, '#66ffff');     // visor highlight
+      s(17, 14, 12, 14, '#0a0a2a');  // armor
+      s(18, 15, 10, 12, '#1a1a3a');  // armor mid
+      s(19, 16, 8, 4, '#00e5ff');    // chest glow
+      s(20, 17, 6, 2, '#66ffff');    // glow highlight
+      s(17, 28, 5, 10, '#0a0a2a');   // legs
+      s(24, 28, 5, 10, '#0a0a2a');
+      s(17, 34, 5, 4, '#00e5ff');    // boots glow
+      s(24, 34, 5, 4, '#00e5ff');
+      s(28, 14, 4, 12, '#0a0a2a');   // arm
+      s(31, 6, 3, 16, '#00e5ff');    // energy blade
+      s(32, 5, 1, 3, '#aaffff');     // blade tip glow
+      s(31, 7, 2, 1, '#88ffff');     // blade highlight
+      s(16, 16, 3, 10, '#0a0a2a');   // left arm
     }
   }
 
-  // ── Stone Age ranged: Slingshot ──
+  // ── Ranged units (5 ages) ──
   draw_ranged(ctx, age) {
     const s = this.rect.bind(this, ctx);
-    const p = this.px.bind(this, ctx);
     if (age === 0) {
-      // Slingshot: caveman with slingshot
-      s(13, 3, 6, 5, '#D2B48C');
-      s(14, 4, 4, 3, '#000');
-      p(14, 5, '#fff'); p(17, 5, '#fff');
-      s(12, 8, 8, 10, '#8B7355');
-      s(12, 18, 3, 8, '#8B7355');
-      s(17, 18, 3, 8, '#8B7355');
-      s(10, 19, 2, 6, '#6B5335');
-      s(19, 19, 2, 6, '#6B5335');
-      s(20, 8, 2, 8, '#8B7355');
-      s(22, 4, 1, 4, '#6B5335');  // slingshot fork
-      s(23, 4, 1, 1, '#6B5335');
-      s(21, 8, 2, 1, '#8B7355');  // band
+      // Slingshot man
+      s(18, 4, 10, 10, '#D2B48C');
+      s(20, 7, 3, 2, '#222');
+      s(25, 7, 3, 2, '#222');
+      s(17, 14, 12, 14, '#8B7355');
+      s(18, 15, 10, 12, '#9a8365');
+      s(17, 28, 5, 10, '#7a6345');
+      s(24, 28, 5, 10, '#7a6345');
+      s(17, 34, 5, 4, '#5a4325');
+      s(24, 34, 5, 4, '#5a4325');
+      s(28, 14, 4, 12, '#8B7355');   // arm
+      s(32, 6, 2, 8, '#6B4325');     // fork handle
+      s(33, 5, 1, 2, '#6B4325');     // fork left
+      s(34, 5, 1, 2, '#6B4325');     // fork right
+      s(32, 14, 2, 1, '#8a5520');    // band
+      s(16, 16, 3, 10, '#7a6345');   // left arm
     } else if (age === 1) {
-      // Archer: hooded archer
-      s(13, 3, 6, 5, '#D2B48C');
-      s(12, 2, 8, 2, '#2a5a2a');   // hood
-      s(14, 4, 4, 3, '#000');
-      s(12, 8, 8, 10, '#2a5a2a');
-      s(12, 18, 3, 8, '#2a4a2a');
-      s(17, 18, 3, 8, '#2a4a2a');
-      s(10, 19, 2, 6, '#1a3a1a');
-      s(19, 19, 2, 6, '#1a3a1a');
-      s(20, 8, 1, 10, '#8B7355'); // bow
-      s(21, 4, 1, 6, '#8B7355');
-      s(21, 10, 1, 1, '#8B7355'); // arrow notch
+      // Archer
+      s(18, 4, 10, 10, '#D2B48C');
+      s(17, 2, 12, 4, '#2a5a2a');    // hood
+      s(18, 3, 10, 2, '#3a6a3a');
+      s(20, 7, 2, 2, '#222');
+      s(25, 7, 2, 2, '#222');
+      s(17, 14, 12, 14, '#2a5a2a');
+      s(18, 15, 10, 12, '#3a6a3a');
+      s(17, 28, 5, 10, '#2a4a2a');
+      s(24, 28, 5, 10, '#2a4a2a');
+      s(17, 34, 5, 4, '#1a3a1a');
+      s(24, 34, 5, 4, '#1a3a1a');
+      s(28, 14, 4, 12, '#2a5a2a');   // arm
+      s(33, 6, 2, 16, '#8B6040');    // bow
+      s(34, 12, 1, 4, '#8B6040');    // bow string
+      s(32, 14, 2, 1, '#8B6040');    // arrow nock
+      s(16, 16, 3, 10, '#2a4a2a');   // left arm
     } else if (age === 2) {
-      // Musketeer: renaissance gunman
-      s(13, 3, 6, 5, '#D2B48C');
-      s(12, 2, 8, 2, '#333');
-      s(12, 8, 8, 10, '#333');
-      s(14, 9, 4, 3, '#8B6914');
-      s(12, 18, 3, 8, '#444');
-      s(17, 18, 3, 8, '#444');
-      s(10, 19, 2, 6, '#333');
-      s(19, 19, 2, 6, '#333');
-      s(20, 8, 8, 2, '#666');     // musket barrel
-      s(20, 7, 2, 4, '#8B7355');
+      // Musketeer
+      s(18, 4, 10, 10, '#D2B48C');
+      s(17, 2, 12, 3, '#222');       // hat
+      s(20, 7, 2, 2, '#222');
+      s(25, 7, 2, 2, '#222');
+      s(17, 14, 12, 14, '#2a2a2a');
+      s(18, 15, 10, 12, '#3a3a3a');
+      s(19, 16, 8, 3, '#8B6914');    // gold trim
+      s(17, 28, 5, 10, '#333');
+      s(24, 28, 5, 10, '#333');
+      s(17, 34, 5, 4, '#222');
+      s(24, 34, 5, 4, '#222');
+      s(28, 14, 4, 12, '#2a2a2a');
+      s(30, 12, 12, 3, '#555');      // musket barrel
+      s(30, 11, 10, 2, '#666');
+      s(41, 12, 3, 2, '#444');       // muzzle
+      s(16, 16, 3, 10, '#2a2a2a');
     } else if (age === 3) {
-      // Infantry: modern rifleman
-      s(13, 3, 6, 5, '#D2B48C');
-      s(12, 2, 8, 2, '#556B2F');
-      s(12, 8, 8, 10, '#556B2F');
-      s(14, 9, 4, 3, '#3a4a2a');
-      s(12, 18, 3, 8, '#4a5a2a');
-      s(17, 18, 3, 8, '#4a5a2a');
-      s(10, 22, 2, 4, '#333');
-      s(19, 22, 2, 4, '#333');
-      s(20, 8, 8, 2, '#333');
-      s(20, 7, 2, 4, '#556B2F');
-      s(28, 8, 1, 1, '#ff6600'); // muzzle flash ready
+      // Infantry rifleman
+      s(18, 5, 10, 9, '#D2B48C');
+      s(17, 3, 12, 4, '#4a5a2a');
+      s(20, 8, 2, 2, '#222');
+      s(25, 8, 2, 2, '#222');
+      s(17, 14, 12, 14, '#556B2F');
+      s(18, 15, 10, 12, '#607030');
+      s(19, 16, 8, 5, '#3a4a2a');
+      s(17, 28, 5, 10, '#4a5a2a');
+      s(24, 28, 5, 10, '#4a5a2a');
+      s(17, 34, 5, 4, '#333');
+      s(24, 34, 5, 4, '#333');
+      s(28, 14, 4, 12, '#556B2F');
+      s(30, 12, 12, 3, '#333');      // rifle
+      s(30, 11, 10, 2, '#444');
+      s(41, 12, 2, 2, '#555');       // muzzle
+      s(16, 16, 3, 10, '#4a5a2a');
     } else {
-      // Blaster: futuristic energy gunner
-      s(13, 3, 6, 5, '#1a1a3a');
-      s(14, 4, 4, 3, '#00e5ff');
-      s(12, 8, 8, 10, '#1a1a3a');
-      s(13, 9, 6, 3, '#00e5ff');
-      s(12, 18, 3, 8, '#1a1a3a');
-      s(17, 18, 3, 8, '#1a1a3a');
-      s(10, 22, 2, 4, '#00e5ff');
-      s(19, 22, 2, 4, '#00e5ff');
-      s(20, 8, 10, 2, '#00e5ff');
-      s(20, 7, 2, 4, '#1a1a3a');
-      s(30, 8, 1, 1, '#00e5ff'); // energy tip
+      // Blaster — futuristic
+      s(18, 4, 10, 10, '#0a0a2a');
+      s(20, 7, 6, 2, '#00e5ff');
+      s(17, 14, 12, 14, '#0a0a2a');
+      s(18, 15, 10, 12, '#1a1a3a');
+      s(19, 16, 8, 4, '#00e5ff');
+      s(17, 28, 5, 10, '#0a0a2a');
+      s(24, 28, 5, 10, '#0a0a2a');
+      s(17, 34, 5, 4, '#00e5ff');
+      s(24, 34, 5, 4, '#00e5ff');
+      s(28, 14, 4, 12, '#0a0a2a');
+      s(30, 12, 14, 3, '#00e5ff');   // energy barrel
+      s(30, 11, 12, 2, '#66ffff');
+      s(43, 12, 3, 3, '#00e5ff');    // energy tip
+      s(44, 11, 1, 1, '#aaffff');
+      s(16, 16, 3, 10, '#0a0a2a');
     }
   }
 
-  // ── Fast units: Dino Rider, Knight, horse, heli, hover ──
+  // ── Fast units (5 ages) ──
   draw_fast(ctx, age) {
     const s = this.rect.bind(this, ctx);
     if (age === 0) {
-      // Dino Rider: green dinosaur
-      s(10, 10, 16, 8, '#4a8a2a');   // body
-      s(6, 8, 6, 6, '#3a7a1a');      // head
-      s(5, 9, 2, 2, '#fff');         // eye
-      s(8, 16, 3, 8, '#3a6a1a');     // front legs
-      s(19, 16, 3, 8, '#3a6a1a');    // back legs
-      s(24, 12, 5, 3, '#4a8a2a');    // tail
-      s(28, 13, 3, 2, '#3a7a1a');
-      // rider
-      s(12, 4, 5, 6, '#D2B48C');
-      s(12, 2, 5, 3, '#8B7355');
-      s(13, 2, 3, 2, '#000');
+      // Dino Rider
+      // Dino body
+      s(8, 16, 24, 10, '#3a8a1a');   // body
+      s(10, 18, 20, 6, '#4a9a2a');   // body highlight
+      s(4, 12, 8, 8, '#2a7a0a');     // head
+      s(5, 14, 6, 4, '#3a8a1a');     // head mid
+      s(6, 14, 2, 2, '#fff');        // eye
+      s(5, 18, 3, 2, '#2a7a0a');     // jaw
+      s(6, 20, 2, 1, '#fff');        // teeth
+      s(10, 26, 4, 10, '#2a6a0a');   // front legs
+      s(12, 26, 4, 10, '#2a6a0a');
+      s(10, 34, 4, 3, '#1a5a00');    // front feet
+      s(12, 34, 4, 3, '#1a5a00');
+      s(24, 26, 4, 10, '#2a6a0a');   // back legs
+      s(26, 26, 4, 10, '#2a6a0a');
+      s(24, 34, 4, 3, '#1a5a00');
+      s(26, 34, 4, 3, '#1a5a00');
+      s(28, 16, 8, 4, '#3a8a1a');    // tail
+      s(34, 17, 4, 3, '#2a7a0a');
+      s(36, 18, 2, 2, '#2a7a0a');
+      // Rider
+      s(14, 6, 8, 10, '#D2B48C');    // body
+      s(15, 6, 6, 8, '#e2c49c');     // highlight
+      s(15, 2, 6, 5, '#8B7355');     // head
+      s(16, 3, 4, 2, '#222');        // eyes
     } else if (age === 1) {
       // Knight on horse
-      s(8, 10, 16, 8, '#8B7355');    // horse body
-      s(4, 8, 6, 6, '#6B5335');      // horse head
-      s(4, 9, 2, 2, '#000');
-      s(8, 18, 3, 8, '#6B5335');     // horse legs
-      s(19, 18, 3, 8, '#6B5335');
-      s(22, 12, 5, 3, '#8B7355');    // horse tail
-      // rider
-      s(11, 2, 6, 8, '#666');        // armor
-      s(12, 0, 4, 3, '#888');        // helmet
-      s(12, 1, 2, 1, '#4444aa');     // plume
-      s(18, 4, 2, 6, '#C0C0C0');    // sword arm
+      // Horse
+      s(6, 16, 26, 10, '#8B6535');   // body
+      s(8, 18, 22, 6, '#9a7545');    // highlight
+      s(2, 12, 8, 8, '#6B4525');     // head
+      s(3, 14, 6, 3, '#7a5535');
+      s(4, 14, 2, 2, '#222');        // eye
+      s(3, 19, 4, 2, '#5a3515');     // muzzle
+      s(6, 26, 4, 10, '#6B4525');    // front legs
+      s(8, 26, 4, 10, '#6B4525');
+      s(6, 34, 4, 3, '#4a2505');
+      s(8, 34, 4, 3, '#4a2505');
+      s(26, 26, 4, 10, '#6B4525');   // back legs
+      s(28, 26, 4, 10, '#6B4525');
+      s(26, 34, 4, 3, '#4a2505');
+      s(28, 34, 4, 3, '#4a2505');
+      s(30, 14, 6, 4, '#7a5535');    // tail
+      s(34, 14, 3, 3, '#6a4525');
+      // Rider
+      s(12, 4, 8, 12, '#555');       // armor
+      s(13, 4, 6, 10, '#666');       // armor highlight
+      s(13, 0, 6, 5, '#777');        // helmet
+      s(14, 1, 4, 2, '#888');
+      s(14, 4, 2, 1, '#4444aa');     // plume
+      s(20, 6, 3, 8, '#aaa');        // sword arm
+      s(21, 4, 1, 3, '#ddd');        // sword
     } else if (age === 2) {
-      // Renaissance horse
-      s(8, 10, 16, 8, '#8B6914');
-      s(4, 8, 6, 6, '#6B5510');
-      s(4, 9, 2, 2, '#000');
-      s(8, 18, 3, 8, '#6B5510');
-      s(19, 18, 3, 8, '#6B5510');
-      s(22, 12, 5, 3, '#8B6914');
-      s(11, 2, 6, 8, '#8B6914');
-      s(12, 0, 4, 3, '#333');
-      s(13, 1, 2, 1, '#8B6914');
+      // Renaissance horse with rider
+      s(6, 16, 26, 10, '#7a5a10');   // body
+      s(8, 18, 22, 6, '#8a6a20');    // highlight
+      s(2, 12, 8, 8, '#5a3a00');     // head
+      s(3, 14, 6, 3, '#6a4a10');
+      s(4, 14, 2, 2, '#222');
+      s(6, 26, 4, 10, '#5a3a00');
+      s(8, 26, 4, 10, '#5a3a00');
+      s(6, 34, 4, 3, '#4a2a00');
+      s(8, 34, 4, 3, '#4a2a00');
+      s(26, 26, 4, 10, '#5a3a00');
+      s(28, 26, 4, 10, '#5a3a00');
+      s(26, 34, 4, 3, '#4a2a00');
+      s(28, 34, 4, 3, '#4a2a00');
+      s(30, 14, 6, 4, '#6a4a10');    // tail
+      // Rider
+      s(12, 4, 8, 12, '#8B6914');
+      s(13, 4, 6, 10, '#9a7924');
+      s(13, 0, 6, 5, '#222');
+      s(14, 1, 4, 2, '#333');
+      s(14, 3, 2, 1, '#8B6914');     // plume
+      s(20, 6, 3, 8, '#8B6914');
     } else if (age === 3) {
       // Helicopter
-      s(8, 10, 16, 8, '#556B2F');    // body
-      s(4, 11, 5, 5, '#7a9a4f');     // cockpit
-      s(5, 12, 3, 2, '#aaddff');     // glass
-      s(10, 8, 10, 2, '#444');       // rotor bar
-      s(14, 6, 2, 2, '#333');        // rotor hub
-      s(22, 14, 6, 2, '#556B2F');    // tail boom
-      s(27, 12, 3, 3, '#333');       // tail rotor
-      s(12, 18, 2, 4, '#333');       // skids
-      s(18, 18, 2, 4, '#333');
+      s(6, 14, 26, 10, '#4a5a2a');   // body
+      s(8, 16, 22, 6, '#556B2F');    // body highlight
+      s(2, 16, 6, 6, '#6a8a4f');     // cockpit
+      s(3, 17, 4, 3, '#aaddff');     // glass
+      s(4, 18, 2, 1, '#ccffff');     // glass highlight
+      s(14, 10, 12, 4, '#333');      // rotor bar
+      s(18, 8, 4, 3, '#444');        // rotor hub
+      s(19, 7, 2, 1, '#555');
+      s(28, 16, 8, 4, '#4a5a2a');    // tail boom
+      s(34, 14, 4, 4, '#333');       // tail rotor
+      s(35, 15, 2, 2, '#444');
+      s(10, 24, 3, 4, '#333');       // skids
+      s(24, 24, 3, 4, '#333');
+      s(8, 28, 20, 1, '#444');       // skid bar
     } else {
       // Hover vehicle
-      s(6, 10, 20, 8, '#1a3a5a');    // body
-      s(4, 11, 4, 5, '#00e5ff');     // glow front
-      s(24, 11, 4, 5, '#ff4444');    // glow rear
-      s(10, 8, 8, 2, '#2a4a6a');     // canopy
-      s(12, 6, 4, 2, '#00e5ff');     // antenna glow
-      s(8, 18, 3, 2, '#00e5ff');     // hover glow
-      s(16, 18, 3, 2, '#00e5ff');
-      s(10, 20, 12, 1, '#00e5ff');
+      s(4, 14, 28, 10, '#1a2a4a');   // body
+      s(6, 16, 24, 6, '#2a3a5a');    // body highlight
+      s(2, 16, 4, 6, '#00e5ff');     // front glow
+      s(3, 17, 2, 4, '#66ffff');
+      s(30, 16, 4, 6, '#ff4444');    // rear glow
+      s(31, 17, 2, 4, '#ff8888');
+      s(10, 12, 10, 4, '#2a3a6a');   // canopy
+      s(11, 13, 8, 2, '#88ccff');    // glass
+      s(12, 12, 4, 1, '#00e5ff');    // antenna
+      s(13, 10, 2, 2, '#00e5ff');
+      s(8, 24, 4, 2, '#00e5ff');     // hover glow
+      s(18, 24, 4, 2, '#00e5ff');
+      s(28, 24, 4, 2, '#00e5ff');
+      s(6, 26, 28, 1, '#00e5ff');    // hover bar
+      s(8, 27, 24, 1, 'rgba(0,229,255,0.3)'); // glow below
     }
   }
 
   // ── Siege: Cannoneer (Renaissance) ──
   draw_siege(ctx) {
     const s = this.rect.bind(this, ctx);
-    // Cannon on wheels
-    s(6, 12, 20, 6, '#8B6914');     // barrel mount
-    s(4, 14, 24, 4, '#666');        // barrel
-    s(26, 13, 4, 3, '#444');        // muzzle
-    s(8, 18, 4, 4, '#333');         // left wheel
-    s(12, 18, 4, 4, '#333');        // right wheel
-    s(20, 18, 4, 4, '#333');
-    s(9, 19, 2, 2, '#555');
-    s(13, 19, 2, 2, '#555');
-    s(21, 19, 2, 2, '#555');
-    // fuse
-    s(6, 10, 1, 3, '#ff6600');
-    s(5, 9, 2, 2, '#ff4400');
+    // Cannon on wheeled cart
+    s(4, 16, 30, 8, '#666');         // barrel
+    s(6, 17, 26, 6, '#777');        // barrel highlight
+    s(32, 17, 4, 5, '#444');        // muzzle
+    s(33, 18, 2, 3, '#333');
+    s(4, 12, 16, 8, '#8B6914');     // mount
+    s(6, 13, 12, 6, '#9a7924');     // mount highlight
+    s(6, 24, 6, 6, '#333');         // left wheel
+    s(7, 25, 4, 4, '#444');
+    s(8, 26, 2, 2, '#555');
+    s(18, 24, 6, 6, '#333');        // right wheel
+    s(19, 25, 4, 4, '#444');
+    s(20, 26, 2, 2, '#555');
+    s(28, 24, 6, 6, '#333');        // rear wheel
+    s(29, 25, 4, 4, '#444');
+    s(30, 26, 2, 2, '#555');
+    s(4, 10, 2, 4, '#ff6600');      // fuse
+    s(3, 8, 3, 3, '#ff4400');       // flame
+    s(4, 7, 1, 2, '#ffaa00');
   }
 
-  // ── Armored: Tank (Modern), War Machine (Future) ──
+  // ── Armored units (Modern + Future) ──
   draw_armored(ctx, age) {
     const s = this.rect.bind(this, ctx);
     if (age === 3) {
-      // Modern Tank
-      s(4, 12, 24, 8, '#556B2F');    // hull
-      s(8, 6, 12, 8, '#4a5a2a');     // turret
-      s(12, 4, 4, 3, '#556B2F');     // cupola
-      s(18, 8, 12, 3, '#333');       // barrel
-      s(4, 20, 6, 3, '#333');        // left tread
-      s(14, 20, 6, 3, '#333');       // right tread
-      s(22, 20, 6, 3, '#333');
-      s(5, 21, 4, 1, '#555');        // tread detail
-      s(15, 21, 4, 1, '#555');
-      s(23, 21, 4, 1, '#555');
+      // Modern tank
+      s(2, 18, 36, 12, '#4a5a2a');   // hull
+      s(4, 20, 32, 8, '#556B2F');    // hull highlight
+      s(10, 8, 16, 12, '#3a4a2a');   // turret
+      s(12, 10, 12, 8, '#4a5a2a');   // turret mid
+      s(16, 5, 6, 4, '#556B2F');     // cupola
+      s(17, 6, 4, 2, '#607030');
+      s(24, 12, 14, 3, '#333');      // barrel
+      s(24, 11, 12, 2, '#444');      // barrel top
+      s(37, 12, 3, 2, '#555');       // muzzle brake
+      s(2, 30, 8, 4, '#2a2a2a');     // treads
+      s(12, 30, 8, 4, '#2a2a2a');
+      s(22, 30, 8, 4, '#2a2a2a');
+      s(32, 30, 8, 4, '#2a2a2a');
+      s(3, 31, 6, 2, '#3a3a3a');     // tread detail
+      s(13, 31, 6, 2, '#3a3a3a');
+      s(23, 31, 6, 2, '#3a3a3a');
+      s(33, 31, 6, 2, '#3a3a3a');
     } else {
-      // Future War Machine
-      s(4, 10, 24, 10, '#1a3a5a');   // hull
-      s(8, 4, 12, 8, '#1a2a4a');     // turret
-      s(10, 2, 8, 3, '#00e5ff');     // sensor array
-      s(18, 6, 14, 3, '#00e5ff');    // energy barrel
-      s(4, 20, 6, 3, '#00e5ff');     // hover pads
-      s(14, 20, 6, 3, '#00e5ff');
-      s(22, 20, 6, 3, '#00e5ff');
-      s(6, 23, 4, 1, '#00e5ff');
-      s(16, 23, 4, 1, '#00e5ff');
-      s(24, 23, 4, 1, '#00e5ff');
+      // Future War Machine — mech
+      s(4, 14, 28, 14, '#0a1a3a');   // hull
+      s(6, 16, 24, 10, '#1a2a4a');   // hull mid
+      s(8, 18, 20, 6, '#2a3a5a');    // hull light
+      s(10, 6, 14, 12, '#0a1a3a');   // turret
+      s(12, 8, 10, 8, '#1a2a4a');    // turret mid
+      s(13, 3, 8, 4, '#00e5ff');     // sensor array
+      s(14, 4, 6, 2, '#66ffff');
+      s(22, 10, 16, 4, '#00e5ff');   // energy barrel
+      s(22, 9, 14, 2, '#66ffff');
+      s(37, 10, 3, 3, '#aaffff');    // barrel tip glow
+      s(6, 28, 6, 4, '#00e5ff');     // hover pads
+      s(18, 28, 6, 4, '#00e5ff');
+      s(30, 28, 6, 4, '#00e5ff');
+      s(7, 32, 4, 1, '#66ffff');     // pad glow
+      s(19, 32, 4, 1, '#66ffff');
+      s(31, 32, 4, 1, '#66ffff');
+      s(5, 33, 28, 1, 'rgba(0,229,255,0.3)'); // ground glow
     }
   }
 
   // ── Elite: Super Soldier (Future) ──
   draw_elite(ctx) {
     const s = this.rect.bind(this, ctx);
-    // Dual-wielding energy warrior
-    s(12, 2, 8, 6, '#1a1a3a');      // head
-    s(13, 3, 6, 3, '#00e5ff');      // visor
-    s(11, 8, 10, 10, '#1a1a3a');    // torso
-    s(13, 9, 6, 3, '#00e5ff');      // chest core
-    s(11, 18, 4, 8, '#1a1a3a');     // left leg
-    s(17, 18, 4, 8, '#1a1a3a');     // right leg
-    s(9, 22, 2, 4, '#00e5ff');
-    s(19, 22, 2, 4, '#00e5ff');
-    s(6, 8, 5, 2, '#1a1a3a');       // left arm
-    s(21, 8, 5, 2, '#1a1a3a');      // right arm
-    s(2, 6, 4, 3, '#ff4444');       // left blade
-    s(26, 6, 4, 3, '#ff4444');      // right blade
-    s(1, 5, 2, 1, '#ff8888');       // glow
-    s(29, 5, 2, 1, '#ff8888');
-    s(14, 1, 4, 1, '#00e5ff');      // head crest
+    // Large dual-wielding warrior
+    s(16, 2, 14, 12, '#0a0a2a');     // head
+    s(17, 3, 12, 8, '#1a1a3a');      // face
+    s(18, 5, 10, 3, '#00e5ff');      // visor
+    s(19, 4, 8, 1, '#66ffff');       // visor highlight
+    s(20, 6, 6, 1, '#aaffff');       // visor center glow
+    s(14, 14, 18, 14, '#0a0a2a');    // torso
+    s(16, 16, 14, 10, '#1a1a3a');    // torso mid
+    s(18, 17, 10, 5, '#00e5ff');     // chest core
+    s(19, 18, 8, 3, '#66ffff');      // core glow
+    s(20, 19, 6, 1, '#aaffff');      // core highlight
+    s(14, 28, 7, 12, '#0a0a2a');     // left leg
+    s(15, 30, 5, 8, '#1a1a3a');      // left leg mid
+    s(25, 28, 7, 12, '#0a0a2a');     // right leg
+    s(26, 30, 5, 8, '#1a1a3a');      // right leg mid
+    s(14, 36, 7, 4, '#00e5ff');      // left boots
+    s(25, 36, 7, 4, '#00e5ff');      // right boots
+    // Arms
+    s(6, 14, 10, 4, '#0a0a2a');      // left arm
+    s(7, 15, 8, 2, '#1a1a3a');
+    s(30, 14, 10, 4, '#0a0a2a');     // right arm
+    s(31, 15, 8, 2, '#1a1a3a');
+    // Energy blades
+    s(1, 8, 6, 8, '#ff3333');        // left blade
+    s(2, 9, 4, 6, '#ff6666');        // left blade mid
+    s(3, 10, 2, 4, '#ff9999');       // left blade glow
+    s(39, 8, 6, 8, '#ff3333');       // right blade
+    s(40, 9, 4, 6, '#ff6666');       // right blade mid
+    s(41, 10, 2, 4, '#ff9999');      // right blade glow
+    // Blade tips
+    s(0, 7, 2, 2, '#ffaaaa');
+    s(44, 7, 2, 2, '#ffaaaa');
+    // Head crest
+    s(20, 0, 6, 3, '#00e5ff');
+    s(21, 0, 4, 1, '#66ffff');
   }
 }
 
