@@ -680,6 +680,8 @@ class Renderer {
     ctx.fillText(age.specialName, spX + 50, y + 17);
     ctx.fillText(spReady ? 'READY' : `${Math.ceil(game.specialCooldown)}s`, spX + 50, y + 27);
 
+    this.drawPauseButton(game);
+
     const row2Y = y + 38;
 
     const slotsFull = game.playerSlotsBought >= CONFIG.TURRET_SLOTS;
@@ -728,6 +730,22 @@ class Renderer {
       ctx.textAlign = 'center';
       ctx.fillText(`Sell ${refund}g`, bx + 45, row3Y + 12);
     }
+  }
+
+  drawPauseButton(game) {
+    const ctx = this.ctx;
+    const bx = CONFIG.VIEWPORT.WIDTH - 30;
+    const by = 22;
+
+    ctx.fillStyle = game.paused ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.08)';
+    ctx.fillRect(bx, by, 24, 24);
+    ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+    ctx.strokeRect(bx, by, 24, 24);
+
+    ctx.fillStyle = '#fff';
+    ctx.font = '14px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('||', bx + 12, by + 16);
   }
 
   drawPauseScreen(game) {

@@ -39,6 +39,7 @@ class Game {
     this.paused = false;
     this.settingsOpen = false;
     this.started = false;
+    this.flashTimer = 0;
 
     this.canvas.addEventListener('click', () => {
       this.audio.init();
@@ -58,6 +59,20 @@ class Game {
           this.togglePause();
         }
       } else {
+        const mx = this.input.mouseX;
+        const my = this.input.mouseY;
+
+        if (pointInRect(mx, my, CONFIG.VIEWPORT.WIDTH - 30, 22, 24, 24)) {
+          this.togglePause();
+          return;
+        }
+
+        if (my >= 2 && my <= 20) {
+          const worldX = (mx / CONFIG.VIEWPORT.WIDTH) * CONFIG.WORLD.WIDTH;
+          this.renderer.scrollTo(worldX - CONFIG.VIEWPORT.WIDTH / 2);
+          return;
+        }
+
         this.input.handleClick(this);
       }
     });
@@ -183,6 +198,8 @@ class Game {
     }
 
     this.particles.update(dt);
+
+    if (this.flashTimer > 0) this.flashTimer = Math.max(0, this.flashTimer - dt);
   }
 
   render() {
@@ -221,6 +238,11 @@ class Game {
       this.renderer.drawSettingsScreen(this);
     } else if (this.paused) {
       this.renderer.drawPauseScreen(this);
+    }
+
+    if (this.flashTimer > 0) {
+      ctx.fillStyle = `rgba(255,255,255,${this.flashTimer * 0.4})`;
+      ctx.fillRect(0, 0, CONFIG.VIEWPORT.WIDTH, CONFIG.VIEWPORT.HEIGHT);
     }
   }
 
@@ -411,6 +433,7 @@ class Game {
     this.playerBase.healFraction(CONFIG.EVOLVE_HEAL);
     this.audio.play('evolve');
     this.audio.updateMusicAge(this.currentAge);
+    this.flashTimer = 0.8;
 
     let refund = 0;
     for (const t of this.turrets) {
