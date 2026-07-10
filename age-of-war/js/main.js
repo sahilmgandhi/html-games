@@ -19,26 +19,28 @@ function getDiffBtnRect(i) {
 }
 
 function drawTitleScreen() {
-  ctx.fillStyle = '#1a1a2e';
+  ctx.fillStyle = '#0a0a1e';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   const t = Date.now() / 1000;
 
   drawTitleBackground(t);
 
+  ctx.shadowColor = '#e6a817';
+  ctx.shadowBlur = 30;
   ctx.fillStyle = '#e6a817';
   ctx.font = 'bold 64px "Segoe UI", sans-serif';
   ctx.textAlign = 'center';
-  ctx.shadowColor = '#e6a817';
-  ctx.shadowBlur = 20;
-  ctx.fillText('AGE OF WAR', canvas.width / 2, 180);
+  ctx.fillText('AGE OF WAR', canvas.width / 2, 170);
+  ctx.shadowBlur = 15;
+  ctx.fillText('AGE OF WAR', canvas.width / 2, 170);
   ctx.shadowBlur = 0;
 
-  ctx.fillStyle = '#aaa';
+  ctx.fillStyle = 'rgba(255,255,255,0.5)';
   ctx.font = '18px "Segoe UI", sans-serif';
-  ctx.fillText('A Strategy Game', canvas.width / 2, 230);
+  ctx.fillText('A Strategy Game', canvas.width / 2, 215);
 
-  ctx.fillStyle = '#888';
+  ctx.fillStyle = '#666';
   ctx.font = '14px "Segoe UI", sans-serif';
   ctx.fillText('Select Difficulty', canvas.width / 2, DIFF_BTN_Y - 14);
 
@@ -47,9 +49,17 @@ function drawTitleScreen() {
     const r = getDiffBtnRect(i);
     const sel = i === selectedDifficulty;
 
-    ctx.fillStyle = sel ? '#2a4a2a' : '#2a2a3a';
+    const grad = ctx.createLinearGradient(r.x, r.y, r.x, r.y + r.h);
+    if (sel) {
+      grad.addColorStop(0, '#3a6a3a');
+      grad.addColorStop(1, '#2a4a2a');
+    } else {
+      grad.addColorStop(0, '#2a2a3a');
+      grad.addColorStop(1, '#1a1a2a');
+    }
+    ctx.fillStyle = grad;
     ctx.fillRect(r.x, r.y, r.w, r.h);
-    ctx.strokeStyle = sel ? '#4a8' : '#555';
+    ctx.strokeStyle = sel ? '#4a8' : '#444';
     ctx.lineWidth = sel ? 2 : 1;
     ctx.strokeRect(r.x, r.y, r.w, r.h);
 
@@ -59,16 +69,19 @@ function drawTitleScreen() {
     ctx.fillText(d.name, r.x + r.w / 2, r.y + 21);
   }
 
-  const pulse = 0.7 + Math.sin(Date.now() / 500) * 0.3;
+  const pulse = 0.6 + Math.sin(Date.now() / 500) * 0.4;
+  ctx.shadowColor = '#e6a817';
+  ctx.shadowBlur = 10;
   ctx.fillStyle = '#e6a817';
-  ctx.font = '22px "Segoe UI", sans-serif';
+  ctx.font = 'bold 22px "Segoe UI", sans-serif';
   ctx.globalAlpha = pulse;
-  ctx.fillText('Click to Start', canvas.width / 2, 440);
+  ctx.fillText('Click to Start', canvas.width / 2, 430);
+  ctx.shadowBlur = 0;
   ctx.globalAlpha = 1;
 
-  ctx.fillStyle = '#666';
-  ctx.font = '14px "Segoe UI", sans-serif';
-  ctx.fillText('WASD or Arrow Keys to scroll  |  Click units in HUD to spawn  |  ESC to pause', canvas.width / 2, 480);
+  ctx.fillStyle = '#555';
+  ctx.font = '13px "Segoe UI", sans-serif';
+  ctx.fillText('WASD or Arrow Keys to scroll  |  Click units in HUD to spawn  |  ESC to pause', canvas.width / 2, 470);
 
   drawTitleUnits();
 }

@@ -1,22 +1,53 @@
 class Minimap {
   draw(ctx, units, turrets, bases, cameraX) {
     const mmW = CONFIG.VIEWPORT.WIDTH;
-    const mmH = 18;
-    const mmY = 2;
+    const mmH = 20;
+    const mmY = 3;
+    const r = 4;
 
-    ctx.fillStyle = 'rgba(0,0,0,0.6)';
-    ctx.fillRect(0, mmY, mmW, mmH);
+    ctx.fillStyle = 'rgba(10,10,20,0.75)';
+    ctx.beginPath();
+    ctx.moveTo(r, mmY);
+    ctx.lineTo(mmW - r, mmY);
+    ctx.arcTo(mmW, mmY, mmW, mmY + r, r);
+    ctx.lineTo(mmW, mmY + mmH - r);
+    ctx.arcTo(mmW, mmY + mmH, mmW - r, mmY + mmH, r);
+    ctx.lineTo(r, mmY + mmH);
+    ctx.arcTo(0, mmY + mmH, 0, mmY + mmH - r, r);
+    ctx.lineTo(0, mmY + r);
+    ctx.arcTo(0, mmY, r, mmY, r);
+    ctx.fill();
+
+    ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(r, mmY);
+    ctx.lineTo(mmW - r, mmY);
+    ctx.arcTo(mmW, mmY, mmW, mmY + r, r);
+    ctx.lineTo(mmW, mmY + mmH - r);
+    ctx.arcTo(mmW, mmY + mmH, mmW - r, mmY + mmH, r);
+    ctx.lineTo(r, mmY + mmH);
+    ctx.arcTo(0, mmY + mmH, 0, mmY + mmH - r, r);
+    ctx.lineTo(0, mmY + r);
+    ctx.arcTo(0, mmY, r, mmY, r);
+    ctx.stroke();
 
     const viewLeft = cameraX / CONFIG.WORLD.WIDTH * mmW;
     const viewW = CONFIG.VIEWPORT.WIDTH / CONFIG.WORLD.WIDTH * mmW;
-    ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+    ctx.fillStyle = 'rgba(255,255,255,0.08)';
+    ctx.fillRect(viewLeft, mmY, viewW, mmH);
+    ctx.strokeStyle = 'rgba(255,255,255,0.4)';
     ctx.lineWidth = 1;
     ctx.strokeRect(viewLeft, mmY, viewW, mmH);
 
     for (const b of bases) {
       const bx = b.x / CONFIG.WORLD.WIDTH * mmW;
-      ctx.fillStyle = b.side === 'player' ? CONFIG.COLORS.PLAYER : CONFIG.COLORS.ENEMY;
+      const sideColor = b.side === 'player' ? CONFIG.COLORS.PLAYER : CONFIG.COLORS.ENEMY;
+      ctx.fillStyle = sideColor;
+      ctx.shadowColor = sideColor;
+      ctx.shadowBlur = 4;
       ctx.fillRect(bx - 3, mmY + 3, 6, mmH - 6);
+      ctx.shadowBlur = 0;
     }
 
     for (const t of turrets) {

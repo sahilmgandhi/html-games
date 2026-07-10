@@ -78,7 +78,10 @@ class Renderer {
 
     this.drawAgeBackground(ageIndex, camX, groundY);
 
-    ctx.fillStyle = age.groundColor;
+    const groundGrad = ctx.createLinearGradient(0, groundY, 0, H);
+    groundGrad.addColorStop(0, age.groundColor);
+    groundGrad.addColorStop(1, this.darkenColor(age.groundColor, 0.6));
+    ctx.fillStyle = groundGrad;
     ctx.fillRect(0, groundY, W, 100);
 
     ctx.fillStyle = this.lightenColor(age.groundColor, 1.15);
@@ -331,33 +334,165 @@ class Renderer {
 
   drawBase(base, ageIndex) {
     const ctx = this.ctx;
-    const s = this.worldToScreen(base.x - base.width / 2, base.y - base.height);
+    const bw = base.width;
+    const bh = base.height;
+    const s = this.worldToScreen(base.x - bw / 2, base.y);
     const age = CONFIG.AGES[ageIndex];
+    const groundY = s.y;
+    const topY = groundY - bh;
+    const sideColor = base.side === 'player' ? CONFIG.COLORS.PLAYER : CONFIG.COLORS.ENEMY;
 
-    ctx.fillStyle = age.color;
-    ctx.fillRect(s.x, s.y, base.width, base.height);
+    switch (ageIndex) {
+      case 0: // Stone Age — stone hut with thatched roof
+        ctx.fillStyle = '#6a5a4a';
+        ctx.fillRect(s.x, topY + 20, bw, bh - 20);
+        ctx.fillStyle = '#8a7a6a';
+        for (let r = 0; r < 4; r++) {
+          for (let c = 0; c < 3; c++) {
+            ctx.fillRect(s.x + 4 + c * 26, topY + 24 + r * 24, 22, 18);
+          }
+        }
+        ctx.fillStyle = '#5a4a30';
+        ctx.fillRect(s.x + bw / 2 - 10, groundY - 30, 20, 30);
+        ctx.fillStyle = '#8a6535';
+        ctx.beginPath();
+        ctx.moveTo(s.x - 6, topY + 20);
+        ctx.lineTo(s.x + bw / 2, topY - 8);
+        ctx.lineTo(s.x + bw + 6, topY + 20);
+        ctx.fill();
+        ctx.fillStyle = '#6a5020';
+        for (let i = 0; i < 5; i++) {
+          ctx.fillRect(s.x - 2 + i * 18, topY + 16, 16, 6);
+        }
+        break;
 
-    ctx.fillStyle = '#000';
+      case 1: // Castle Age — stone wall with crenellations
+        ctx.fillStyle = '#4a4a6a';
+        ctx.fillRect(s.x, topY + 10, bw, bh - 10);
+        ctx.fillStyle = '#3a3a5a';
+        for (let r = 0; r < 5; r++) {
+          for (let c = 0; c < 3; c++) {
+            ctx.fillRect(s.x + 2 + c * 27, topY + 14 + r * 20, 24, 16);
+          }
+        }
+        for (let i = 0; i < 5; i++) {
+          if (i % 2 === 0) {
+            ctx.fillStyle = '#4a4a6a';
+            ctx.fillRect(s.x + i * 18 - 2, topY, 14, 14);
+          }
+        }
+        ctx.fillStyle = '#5555aa';
+        ctx.fillRect(s.x + bw / 2 - 10, groundY - 35, 20, 35);
+        ctx.fillStyle = '#4444aa';
+        ctx.fillRect(s.x + bw / 2 - 14, groundY - 38, 28, 6);
+        ctx.fillStyle = sideColor;
+        ctx.fillRect(s.x + bw / 2 - 1, topY + 2, 2, 12);
+        ctx.fillStyle = '#ff4444';
+        ctx.fillRect(s.x + bw / 2 - 5, topY + 2, 8, 6);
+        break;
+
+      case 2: // Renaissance — fortified building with dome
+        ctx.fillStyle = '#7a6a50';
+        ctx.fillRect(s.x, topY + 15, bw, bh - 15);
+        ctx.fillStyle = '#9a8a60';
+        for (let c = 0; c < 4; c++) {
+          ctx.fillRect(s.x + 4 + c * 20, topY + 40, 14, bh - 55);
+        }
+        ctx.fillStyle = '#8B6914';
+        ctx.beginPath();
+        ctx.arc(s.x + bw / 2, topY + 15, 20, Math.PI, 0);
+        ctx.fill();
+        ctx.fillStyle = '#aa9a60';
+        ctx.beginPath();
+        ctx.arc(s.x + bw / 2, topY + 15, 14, Math.PI, 0);
+        ctx.fill();
+        ctx.fillStyle = '#6a5a40';
+        ctx.fillRect(s.x + bw / 2 - 8, groundY - 30, 16, 30);
+        ctx.fillStyle = '#8B6914';
+        ctx.fillRect(s.x + 2, groundY - 4, bw - 4, 4);
+        break;
+
+      case 3: // Modern Age — concrete bunker
+        ctx.fillStyle = '#4a4a4a';
+        ctx.fillRect(s.x - 4, topY + 20, bw + 8, bh - 20);
+        ctx.fillStyle = '#5a5a5a';
+        ctx.fillRect(s.x, topY + 10, bw, 14);
+        ctx.fillStyle = '#3a3a3a';
+        ctx.fillRect(s.x, topY + 10, bw, 3);
+        for (let i = 0; i < 3; i++) {
+          ctx.fillRect(s.x + 6 + i * 26, topY + 26, 18, 12);
+        }
+        ctx.fillStyle = '#666';
+        ctx.fillRect(s.x + bw / 2 - 8, groundY - 28, 16, 28);
+        ctx.fillStyle = '#555';
+        ctx.fillRect(s.x + bw / 2 - 10, groundY - 30, 20, 4);
+        ctx.fillStyle = '#4a5a2a';
+        ctx.fillRect(s.x - 8, groundY - 12, 12, 12);
+        ctx.fillRect(s.x + bw - 4, groundY - 12, 12, 12);
+        break;
+
+      case 4: // Future Age — tech tower with energy shield
+        ctx.fillStyle = '#1a2a4a';
+        ctx.fillRect(s.x - 2, topY, bw + 4, bh);
+        ctx.fillStyle = '#00e5ff';
+        ctx.shadowColor = '#00e5ff';
+        ctx.shadowBlur = 8;
+        for (let j = 0; j < 5; j++) {
+          ctx.fillRect(s.x + 4, topY + 10 + j * 20, bw - 8, 2);
+        }
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = '#2a3a5a';
+        ctx.fillRect(s.x + bw / 2 - 12, topY - 10, 24, 14);
+        ctx.fillStyle = '#ff00ff';
+        ctx.shadowColor = '#ff00ff';
+        ctx.shadowBlur = 6;
+        ctx.beginPath();
+        ctx.arc(s.x + bw / 2, topY - 12, 5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = '#00e5ff';
+        ctx.shadowColor = '#00e5ff';
+        ctx.shadowBlur = 10;
+        ctx.beginPath();
+        ctx.arc(s.x + bw / 2, groundY - 8, 30, Math.PI, 0);
+        ctx.globalAlpha = 0.15;
+        ctx.fill();
+        ctx.globalAlpha = 1;
+        ctx.shadowBlur = 0;
+        break;
+    }
+
+    ctx.fillStyle = sideColor;
     ctx.font = 'bold 14px sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText(base.side === 'player' ? 'YOUR BASE' : 'ENEMY BASE', s.x + base.width / 2, s.y - 8);
+    ctx.shadowColor = '#000';
+    ctx.shadowBlur = 4;
+    ctx.fillText(base.side === 'player' ? 'YOUR BASE' : 'ENEMY BASE', s.x + bw / 2, topY - 12);
+    ctx.shadowBlur = 0;
 
     const hpFrac = base.hp / base.maxHp;
-    const barW = base.width;
-    const barH = 8;
-    const barY = s.y - 16;
+    const barW = bw + 10;
+    const barH = 10;
+    const barX = s.x - 5;
+    const barY = topY - 34;
 
+    ctx.fillStyle = '#1a1a1a';
+    ctx.fillRect(barX - 1, barY - 1, barW + 2, barH + 2);
     ctx.fillStyle = '#333';
-    ctx.fillRect(s.x, barY, barW, barH);
+    ctx.fillRect(barX, barY, barW, barH);
     ctx.fillStyle = this.hpColor(hpFrac);
-    ctx.fillRect(s.x, barY, barW * hpFrac, barH);
+    ctx.fillRect(barX, barY, barW * hpFrac, barH);
     ctx.strokeStyle = '#000';
-    ctx.strokeRect(s.x, barY, barW, barH);
+    ctx.lineWidth = 1;
+    ctx.strokeRect(barX, barY, barW, barH);
 
     ctx.fillStyle = '#fff';
-    ctx.font = '10px sans-serif';
+    ctx.font = 'bold 9px sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText(`${Math.ceil(base.hp)}/${base.maxHp}`, s.x + barW / 2, barY + barH - 1);
+    ctx.shadowColor = '#000';
+    ctx.shadowBlur = 2;
+    ctx.fillText(`${Math.ceil(base.hp)}/${base.maxHp}`, barX + barW / 2, barY + barH - 2);
+    ctx.shadowBlur = 0;
   }
 
   drawUnit(unit, ageIndex) {
@@ -408,30 +543,92 @@ class Renderer {
       ctx.shadowBlur = 10;
     }
 
-    ctx.fillStyle = age.color;
-    ctx.fillRect(s.x - 8, s.y - 38, 16, 38);
-    ctx.fillRect(s.x - 12, s.y, 24, 8);
-
-    ctx.fillStyle = '#555';
-    ctx.fillRect(s.x - 10, s.y - 42, 20, 6);
-    ctx.fillStyle = '#444';
-    ctx.fillRect(s.x - 6, s.y - 44, 12, 4);
-
-    ctx.fillStyle = sideColor;
-    ctx.fillRect(s.x - 2, s.y - 52, 4, 10);
+    switch (ageIndex) {
+      case 0: // Stone — wooden post + rock
+        ctx.fillStyle = '#5a4a30';
+        ctx.fillRect(s.x - 4, s.y - 30, 8, 30);
+        ctx.fillStyle = '#7a6a5a';
+        ctx.beginPath();
+        ctx.arc(s.x, s.y - 34, 8, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#6a5a4a';
+        ctx.beginPath();
+        ctx.arc(s.x, s.y - 34, 5, 0, Math.PI * 2);
+        ctx.fill();
+        break;
+      case 1: // Castle — stone tower
+        ctx.fillStyle = '#4a4a6a';
+        ctx.fillRect(s.x - 7, s.y - 36, 14, 36);
+        ctx.fillStyle = '#3a3a5a';
+        for (let i = 0; i < 3; i++) {
+          ctx.fillRect(s.x - 8 + i * 6, s.y - 40, 5, 5);
+        }
+        ctx.fillStyle = sideColor;
+        ctx.fillRect(s.x - 1, s.y - 46, 2, 8);
+        ctx.fillStyle = '#ff4444';
+        ctx.fillRect(s.x - 4, s.y - 46, 6, 4);
+        break;
+      case 2: // Renaissance — cannon on mount
+        ctx.fillStyle = '#6a5a40';
+        ctx.fillRect(s.x - 6, s.y - 28, 12, 28);
+        ctx.fillStyle = '#888';
+        ctx.fillRect(s.x - 10, s.y - 32, 20, 6);
+        ctx.fillStyle = '#666';
+        ctx.fillRect(s.x + 8, s.y - 34, 12, 4);
+        ctx.fillStyle = '#444';
+        ctx.fillRect(s.x - 8, s.y - 2, 16, 4);
+        break;
+      case 3: // Modern — gun turret
+        ctx.fillStyle = '#4a5a2a';
+        ctx.fillRect(s.x - 8, s.y - 30, 16, 30);
+        ctx.fillStyle = '#556B2F';
+        ctx.fillRect(s.x - 6, s.y - 36, 12, 8);
+        ctx.fillStyle = '#333';
+        ctx.fillRect(s.x + 4, s.y - 38, 14, 3);
+        ctx.fillStyle = sideColor;
+        ctx.shadowColor = sideColor;
+        ctx.shadowBlur = 4;
+        ctx.fillRect(s.x - 2, s.y - 40, 4, 6);
+        ctx.shadowBlur = 0;
+        break;
+      case 4: // Future — energy tower
+        ctx.fillStyle = '#1a2a4a';
+        ctx.fillRect(s.x - 6, s.y - 36, 12, 36);
+        ctx.fillStyle = '#00e5ff';
+        ctx.shadowColor = '#00e5ff';
+        ctx.shadowBlur = 6;
+        for (let j = 0; j < 3; j++) {
+          ctx.fillRect(s.x - 4, s.y - 32 + j * 10, 8, 2);
+        }
+        ctx.fillRect(s.x - 2, s.y - 42, 4, 8);
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = '#ff00ff';
+        ctx.shadowColor = '#ff00ff';
+        ctx.shadowBlur = 4;
+        ctx.beginPath();
+        ctx.arc(s.x, s.y - 44, 3, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+        break;
+    }
 
     ctx.shadowBlur = 0;
 
     const hpFrac = turret.hp / turret.maxHp;
     if (hpFrac < 1) {
-      const barW = 20;
+      const barW = 22;
       const barH = 4;
       const barX = s.x - barW / 2;
-      const barY = s.y - 58;
+      const barY = s.y - 50;
+      ctx.fillStyle = '#1a1a1a';
+      ctx.fillRect(barX - 1, barY - 1, barW + 2, barH + 2);
       ctx.fillStyle = '#333';
       ctx.fillRect(barX, barY, barW, barH);
       ctx.fillStyle = this.hpColor(hpFrac);
       ctx.fillRect(barX, barY, barW * hpFrac, barH);
+      ctx.strokeStyle = '#000';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(barX, barY, barW, barH);
     }
   }
 
@@ -439,16 +636,40 @@ class Renderer {
     if (!proj.alive) return;
     const ctx = this.ctx;
     const s = this.worldToScreen(proj.x, proj.y);
-    ctx.fillStyle = proj.side === 'player' ? '#ffcc00' : '#ff4444';
+    const isPlayer = proj.side === 'player';
+
+    const speed = Math.sqrt(proj.vx * proj.vx + proj.vy * proj.vy);
+    const trailLen = Math.min(speed * 1.5, 12);
+
+    if (trailLen > 2) {
+      ctx.globalAlpha = 0.3;
+      ctx.strokeStyle = isPlayer ? '#ffcc00' : '#ff4444';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(s.x, s.y);
+      ctx.lineTo(s.x - (proj.vx / speed) * trailLen, s.y - (proj.vy / speed) * trailLen);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+    }
+
+    ctx.fillStyle = isPlayer ? '#ffcc00' : '#ff4444';
+    ctx.shadowColor = isPlayer ? '#ffcc00' : '#ff4444';
+    ctx.shadowBlur = 6;
     ctx.beginPath();
     ctx.arc(s.x, s.y, 3, 0, Math.PI * 2);
     ctx.fill();
+
+    ctx.fillStyle = '#fff';
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, 1.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
   }
 
   drawTurretSlots(game) {
     const ctx = this.ctx;
-    this.drawSlotRow(ctx, game.turretSlotPositions, game.playerSlotsBought, 'rgba(74,138,244,0.3)', 'rgba(255,255,255,0.15)');
-    this.drawSlotRow(ctx, game.enemyTurretSlotPositions, game.enemySlotsBought, 'rgba(244,74,74,0.3)', 'rgba(255,255,255,0.08)');
+    this.drawSlotRow(ctx, game.turretSlotPositions, game.playerSlotsBought, 'rgba(74,138,244,0.4)', 'rgba(255,255,255,0.08)');
+    this.drawSlotRow(ctx, game.enemyTurretSlotPositions, game.enemySlotsBought, 'rgba(244,74,74,0.4)', 'rgba(255,255,255,0.05)');
   }
 
   drawSlotRow(ctx, positions, slotsBought, activeColor, inactiveColor) {
@@ -456,8 +677,8 @@ class Renderer {
       const pos = positions[i];
       const s = this.worldToScreen(pos.x, pos.y);
       ctx.strokeStyle = i < slotsBought ? activeColor : inactiveColor;
-      ctx.lineWidth = 1;
-      ctx.setLineDash([4, 4]);
+      ctx.lineWidth = i < slotsBought ? 1.5 : 1;
+      ctx.setLineDash(i < slotsBought ? [6, 3] : [4, 4]);
       ctx.strokeRect(s.x - 14, s.y - 50, 28, 58);
       ctx.setLineDash([]);
     }
@@ -467,16 +688,34 @@ class Renderer {
     const ctx = this.ctx;
     const hudH = 100;
     const y = CONFIG.VIEWPORT.HEIGHT - hudH;
-    ctx.fillStyle = 'rgba(0,0,0,0.85)';
-    ctx.fillRect(0, y, CONFIG.VIEWPORT.WIDTH, hudH);
+    const W = CONFIG.VIEWPORT.WIDTH;
+
+    const grad = ctx.createLinearGradient(0, y, 0, y + hudH);
+    grad.addColorStop(0, 'rgba(10,10,20,0.92)');
+    grad.addColorStop(1, 'rgba(5,5,15,0.98)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, y, W, hudH);
+
+    ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(W, y);
+    ctx.stroke();
 
     ctx.fillStyle = '#ffd700';
     ctx.font = 'bold 14px sans-serif';
     ctx.textAlign = 'left';
+    ctx.shadowColor = '#ffd700';
+    ctx.shadowBlur = 4;
     ctx.fillText(`Gold: ${Math.floor(game.gold)}`, 10, y + 18);
+    ctx.shadowBlur = 0;
 
     ctx.fillStyle = '#00e5ff';
+    ctx.shadowColor = '#00e5ff';
+    ctx.shadowBlur = 4;
     ctx.fillText(`XP: ${Math.floor(game.xp)}`, 10, y + 36);
+    ctx.shadowBlur = 0;
 
     const age = CONFIG.AGES[game.currentAge];
     ctx.fillStyle = age.color;
@@ -495,15 +734,26 @@ class Renderer {
       const bx = unitStartX + i * 90;
       const canAfford = game.gold >= u.cost;
 
-      ctx.fillStyle = canAfford ? '#2a4a2a' : '#3a2a2a';
+      const btnGrad = ctx.createLinearGradient(bx, y + 5, bx, y + 33);
+      if (canAfford) {
+        btnGrad.addColorStop(0, '#2a5a3a');
+        btnGrad.addColorStop(1, '#1a3a2a');
+      } else {
+        btnGrad.addColorStop(0, '#3a2a2a');
+        btnGrad.addColorStop(1, '#2a1a1a');
+      }
+      ctx.fillStyle = btnGrad;
       ctx.fillRect(bx, y + 5, 80, 28);
-      ctx.strokeStyle = canAfford ? '#4a8' : '#844';
+      ctx.strokeStyle = canAfford ? '#4a8' : '#633';
+      ctx.lineWidth = 1;
       ctx.strokeRect(bx, y + 5, 80, 28);
 
-      ctx.fillStyle = canAfford ? '#fff' : '#888';
-      ctx.font = '10px sans-serif';
+      ctx.fillStyle = canAfford ? '#fff' : '#777';
+      ctx.font = 'bold 10px sans-serif';
       ctx.textAlign = 'center';
       ctx.fillText(u.name, bx + 40, y + 17);
+      ctx.fillStyle = canAfford ? '#ffd700' : '#666';
+      ctx.font = '9px sans-serif';
       ctx.fillText(`${u.cost}g`, bx + 40, y + 27);
     }
 
@@ -511,27 +761,49 @@ class Renderer {
     if (evoNeeded !== undefined) {
       const evoX = unitStartX + age.units.length * 90 + 10;
       const canEvolve = game.xp >= evoNeeded;
-      ctx.fillStyle = canEvolve ? '#4a2a6a' : '#2a2a3a';
+      const evoGrad = ctx.createLinearGradient(evoX, y + 5, evoX, y + 33);
+      if (canEvolve) {
+        evoGrad.addColorStop(0, '#5a2a8a');
+        evoGrad.addColorStop(1, '#3a1a5a');
+      } else {
+        evoGrad.addColorStop(0, '#2a2a3a');
+        evoGrad.addColorStop(1, '#1a1a2a');
+      }
+      ctx.fillStyle = evoGrad;
       ctx.fillRect(evoX, y + 5, 90, 28);
-      ctx.strokeStyle = canEvolve ? '#a4f' : '#448';
+      ctx.strokeStyle = canEvolve ? '#a4f' : '#336';
+      ctx.lineWidth = 1;
       ctx.strokeRect(evoX, y + 5, 90, 28);
-      ctx.fillStyle = canEvolve ? '#fff' : '#888';
-      ctx.font = '10px sans-serif';
+      ctx.fillStyle = canEvolve ? '#fff' : '#777';
+      ctx.font = 'bold 10px sans-serif';
       ctx.textAlign = 'center';
       ctx.fillText('Evolve', evoX + 45, y + 17);
+      ctx.fillStyle = canEvolve ? '#dd88ff' : '#555';
+      ctx.font = '9px sans-serif';
       ctx.fillText(`${evoNeeded} xp`, evoX + 45, y + 27);
     }
 
-    const spX = CONFIG.VIEWPORT.WIDTH - 110;
+    const spX = W - 110;
     const spReady = game.specialCooldown <= 0;
-    ctx.fillStyle = spReady ? '#6a2a0a' : '#2a2a2a';
+    const spGrad = ctx.createLinearGradient(spX, y + 5, spX, y + 33);
+    if (spReady) {
+      spGrad.addColorStop(0, '#8a4a0a');
+      spGrad.addColorStop(1, '#5a2a0a');
+    } else {
+      spGrad.addColorStop(0, '#2a2a2a');
+      spGrad.addColorStop(1, '#1a1a1a');
+    }
+    ctx.fillStyle = spGrad;
     ctx.fillRect(spX, y + 5, 100, 28);
-    ctx.strokeStyle = spReady ? '#fa4' : '#444';
+    ctx.strokeStyle = spReady ? '#fa4' : '#333';
+    ctx.lineWidth = 1;
     ctx.strokeRect(spX, y + 5, 100, 28);
-    ctx.fillStyle = spReady ? '#fff' : '#888';
-    ctx.font = '10px sans-serif';
+    ctx.fillStyle = spReady ? '#fff' : '#666';
+    ctx.font = 'bold 10px sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText(age.specialName, spX + 50, y + 17);
+    ctx.fillStyle = spReady ? '#ffd700' : '#555';
+    ctx.font = '9px sans-serif';
     ctx.fillText(spReady ? 'READY' : `${Math.ceil(game.specialCooldown)}s`, spX + 50, y + 27);
 
     this.drawPauseButton(game);
@@ -540,14 +812,20 @@ class Renderer {
 
     const slotsFull = game.playerSlotsBought >= CONFIG.TURRET_SLOTS;
     const canBuySlot = game.gold >= CONFIG.TURRET_SLOT_COST && !slotsFull;
-    ctx.fillStyle = canBuySlot ? '#2a3a4a' : '#2a2a2a';
+    const slotGrad = ctx.createLinearGradient(10, row2Y, 10, row2Y + 24);
+    slotGrad.addColorStop(0, canBuySlot ? '#2a4a5a' : '#2a2a2a');
+    slotGrad.addColorStop(1, canBuySlot ? '#1a3a4a' : '#1a1a1a');
+    ctx.fillStyle = slotGrad;
     ctx.fillRect(10, row2Y, 90, 24);
-    ctx.strokeStyle = canBuySlot ? '#48f' : '#444';
+    ctx.strokeStyle = canBuySlot ? '#48f' : '#333';
+    ctx.lineWidth = 1;
     ctx.strokeRect(10, row2Y, 90, 24);
-    ctx.fillStyle = canBuySlot ? '#fff' : '#888';
-    ctx.font = '9px sans-serif';
+    ctx.fillStyle = canBuySlot ? '#fff' : '#666';
+    ctx.font = 'bold 9px sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText(`Slot (${game.playerSlotsBought}/${CONFIG.TURRET_SLOTS})`, 55, row2Y + 10);
+    ctx.fillStyle = canBuySlot ? '#88ccff' : '#444';
+    ctx.font = '9px sans-serif';
     ctx.fillText(slotsFull ? 'FULL' : `${CONFIG.TURRET_SLOT_COST}g`, 55, row2Y + 20);
 
     const occupiedCount = game.turrets.filter(t => t.side === 'player').length;
@@ -555,16 +833,20 @@ class Renderer {
       const t = age.turrets[i];
       const bx = 110 + i * 100;
       const canPlace = game.gold >= t.cost && occupiedCount < game.playerSlotsBought;
-      const turretBtnColor = canPlace ? '#2a3a2a' : '#2a2a2a';
-
-      ctx.fillStyle = turretBtnColor;
+      const tGrad = ctx.createLinearGradient(bx, row2Y, bx, row2Y + 24);
+      tGrad.addColorStop(0, canPlace ? '#2a4a2a' : '#2a2a2a');
+      tGrad.addColorStop(1, canPlace ? '#1a3a1a' : '#1a1a1a');
+      ctx.fillStyle = tGrad;
       ctx.fillRect(bx, row2Y, 90, 24);
-      ctx.strokeStyle = canPlace ? '#8a4' : '#444';
+      ctx.strokeStyle = canPlace ? '#8a4' : '#333';
+      ctx.lineWidth = 1;
       ctx.strokeRect(bx, row2Y, 90, 24);
-      ctx.fillStyle = canPlace ? '#fff' : '#888';
-      ctx.font = '9px sans-serif';
+      ctx.fillStyle = canPlace ? '#fff' : '#666';
+      ctx.font = 'bold 9px sans-serif';
       ctx.textAlign = 'center';
       ctx.fillText(t.name, bx + 45, row2Y + 10);
+      ctx.fillStyle = canPlace ? '#aaddaa' : '#444';
+      ctx.font = '9px sans-serif';
       ctx.fillText(`${t.cost}g`, bx + 45, row2Y + 20);
     }
 
@@ -575,12 +857,13 @@ class Renderer {
       const bx = 110 + i * 100;
       const refund = Math.floor(t.cost * CONFIG.TURRET_REFUND_RATE);
 
-      ctx.fillStyle = '#4a2a2a';
+      ctx.fillStyle = '#3a1a1a';
       ctx.fillRect(bx, row3Y, 90, 18);
-      ctx.strokeStyle = '#a44';
+      ctx.strokeStyle = '#833';
+      ctx.lineWidth = 1;
       ctx.strokeRect(bx, row3Y, 90, 18);
       ctx.fillStyle = '#faa';
-      ctx.font = '8px sans-serif';
+      ctx.font = 'bold 8px sans-serif';
       ctx.textAlign = 'center';
       ctx.fillText(`Sell ${refund}g`, bx + 45, row3Y + 12);
     }
@@ -591,15 +874,15 @@ class Renderer {
     const bx = CONFIG.VIEWPORT.WIDTH - 30;
     const by = 22;
 
-    ctx.fillStyle = game.paused ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.08)';
+    ctx.fillStyle = game.paused ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.06)';
     ctx.fillRect(bx, by, 24, 24);
-    ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+    ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+    ctx.lineWidth = 1;
     ctx.strokeRect(bx, by, 24, 24);
 
     ctx.fillStyle = '#fff';
-    ctx.font = '14px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('||', bx + 12, by + 16);
+    ctx.fillRect(bx + 7, by + 6, 3, 12);
+    ctx.fillRect(bx + 14, by + 6, 3, 12);
   }
 
   drawPauseScreen(game) {

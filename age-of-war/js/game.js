@@ -259,19 +259,25 @@ class Game {
 
   drawGameOver() {
     const ctx = this.ctx;
-    ctx.fillStyle = 'rgba(0,0,0,0.7)';
+    ctx.fillStyle = 'rgba(0,0,0,0.75)';
     ctx.fillRect(0, 0, CONFIG.VIEWPORT.WIDTH, CONFIG.VIEWPORT.HEIGHT);
 
-    ctx.fillStyle = this.winner === 'player' ? CONFIG.COLORS.PLAYER : CONFIG.COLORS.ENEMY;
-    ctx.font = 'bold 48px sans-serif';
+    const isWin = this.winner === 'player';
+    const color = isWin ? CONFIG.COLORS.PLAYER : CONFIG.COLORS.ENEMY;
+
+    ctx.shadowColor = color;
+    ctx.shadowBlur = 30;
+    ctx.fillStyle = color;
+    ctx.font = 'bold 56px sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText(
-      this.winner === 'player' ? 'VICTORY!' : 'DEFEAT!',
+      isWin ? 'VICTORY!' : 'DEFEAT!',
       CONFIG.VIEWPORT.WIDTH / 2,
       CONFIG.VIEWPORT.HEIGHT / 2 - 30
     );
+    ctx.shadowBlur = 0;
 
-    ctx.fillStyle = '#aaa';
+    ctx.fillStyle = 'rgba(255,255,255,0.6)';
     ctx.font = '20px sans-serif';
     ctx.fillText('Click to Restart', CONFIG.VIEWPORT.WIDTH / 2, CONFIG.VIEWPORT.HEIGHT / 2 + 30);
   }
