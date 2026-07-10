@@ -558,71 +558,144 @@ class Renderer {
     ctx.fill();
   }
 
+  drawTurretSlots(game) {
+    const ctx = this.ctx;
+
+    for (let i = 0; i < CONFIG.TURRET_SLOTS; i++) {
+      const pos = game.turretSlotPositions[i];
+      const s = this.worldToScreen(pos.x - 15, pos.y - 25);
+
+      if (i < game.playerSlotsBought) {
+        ctx.strokeStyle = 'rgba(74,138,244,0.3)';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([4, 4]);
+        ctx.strokeRect(s.x, s.y, 30, 35);
+        ctx.setLineDash([]);
+      } else {
+        ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([4, 4]);
+        ctx.strokeRect(s.x, s.y, 30, 35);
+        ctx.setLineDash([]);
+      }
+    }
+
+    for (let i = 0; i < CONFIG.TURRET_SLOTS; i++) {
+      const pos = game.enemyTurretSlotPositions[i];
+      const s = this.worldToScreen(pos.x - 15, pos.y - 25);
+
+      if (i < game.enemySlotsBought) {
+        ctx.strokeStyle = 'rgba(244,74,74,0.3)';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([4, 4]);
+        ctx.strokeRect(s.x, s.y, 30, 35);
+        ctx.setLineDash([]);
+      } else {
+        ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([4, 4]);
+        ctx.strokeRect(s.x, s.y, 30, 35);
+        ctx.setLineDash([]);
+      }
+    }
+  }
+
   drawHUD(game) {
     const ctx = this.ctx;
-    const y = CONFIG.VIEWPORT.HEIGHT - 70;
-    ctx.fillStyle = 'rgba(0,0,0,0.8)';
-    ctx.fillRect(0, y, CONFIG.VIEWPORT.WIDTH, 70);
+    const hudH = 100;
+    const y = CONFIG.VIEWPORT.HEIGHT - hudH;
+    ctx.fillStyle = 'rgba(0,0,0,0.85)';
+    ctx.fillRect(0, y, CONFIG.VIEWPORT.WIDTH, hudH);
 
     ctx.fillStyle = '#ffd700';
     ctx.font = 'bold 14px sans-serif';
     ctx.textAlign = 'left';
-    ctx.fillText(`Gold: ${Math.floor(game.gold)}`, 10, y + 20);
+    ctx.fillText(`Gold: ${Math.floor(game.gold)}`, 10, y + 18);
 
     ctx.fillStyle = '#00e5ff';
-    ctx.fillText(`XP: ${Math.floor(game.xp)}`, 10, y + 40);
+    ctx.fillText(`XP: ${Math.floor(game.xp)}`, 10, y + 36);
 
     const age = CONFIG.AGES[game.currentAge];
     ctx.fillStyle = age.color;
     ctx.textAlign = 'center';
-    ctx.fillText(age.name, CONFIG.VIEWPORT.WIDTH / 2, y + 18);
+    ctx.font = 'bold 13px sans-serif';
+    ctx.fillText(age.name, 65, y + 54);
 
     const unitStartX = 120;
     for (let i = 0; i < age.units.length; i++) {
       const u = age.units[i];
-      const bx = unitStartX + i * 100;
+      const bx = unitStartX + i * 90;
       const canAfford = game.gold >= u.cost;
 
       ctx.fillStyle = canAfford ? '#2a4a2a' : '#3a2a2a';
-      ctx.fillRect(bx, y + 5, 85, 30);
+      ctx.fillRect(bx, y + 5, 80, 28);
       ctx.strokeStyle = canAfford ? '#4a8' : '#844';
-      ctx.strokeRect(bx, y + 5, 85, 30);
+      ctx.strokeRect(bx, y + 5, 80, 28);
 
       ctx.fillStyle = canAfford ? '#fff' : '#888';
-      ctx.font = '11px sans-serif';
+      ctx.font = '10px sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText(u.name, bx + 42, y + 18);
-      ctx.fillText(`${u.cost}g`, bx + 42, y + 30);
-
-      ctx.fillStyle = '#ffd700';
-      ctx.fillRect(bx, y + 38, 85 * (game.gold / u.cost > 1 ? 1 : game.gold / u.cost), 3);
+      ctx.fillText(u.name, bx + 40, y + 17);
+      ctx.fillText(`${u.cost}g`, bx + 40, y + 27);
     }
 
     const evoNeeded = CONFIG.EVOLVE_XP[game.currentAge + 1];
     if (evoNeeded !== undefined) {
-      const evoX = unitStartX + age.units.length * 100 + 20;
+      const evoX = unitStartX + age.units.length * 90 + 10;
       const canEvolve = game.xp >= evoNeeded;
       ctx.fillStyle = canEvolve ? '#4a2a6a' : '#2a2a3a';
-      ctx.fillRect(evoX, y + 5, 100, 30);
+      ctx.fillRect(evoX, y + 5, 90, 28);
       ctx.strokeStyle = canEvolve ? '#a4f' : '#448';
-      ctx.strokeRect(evoX, y + 5, 100, 30);
+      ctx.strokeRect(evoX, y + 5, 90, 28);
       ctx.fillStyle = canEvolve ? '#fff' : '#888';
-      ctx.font = '11px sans-serif';
+      ctx.font = '10px sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText(`Evolve`, evoX + 50, y + 18);
-      ctx.fillText(`${evoNeeded} xp`, evoX + 50, y + 30);
+      ctx.fillText('Evolve', evoX + 45, y + 17);
+      ctx.fillText(`${evoNeeded} xp`, evoX + 45, y + 27);
     }
 
-    const spX = CONFIG.VIEWPORT.WIDTH - 120;
+    const spX = CONFIG.VIEWPORT.WIDTH - 110;
     const spReady = game.specialCooldown <= 0;
     ctx.fillStyle = spReady ? '#6a2a0a' : '#2a2a2a';
-    ctx.fillRect(spX, y + 5, 110, 30);
+    ctx.fillRect(spX, y + 5, 100, 28);
     ctx.strokeStyle = spReady ? '#fa4' : '#444';
-    ctx.strokeRect(spX, y + 5, 110, 30);
+    ctx.strokeRect(spX, y + 5, 100, 28);
     ctx.fillStyle = spReady ? '#fff' : '#888';
-    ctx.font = '11px sans-serif';
+    ctx.font = '10px sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText(age.specialName, spX + 55, y + 18);
-    ctx.fillText(spReady ? 'READY' : `${Math.ceil(game.specialCooldown)}s`, spX + 55, y + 30);
+    ctx.fillText(age.specialName, spX + 50, y + 17);
+    ctx.fillText(spReady ? 'READY' : `${Math.ceil(game.specialCooldown)}s`, spX + 50, y + 27);
+
+    const row2Y = y + 38;
+
+    const slotsFull = game.playerSlotsBought >= CONFIG.TURRET_SLOTS;
+    const canBuySlot = game.gold >= CONFIG.TURRET_SLOT_COST && !slotsFull;
+    ctx.fillStyle = canBuySlot ? '#2a3a4a' : '#2a2a2a';
+    ctx.fillRect(10, row2Y, 90, 24);
+    ctx.strokeStyle = canBuySlot ? '#48f' : '#444';
+    ctx.strokeRect(10, row2Y, 90, 24);
+    ctx.fillStyle = canBuySlot ? '#fff' : '#888';
+    ctx.font = '9px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(`Slot (${game.playerSlotsBought}/${CONFIG.TURRET_SLOTS})`, 55, row2Y + 10);
+    ctx.fillText(slotsFull ? 'FULL' : `${CONFIG.TURRET_SLOT_COST}g`, 55, row2Y + 20);
+
+    const occupiedCount = game.turrets.filter(t => t.side === 'player').length;
+    for (let i = 0; i < age.turrets.length; i++) {
+      const t = age.turrets[i];
+      const bx = 110 + i * 100;
+      const canPlace = game.gold >= t.cost && occupiedCount < game.playerSlotsBought;
+      const turretBtnColor = canPlace ? '#2a3a2a' : '#2a2a2a';
+
+      ctx.fillStyle = turretBtnColor;
+      ctx.fillRect(bx, row2Y, 90, 24);
+      ctx.strokeStyle = canPlace ? '#8a4' : '#444';
+      ctx.strokeRect(bx, row2Y, 90, 24);
+      ctx.fillStyle = canPlace ? '#fff' : '#888';
+      ctx.font = '9px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(t.name, bx + 45, row2Y + 10);
+      ctx.fillText(`${t.cost}g`, bx + 45, row2Y + 20);
+    }
   }
 }
