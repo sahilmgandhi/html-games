@@ -796,8 +796,9 @@ class Renderer {
     const unitNames = age.units.map((u, i) => u.name.substring(0, 14));
     const spawnColW = bw;
     for (let i = 0; i < unitNames.length; i++) {
-      const rowX = i < 2 ? col1X : col2X;
-      const rowY = y + (i % 2) * 26;
+      const useTwoCols = unitNames.length <= 3;
+      const rowX = useTwoCols ? (i < 2 ? col1X : col2X) : col1X;
+      const rowY = useTwoCols ? y + (i % 2) * 26 : y + i * 26;
       ctx.fillStyle = '#2a3a2a';
       ctx.fillRect(rowX, rowY, spawnColW, bh);
       ctx.strokeStyle = '#4a8';
@@ -820,8 +821,10 @@ class Renderer {
     }
     if (unitNames.length <= 2) {
       y += 26;
-    } else {
+    } else if (unitNames.length <= 3) {
       y += 52;
+    } else {
+      y += 4 * 26;
     }
     y += 6;
 

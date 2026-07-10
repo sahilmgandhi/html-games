@@ -285,6 +285,7 @@ class Game {
     this.enemyAge = 0;
     this.specialCooldown = 0;
     this.enemySpecialCooldown = 0;
+    this.specialAnim = null;
     this.gameTime = 0;
     balanceTracker.reset();
     this.units = [];
@@ -302,6 +303,8 @@ class Game {
     this.renderer.camera.x = 0;
     this.difficulty = 0;
     this.ai = new AI(this);
+    this.audio.stopMusic();
+    this.audio.startMusic(0);
   }
 
   togglePause() {
@@ -351,7 +354,9 @@ class Game {
 
     const restartBtnY = panelY + 220;
     if (pointInRect(mx, my, cx - 110, restartBtnY, 220, 30)) {
-      this.togglePause();
+      this.paused = false;
+      this.audio.musicEnabled = this.musicWereOn;
+      this.audio.sfxEnabled = this.sfxWereOn;
       this.restart();
       return;
     }
@@ -442,8 +447,9 @@ class Game {
     y = panelY + 298;
     const age = CONFIG.AGES[this.currentAge];
     for (let i = 0; i < age.units.length; i++) {
-      const rowX = i < 2 ? col1X : col2X;
-      const rowY = y + (i % 2) * 26;
+      const useTwoCols = age.units.length <= 3;
+      const rowX = useTwoCols ? (i < 2 ? col1X : col2X) : col1X;
+      const rowY = useTwoCols ? y + (i % 2) * 26 : y + i * 26;
       if (pointInRect(mx, my, rowX, rowY, bw, bh)) {
         this.spawnUnit(i);
         return;
@@ -454,7 +460,7 @@ class Game {
       }
     }
 
-    y += age.units.length <= 2 ? 32 : 58;
+    y += age.units.length <= 2 ? 32 : age.units.length <= 3 ? 58 : 4 * 26 + 6;
     if (pointInRect(mx, my, col1X, y, bw, bh)) {
       this.gold = 100000;
       this.xp = 500000;
@@ -464,8 +470,10 @@ class Game {
     if (pointInRect(mx, my, col2X, y, bw, bh)) {
       this.gold = 100000;
       this.xp = 500000;
-      this.spawnEnemyUnit(3);
-      this.spawnEnemyUnit(4);
+      this.enemyAge = CONFIG.AGES.length - 1;
+      const lastIdx = CONFIG.AGES[this.enemyAge].units.length - 1;
+      this.spawnEnemyUnit(lastIdx);
+      if (lastIdx > 0) this.spawnEnemyUnit(lastIdx - 1);
       return;
     }
     y += 30;
@@ -768,7 +776,7 @@ class Game {
             if (p.y >= CONFIG.GROUND_Y) {
               p.exploded = true;
               this.particles.emit(
-                p.x + this.renderer.camera.x, CONFIG.GROUND_Y,
+                p.x, CONFIG.GROUND_Y,
                 '#ff6600', 15, 8, 0.6, 4
               );
             }
@@ -799,7 +807,7 @@ class Game {
               if (bomb.y >= CONFIG.GROUND_Y) {
                 bomb.exploded = true;
                 this.particles.emit(
-                  bomb.x + this.renderer.camera.x, CONFIG.GROUND_Y,
+                  bomb.x, CONFIG.GROUND_Y,
                   '#ff8800', 12, 6, 0.5, 3
                 );
               }
@@ -823,7 +831,7 @@ class Game {
             laser.sweepX = 0;
           }
         } else {
-          laser.sweepX += dt * 800;
+          laser.sweepX += dt * 3000;
           laser.width = 3 + Math.sin(anim.timer * 20) * 2;
           if (laser.sweepX > CONFIG.WORLD.WIDTH && !anim.damageDealt) {
             anim.damageDealt = true;

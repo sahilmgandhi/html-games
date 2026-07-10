@@ -95,7 +95,7 @@ function drawTitleBackground(t) {
   }
 
   ctx.fillStyle = '#2a2a1a';
-  ctx.fillRect(0, groundY, canvas.height - groundY, 10);
+  ctx.fillRect(0, groundY, canvas.width, 10);
 
   for (let i = 0; i < 8; i++) {
     const tx = (i * 160 + 30) % canvas.width;
