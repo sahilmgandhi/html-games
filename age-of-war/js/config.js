@@ -1,7 +1,7 @@
 const CONFIG = {
   VIEWPORT: { WIDTH: 1200, HEIGHT: 600 },
   WORLD: { WIDTH: 2400, HEIGHT: 600 },
-  GROUND_Y: 500,
+  GROUND_Y: 450,
 
   COLORS: {
     PLAYER: '#4a8af4',

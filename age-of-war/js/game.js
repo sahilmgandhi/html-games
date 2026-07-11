@@ -326,7 +326,7 @@ class Game {
     this.renderer.drawBase(this.enemyBase, this.enemyAge, enemyTurretCount);
 
     for (const t of this.turrets) {
-      this.renderer.drawTurret(t, t.side === 'player' ? this.currentAge : this.enemyAge);
+      this.renderer.drawTurret(t, t.side === 'player' ? this.currentAge : this.enemyAge, t.turretIndex);
     }
 
     for (const b of this.buildings) {

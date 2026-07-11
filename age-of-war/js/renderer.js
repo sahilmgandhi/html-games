@@ -61,7 +61,7 @@ class Renderer {
   buildTerrainCache(ageIndex) {
     const W = CONFIG.VIEWPORT.WIDTH;
     const H = CONFIG.VIEWPORT.HEIGHT;
-    const groundY = H - 100;
+    const groundY = CONFIG.GROUND_Y;
     const age = CONFIG.AGES[ageIndex];
 
     if (!this.terrainCache || this.terrainCacheWidth !== W) {
@@ -134,7 +134,7 @@ class Renderer {
     groundGrad.addColorStop(0.3, this.darkenColor(age.groundColor, 0.85));
     groundGrad.addColorStop(1, this.darkenColor(age.groundColor, 0.5));
     tc.fillStyle = groundGrad;
-    tc.fillRect(0, groundY, W, 100);
+    tc.fillRect(0, groundY, W, H - groundY);
 
     const highlight = this.lightenColor(age.groundColor, 1.2);
     const shadow = this.darkenColor(age.groundColor, 0.7);
@@ -187,7 +187,7 @@ class Renderer {
     const W = CONFIG.WORLD.WIDTH;
     const H = CONFIG.VIEWPORT.HEIGHT;
     const age = CONFIG.AGES[ageIndex];
-    const groundY = H - 100;
+    const groundY = CONFIG.GROUND_Y;
     const ctx = document.createElement('canvas').getContext('2d');
     ctx.canvas.width = W;
     ctx.canvas.height = H;
@@ -270,7 +270,7 @@ class Renderer {
     const camX = this.camera.x;
     const W = CONFIG.VIEWPORT.WIDTH;
     const H = CONFIG.VIEWPORT.HEIGHT;
-    const groundY = H - 100;
+    const groundY = CONFIG.GROUND_Y;
 
     if (this.terrainCacheAge !== ageIndex) {
       if (this.crossfadeTimer > 0 && this.terrainCache) {
@@ -1162,7 +1162,7 @@ class Renderer {
     }
   }
 
-  drawTurret(turret, ageIndex) {
+  drawTurret(turret, ageIndex, turretIndex) {
     if (!turret.alive) return;
     const ctx = this.ctx;
     const s = this.worldToScreen(turret.x, turret.y);
@@ -1175,127 +1175,194 @@ class Renderer {
     }
 
     ctx.lineJoin = 'round';
+    const ti = turretIndex | 0;
     switch (ageIndex) {
-      case 0: { // Stone — wooden post + rock
+      case 0: { // Stone Age — wood & rock
         const postG = ctx.createLinearGradient(s.x - 4, 0, s.x + 4, 0);
         postG.addColorStop(0, '#3f3320');
         postG.addColorStop(0.5, '#6a5638');
         postG.addColorStop(1, '#3f3320');
-        ctx.fillStyle = postG;
-        ctx.fillRect(s.x - 4, s.y - 30, 8, 30);
-        ctx.fillStyle = sideColor;
-        ctx.fillRect(s.x - 4, s.y - 14, 8, 3);
-        const rockG = ctx.createRadialGradient(s.x - 2, s.y - 36, 2, s.x, s.y - 34, 9);
-        rockG.addColorStop(0, '#9a8a78');
-        rockG.addColorStop(1, '#5a4f42');
-        ctx.fillStyle = rockG;
-        ctx.beginPath();
-        ctx.arc(s.x, s.y - 34, 8, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.strokeStyle = '#2a241b';
-        ctx.lineWidth = 1.5;
-        ctx.stroke();
-        break;
-      }
-      case 1: { // Castle — crenellated stone tower + team flag
-        const towG = ctx.createLinearGradient(s.x - 7, 0, s.x + 7, 0);
-        towG.addColorStop(0, '#2f2f47');
-        towG.addColorStop(0.5, '#5a5a7a');
-        towG.addColorStop(1, '#2f2f47');
-        ctx.fillStyle = towG;
-        this.roundRect(ctx, s.x - 7, s.y - 36, 14, 36, 2);
-        ctx.fill();
-        ctx.strokeStyle = '#1d1d2e';
-        ctx.lineWidth = 1;
-        ctx.stroke();
-        ctx.fillStyle = '#3a3a5a';
-        for (let i = 0; i < 3; i++) {
-          ctx.fillRect(s.x - 8 + i * 6, s.y - 41, 5, 5);
+        if (ti === 2) { // Primit. Catapult — A-frame + throwing arm
+          ctx.fillStyle = postG;
+          ctx.fillRect(s.x - 10, s.y - 14, 4, 14);
+          ctx.fillRect(s.x + 6, s.y - 14, 4, 14);
+          ctx.save();
+          ctx.translate(s.x, s.y - 22);
+          ctx.rotate(-0.5);
+          ctx.fillStyle = '#5a4a30';
+          ctx.fillRect(-2, -14, 4, 18);
+          ctx.fillStyle = '#8a7a5a';
+          ctx.beginPath();
+          ctx.arc(0, -14, 5, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+          ctx.fillStyle = sideColor;
+          ctx.fillRect(s.x - 10, s.y - 14, 20, 3);
+        } else if (ti === 1) { // Egg Automatic — post with two eggs
+          ctx.fillStyle = postG;
+          ctx.fillRect(s.x - 4, s.y - 28, 8, 28);
+          ctx.fillStyle = '#efe6d0';
+          ctx.beginPath(); ctx.arc(s.x - 3, s.y - 30, 4, 0, Math.PI * 2); ctx.fill();
+          ctx.beginPath(); ctx.arc(s.x + 3, s.y - 33, 4, 0, Math.PI * 2); ctx.fill();
+          ctx.strokeStyle = '#b8a988'; ctx.lineWidth = 1;
+          ctx.beginPath(); ctx.arc(s.x - 3, s.y - 30, 4, 0, Math.PI * 2); ctx.stroke();
+          ctx.beginPath(); ctx.arc(s.x + 3, s.y - 33, 4, 0, Math.PI * 2); ctx.stroke();
+          ctx.fillStyle = sideColor;
+          ctx.fillRect(s.x - 4, s.y - 14, 8, 3);
+        } else { // Rock Slingshot — forked slingshot + rock
+          ctx.fillStyle = postG;
+          ctx.fillRect(s.x - 4, s.y - 30, 8, 30);
+          ctx.fillStyle = '#5a4a30';
+          ctx.fillRect(s.x - 5, s.y - 34, 4, 14);
+          ctx.fillRect(s.x + 1, s.y - 34, 4, 14);
+          const rockG = ctx.createRadialGradient(s.x - 2, s.y - 36, 1, s.x, s.y - 34, 7);
+          rockG.addColorStop(0, '#9a8a78');
+          rockG.addColorStop(1, '#5a4f42');
+          ctx.fillStyle = rockG;
+          ctx.beginPath(); ctx.arc(s.x, s.y - 32, 7, 0, Math.PI * 2); ctx.fill();
+          ctx.strokeStyle = '#2a241b'; ctx.lineWidth = 1.5; ctx.stroke();
+          ctx.fillStyle = sideColor;
+          ctx.fillRect(s.x - 4, s.y - 14, 8, 3);
         }
-        ctx.strokeStyle = sideColor;
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.moveTo(s.x, s.y - 41);
-        ctx.lineTo(s.x, s.y - 52);
-        ctx.stroke();
-        ctx.fillStyle = sideColor;
-        ctx.beginPath();
-        ctx.moveTo(s.x, s.y - 52);
-        ctx.lineTo(s.x + 7, s.y - 49);
-        ctx.lineTo(s.x, s.y - 46);
-        ctx.fill();
         break;
       }
-      case 2: { // Renaissance — cannon on wooden mount
+      case 1: { // Castle Age — stone towers / catapults
+        if (ti === 2) { // Oil — cauldron on a stone post
+          ctx.fillStyle = '#3a3a52';
+          this.roundRect(ctx, s.x - 6, s.y - 24, 12, 24, 2);
+          ctx.fill();
+          ctx.fillStyle = '#2a2a3a';
+          ctx.fillRect(s.x - 8, s.y - 30, 16, 6);
+          ctx.fillStyle = '#1a1a1a';
+          ctx.beginPath(); ctx.ellipse(s.x, s.y - 28, 8, 5, 0, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = '#77aa33';
+          ctx.beginPath(); ctx.ellipse(s.x, s.y - 28, 6, 3.5, 0, 0, Math.PI * 2); ctx.fill();
+        } else { // Catapult (ti0) / Fire Catapult (ti1)
+          const woodG = ctx.createLinearGradient(s.x - 8, 0, s.x + 8, 0);
+          woodG.addColorStop(0, '#4a3a24');
+          woodG.addColorStop(0.5, '#6a5436');
+          woodG.addColorStop(1, '#4a3a24');
+          ctx.fillStyle = woodG;
+          this.roundRect(ctx, s.x - 8, s.y - 16, 16, 16, 2);
+          ctx.fill();
+          ctx.fillStyle = '#2a2a2a';
+          ctx.beginPath(); ctx.arc(s.x - 5, s.y - 2, 3, 0, Math.PI * 2); ctx.fill();
+          ctx.beginPath(); ctx.arc(s.x + 5, s.y - 2, 3, 0, Math.PI * 2); ctx.fill();
+          ctx.save();
+          ctx.translate(s.x, s.y - 16);
+          ctx.rotate(ti === 1 ? -0.7 : -0.4);
+          ctx.fillStyle = ti === 1 ? '#a5421f' : '#5a4a30';
+          ctx.fillRect(-2, -16, 4, 18);
+          ctx.fillStyle = ti === 1 ? '#ff7a2a' : '#8a7a5a';
+          ctx.beginPath(); ctx.arc(0, -16, 5, 0, Math.PI * 2); ctx.fill();
+          ctx.restore();
+        }
+        ctx.fillStyle = sideColor;
+        ctx.fillRect(s.x - 8, s.y - 8, 16, 3);
+        break;
+      }
+      case 2: { // Renaissance — bronze cannons
         const mountG = ctx.createLinearGradient(s.x - 6, 0, s.x + 6, 0);
         mountG.addColorStop(0, '#4a3c28');
         mountG.addColorStop(1, '#2f2618');
+        const mountH = (ti === 1 || ti === 2) ? 24 : 20;
         ctx.fillStyle = mountG;
-        this.roundRect(ctx, s.x - 6, s.y - 22, 12, 22, 2);
+        this.roundRect(ctx, s.x - 6, s.y - mountH, 12, mountH, 2);
         ctx.fill();
-        ctx.fillStyle = sideColor;
-        ctx.fillRect(s.x - 6, s.y - 14, 12, 3);
-        const barrelG = ctx.createLinearGradient(s.x - 10, 0, s.x + 10, 0);
+        const bw = ti === 1 ? 32 : ti === 2 ? 36 : 22;
+        const bh = ti === 2 ? 10 : 7;
+        const by = s.y - (ti === 1 ? 34 : 30);
+        const barrelG = ctx.createLinearGradient(s.x - bw, 0, s.x + bw, 0);
         barrelG.addColorStop(0, '#3a3a3a');
         barrelG.addColorStop(0.5, '#9a9a9a');
         barrelG.addColorStop(1, '#444');
         ctx.fillStyle = barrelG;
-        this.roundRect(ctx, s.x - 11, s.y - 33, 26, 7, 3);
+        this.roundRect(ctx, s.x - bw / 2, by - bh / 2, bw, bh, 3);
         ctx.fill();
         ctx.fillStyle = '#222';
-        ctx.beginPath();
-        ctx.arc(s.x + 14, s.y - 29.5, 3.5, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.strokeStyle = '#1a1a1a';
-        ctx.lineWidth = 1;
-        ctx.stroke();
+        ctx.beginPath(); ctx.arc(s.x + bw / 2 - 1, by, bh / 2, 0, Math.PI * 2); ctx.fill();
+        if (ti === 2) { // explosive accent shell
+          ctx.fillStyle = '#222';
+          ctx.beginPath(); ctx.arc(s.x - bw / 2 - 4, by, 5, 0, Math.PI * 2); ctx.fill();
+          ctx.strokeStyle = '#ff6600'; ctx.lineWidth = 1.5; ctx.stroke();
+        }
+        ctx.fillStyle = sideColor;
+        ctx.fillRect(s.x - 6, s.y - 12, 12, 3);
         break;
       }
-      case 3: { // Modern — gun turret
+      case 3: { // Modern — gun turrets
         const baseG = ctx.createLinearGradient(s.x - 8, 0, s.x + 8, 0);
         baseG.addColorStop(0, '#2f3a1a');
         baseG.addColorStop(0.5, '#5a6b30');
         baseG.addColorStop(1, '#2f3a1a');
         ctx.fillStyle = baseG;
-        ctx.fillRect(s.x - 8, s.y - 30, 16, 30);
+        this.roundRect(ctx, s.x - 8, s.y - 22, 16, 22, 2);
+        ctx.fill();
         ctx.fillStyle = '#3a4a1f';
-        this.roundRect(ctx, s.x - 7, s.y - 38, 14, 12, 3);
+        this.roundRect(ctx, s.x - 7, s.y - 30, 14, 10, 3);
         ctx.fill();
-        ctx.fillStyle = '#2a2a2a';
-        this.roundRect(ctx, s.x + 4, s.y - 40, 16, 4, 2);
-        ctx.fill();
+        ctx.strokeStyle = '#1c2410'; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.rect(s.x - 7, s.y - 30, 14, 10); ctx.stroke();
+        if (ti === 1) { // Rocket Turret — 3-tube pod
+          ctx.fillStyle = '#333';
+          for (let r = -1; r <= 1; r++) {
+            this.roundRect(ctx, s.x - 3 + r * 5, s.y - 42, 4, 14, 2);
+            ctx.fill();
+          }
+          ctx.fillStyle = '#5a5a5a';
+          for (let r = -1; r <= 1; r++) ctx.fillRect(s.x - 3 + r * 5, s.y - 30, 4, 2);
+        } else { // Single (ti0) / Double (ti2) barrels
+          ctx.fillStyle = '#2a2a2a';
+          const dy = s.y - 36;
+          if (ti === 2) {
+            this.roundRect(ctx, s.x - 5, dy, 4, 16, 1); ctx.fill();
+            this.roundRect(ctx, s.x + 1, dy, 4, 16, 1); ctx.fill();
+          } else {
+            this.roundRect(ctx, s.x - 2, dy, 4, 16, 1); ctx.fill();
+          }
+        }
         ctx.fillStyle = sideColor;
-        ctx.fillRect(s.x - 6, s.y - 24, 12, 3);
-        ctx.strokeStyle = '#1c2410';
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.rect(s.x - 7, s.y - 38, 14, 12);
-        ctx.stroke();
+        ctx.fillRect(s.x - 6, s.y - 16, 12, 3);
         break;
       }
-      case 4: { // Future — energy spire + glowing core
+      case 4: { // Future — energy towers
         const spireG = ctx.createLinearGradient(s.x - 6, 0, s.x + 6, 0);
         spireG.addColorStop(0, '#0f1c33');
         spireG.addColorStop(0.5, '#26405f');
         spireG.addColorStop(1, '#0f1c33');
         ctx.fillStyle = spireG;
-        this.roundRect(ctx, s.x - 6, s.y - 36, 12, 36, 3);
+        this.roundRect(ctx, s.x - 6, s.y - 34, 12, 34, 3);
         ctx.fill();
-        ctx.strokeStyle = sideColor;
-        ctx.lineWidth = 1.5;
-        ctx.stroke();
-        ctx.fillStyle = sideColor;
-        for (let j = 0; j < 3; j++) {
-          ctx.fillRect(s.x - 4, s.y - 32 + j * 10, 8, 2);
+        ctx.strokeStyle = sideColor; ctx.lineWidth = 1.5; ctx.stroke();
+        if (ti === 2) { // Ion Ray — large orb
+          const orbG = ctx.createRadialGradient(s.x, s.y - 40, 1, s.x, s.y - 40, 8);
+          orbG.addColorStop(0, '#ffffff');
+          orbG.addColorStop(0.5, sideColor);
+          orbG.addColorStop(1, 'rgba(0,0,0,0)');
+          ctx.fillStyle = orbG;
+          ctx.beginPath(); ctx.arc(s.x, s.y - 40, 8, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = sideColor;
+          ctx.fillRect(s.x - 1, s.y - 40, 2, 10);
+        } else if (ti === 1) { // Lazer Cannon — thin long barrel + glow tip
+          ctx.fillStyle = '#1a2a44';
+          this.roundRect(ctx, s.x - 2, s.y - 46, 4, 18, 2);
+          ctx.fill();
+          const tipG = ctx.createRadialGradient(s.x, s.y - 46, 1, s.x, s.y - 46, 5);
+          tipG.addColorStop(0, '#ffffff');
+          tipG.addColorStop(0.5, sideColor);
+          tipG.addColorStop(1, 'rgba(0,0,0,0)');
+          ctx.fillStyle = tipG;
+          ctx.beginPath(); ctx.arc(s.x, s.y - 46, 5, 0, Math.PI * 2); ctx.fill();
+        } else { // Titanium Shooter — single barrel + glow lines + orb
+          ctx.fillStyle = sideColor;
+          for (let j = 0; j < 3; j++) ctx.fillRect(s.x - 4, s.y - 30 + j * 9, 8, 2);
+          const orbG = ctx.createRadialGradient(s.x, s.y - 38, 1, s.x, s.y - 38, 5);
+          orbG.addColorStop(0, '#ffffff');
+          orbG.addColorStop(0.5, sideColor);
+          orbG.addColorStop(1, 'rgba(0,0,0,0)');
+          ctx.fillStyle = orbG;
+          ctx.beginPath(); ctx.arc(s.x, s.y - 38, 5, 0, Math.PI * 2); ctx.fill();
         }
-        const orbG = ctx.createRadialGradient(s.x, s.y - 42, 1, s.x, s.y - 42, 5);
-        orbG.addColorStop(0, '#ffffff');
-        orbG.addColorStop(0.5, sideColor);
-        orbG.addColorStop(1, 'rgba(0,0,0,0)');
-        ctx.fillStyle = orbG;
-        ctx.beginPath();
-        ctx.arc(s.x, s.y - 42, 5, 0, Math.PI * 2);
-        ctx.fill();
         break;
       }
     }
@@ -2469,7 +2536,7 @@ class Renderer {
     const camX = this.camera.x;
     const W = CONFIG.VIEWPORT.WIDTH;
     const H = CONFIG.VIEWPORT.HEIGHT;
-    const groundY = H - 100;
+    const groundY = CONFIG.GROUND_Y;
     const age = CONFIG.AGES[anim.ageIndex];
     const isPlayer = anim.side === 'player';
 
