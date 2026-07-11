@@ -65,6 +65,67 @@ class InputHandler {
     window.addEventListener('keyup', (e) => {
       this.keys[e.key] = false;
     });
+
+    let touchActive = false;
+    let touchMoved = false;
+    let touchStartX = 0;
+    let touchStartY = 0;
+    let cameraStartX = 0;
+
+    const touchToCanvas = (t) => {
+      const rect = canvas.getBoundingClientRect();
+      return {
+        x: (t.clientX - rect.left) * (canvas.width / rect.width),
+        y: (t.clientY - rect.top) * (canvas.height / rect.height),
+        clientX: t.clientX,
+        clientY: t.clientY,
+      };
+    };
+
+    canvas.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      const p = touchToCanvas(e.touches[0]);
+      this.mouseX = p.x;
+      this.mouseY = p.y;
+      this.renderer.mouseX = p.x;
+      this.renderer.mouseY = p.y;
+      touchActive = true;
+      touchMoved = false;
+      touchStartX = p.x;
+      touchStartY = p.y;
+      cameraStartX = this.renderer.camera.x;
+    }, { passive: false });
+
+    canvas.addEventListener('touchmove', (e) => {
+      e.preventDefault();
+      if (!touchActive) return;
+      const p = touchToCanvas(e.touches[0]);
+      this.mouseX = p.x;
+      this.mouseY = p.y;
+      this.renderer.mouseX = p.x;
+      this.renderer.mouseY = p.y;
+      if (Math.abs(p.x - touchStartX) > 8 || Math.abs(p.y - touchStartY) > 8) {
+        touchMoved = true;
+      }
+      const hudTop = CONFIG.VIEWPORT.HEIGHT - CONFIG.HUD_HEIGHT;
+      if (touchStartY < hudTop) {
+        this.renderer.scrollTo(cameraStartX - (p.x - touchStartX));
+      }
+    }, { passive: false });
+
+    canvas.addEventListener('touchend', (e) => {
+      e.preventDefault();
+      if (!touchActive) return;
+      touchActive = false;
+      if (!touchMoved) {
+        const t = e.changedTouches[0];
+        canvas.dispatchEvent(new MouseEvent('click', {
+          clientX: t.clientX,
+          clientY: t.clientY,
+          bubbles: true,
+        }));
+      }
+    }, { passive: false });
   }
 
   setGame(game) {

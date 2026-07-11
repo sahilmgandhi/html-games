@@ -4,6 +4,23 @@ const ctx = canvas.getContext('2d');
 canvas.width = CONFIG.VIEWPORT.WIDTH;
 canvas.height = CONFIG.VIEWPORT.HEIGHT;
 
+function fitCanvas() {
+  const aspect = CONFIG.VIEWPORT.WIDTH / CONFIG.VIEWPORT.HEIGHT;
+  let w = window.innerWidth;
+  let h = window.innerHeight;
+  if (w / h > aspect) {
+    w = h * aspect;
+  } else {
+    h = w / aspect;
+  }
+  canvas.style.width = Math.round(w) + 'px';
+  canvas.style.height = Math.round(h) + 'px';
+}
+
+window.addEventListener('resize', fitCanvas);
+window.addEventListener('orientationchange', fitCanvas);
+fitCanvas();
+
 let gameState = 'title';
 let game = null;
 let selectedDifficulty = 0;
@@ -184,7 +201,7 @@ function drawTitleScreen() {
   ctx.fillStyle = '#e6a817';
   ctx.font = 'bold 22px "Segoe UI", sans-serif';
   ctx.globalAlpha = pulse;
-  ctx.fillText('Click to Start', cx, 470);
+  ctx.fillText('Click or Tap to Start', cx, 470);
   ctx.globalAlpha = 1;
 
   const hintY = 490;
