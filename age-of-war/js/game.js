@@ -1,3 +1,5 @@
+const DEBUG_PASSWORD_HASH = '09a02186ab393005456913adb512de365a1f56681a045078e0a94d0ea03946b7';
+
 class Game {
   constructor(canvas, ctx) {
     this.canvas = canvas;
@@ -48,6 +50,9 @@ class Game {
     this.winner = null;
     this.paused = false;
     this.debugOpen = false;
+    this.debugPasswordOpen = false;
+    this.debugPasswordBuffer = '';
+    this.debugPasswordError = false;
     this.invincible = false;
     this.gameSpeed = 1;
     this.difficulty = 0;
@@ -73,6 +78,8 @@ class Game {
         this.restart();
       } else if (!this.started) {
         return;
+      } else if (this.debugPasswordOpen) {
+        this.handleDebugPasswordClick();
       } else if (this.debugOpen) {
         this.handleDebugClick();
       } else if (this.paused) {
@@ -97,6 +104,22 @@ class Game {
     });
 
     window.addEventListener('keydown', (e) => {
+      if (this.debugPasswordOpen) {
+        if (e.key === 'Escape') {
+          this.debugPasswordOpen = false;
+          this.debugPasswordBuffer = '';
+          this.debugPasswordError = false;
+        } else if (e.key === 'Enter') {
+          this.handleDebugPasswordClick();
+        } else if (e.key === 'Backspace') {
+          this.debugPasswordBuffer = this.debugPasswordBuffer.slice(0, -1);
+          this.debugPasswordError = false;
+        } else if (e.key.length === 1) {
+          this.debugPasswordBuffer += e.key;
+          this.debugPasswordError = false;
+        }
+        return;
+      }
       if (e.key === 'Escape' || e.key === 'p' || e.key === 'P') {
         if (this.gameOver) return;
         if (this.debugOpen) {
@@ -335,6 +358,8 @@ class Game {
 
     if (this.debugOpen) {
       this.renderer.drawDebugScreen(this);
+    } else if (this.debugPasswordOpen) {
+      this.renderer.drawPasswordPrompt(this);
     } else if (this.paused) {
       this.renderer.drawPauseScreen(this);
     }
@@ -447,6 +472,9 @@ class Game {
     this.enemyHeroCooldown = 0;
     this.paused = false;
     this.debugOpen = false;
+    this.debugPasswordOpen = false;
+    this.debugPasswordBuffer = '';
+    this.debugPasswordError = false;
     this.invincible = false;
     this.gameSpeed = 1;
     this.formationMode = 0;
@@ -506,7 +534,9 @@ class Game {
 
     const debugBtnY = panelY + 170;
     if (pointInRect(mx, my, cx - 110, debugBtnY, 220, 30)) {
-      this.debugOpen = true;
+      this.debugPasswordOpen = true;
+      this.debugPasswordBuffer = '';
+      this.debugPasswordError = false;
       return;
     }
 
@@ -522,6 +552,51 @@ class Game {
     const resumeBtnY = panelY + 280;
     if (pointInRect(mx, my, cx - 110, resumeBtnY, 220, 30)) {
       this.togglePause();
+      return;
+    }
+  }
+
+  async _hashPassword(input) {
+    const data = new TextEncoder().encode(input);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+  }
+
+  async handleDebugPasswordClick() {
+    const mx = this.input.mouseX;
+    const my = this.input.mouseY;
+    const cx = CONFIG.VIEWPORT.WIDTH / 2;
+    const cy = CONFIG.VIEWPORT.HEIGHT / 2;
+    const panelW = 300;
+    const panelH = 160;
+    const panelX = cx - panelW / 2;
+    const panelY = cy - panelH / 2;
+    const inputX = panelX + 20;
+    const inputY = panelY + 60;
+    const inputW = panelW - 40;
+    const submitBtnY = panelY + 100;
+
+    if (pointInRect(mx, my, inputX, inputY, inputW, 28)) return;
+
+    if (pointInRect(mx, my, cx - 60, submitBtnY, 120, 28)) {
+      const hash = await this._hashPassword(this.debugPasswordBuffer);
+      if (hash === DEBUG_PASSWORD_HASH) {
+        this.debugPasswordOpen = false;
+        this.debugPasswordBuffer = '';
+        this.debugPasswordError = false;
+        this.debugOpen = true;
+      } else {
+        this.debugPasswordError = true;
+        this.debugPasswordBuffer = '';
+      }
+      return;
+    }
+
+    const cancelBtnY = submitBtnY + 34;
+    if (pointInRect(mx, my, cx - 60, cancelBtnY, 120, 28)) {
+      this.debugPasswordOpen = false;
+      this.debugPasswordBuffer = '';
+      this.debugPasswordError = false;
       return;
     }
   }

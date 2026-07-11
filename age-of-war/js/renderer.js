@@ -2110,6 +2110,73 @@ class Renderer {
     ctx.fillText('Press ESC or P to resume', cx, panelY + 340);
   }
 
+  drawPasswordPrompt(game) {
+    const ctx = this.ctx;
+    const w = CONFIG.VIEWPORT.WIDTH;
+    const h = CONFIG.VIEWPORT.HEIGHT;
+    const cx = w / 2;
+    const cy = h / 2;
+    const panelW = 300;
+    const panelH = 160;
+    const panelX = cx - panelW / 2;
+    const panelY = cy - panelH / 2;
+
+    ctx.fillStyle = 'rgba(0,0,0,0.8)';
+    ctx.fillRect(0, 0, w, h);
+
+    ctx.fillStyle = '#1a1a2e';
+    ctx.fillRect(panelX, panelY, panelW, panelH);
+    ctx.strokeStyle = '#8a6aaa';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(panelX, panelY, panelW, panelH);
+
+    ctx.fillStyle = '#d4aaff';
+    ctx.font = 'bold 16px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Debug Access', cx, panelY + 28);
+
+    const inputX = panelX + 20;
+    const inputY = panelY + 60;
+    const inputW = panelW - 40;
+    const inputH = 28;
+
+    ctx.fillStyle = '#0a0a1a';
+    ctx.fillRect(inputX, inputY, inputW, inputH);
+    ctx.strokeStyle = game.debugPasswordError ? '#f44' : '#555';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(inputX, inputY, inputW, inputH);
+
+    ctx.fillStyle = '#fff';
+    ctx.font = '14px monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText('*'.repeat(game.debugPasswordBuffer.length), inputX + 8, inputY + 19);
+
+    if (game.debugPasswordError) {
+      ctx.fillStyle = '#f44';
+      ctx.font = '11px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('Incorrect password', cx, inputY + inputH + 16);
+    }
+
+    const submitBtnY = panelY + 100;
+    ctx.fillStyle = '#2a4a2a';
+    ctx.fillRect(cx - 60, submitBtnY, 120, 28);
+    ctx.strokeStyle = '#4a8';
+    ctx.strokeRect(cx - 60, submitBtnY, 120, 28);
+    ctx.fillStyle = '#fff';
+    ctx.font = '12px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Submit', cx, submitBtnY + 18);
+
+    const cancelBtnY = submitBtnY + 34;
+    ctx.fillStyle = '#4a2a2a';
+    ctx.fillRect(cx - 60, cancelBtnY, 120, 28);
+    ctx.strokeStyle = '#a44';
+    ctx.strokeRect(cx - 60, cancelBtnY, 120, 28);
+    ctx.fillStyle = '#fff';
+    ctx.fillText('Cancel', cx, cancelBtnY + 18);
+  }
+
   drawDebugScreen(game) {
     const ctx = this.ctx;
     const w = CONFIG.VIEWPORT.WIDTH;
