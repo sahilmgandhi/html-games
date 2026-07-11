@@ -89,6 +89,7 @@ class Base {
     this.side = side;
     this.hp = CONFIG.BASE_HP;
     this.maxHp = CONFIG.BASE_HP;
+    this.displayHp = this.maxHp;
     this.width = CONFIG.BASE_WIDTH;
     this.height = CONFIG.BASE_HEIGHT;
   }
@@ -140,6 +141,10 @@ class Unit {
     this.attackCooldown = 0;
     this.alive = true;
     this.hitFlash = 0;
+    this.dying = false;
+    this.deathTimer = 0;
+    this.walkPhase = 0;
+    this.displayHp = this.maxHp;
   }
 
   getTarget(enemyUnits, enemyTurrets, enemyBase, spatialHash) {
@@ -195,6 +200,14 @@ class Unit {
   update(dt, allUnits, allTurrets, enemyBase, projectilePool, spatialHash) {
     if (!this.alive) return null;
 
+    if (this.dying) {
+      this.deathTimer += dt;
+      if (this.deathTimer > 0.35) {
+        this.alive = false;
+      }
+      return null;
+    }
+
     if (this.hitFlash > 0) this.hitFlash -= dt;
     if (this.attackCooldown > 0) this.attackCooldown -= dt;
 
@@ -226,7 +239,9 @@ class Unit {
     } else {
       const dir = Math.sign(target.x - this.x);
       this.x += this.speed * dir * dt * 60;
+      this.walkPhase += dt * this.speed * 4;
     }
+    this.displayHp += (this.hp - this.displayHp) * Math.min(1, dt * 8);
     return null;
   }
 
@@ -249,8 +264,8 @@ class Unit {
   takeDamage(amount) {
     this.hp = Math.max(0, this.hp - amount);
     this.hitFlash = 0.1;
-    if (this.hp <= 0) {
-      this.alive = false;
+    if (this.hp <= 0 && !this.dying) {
+      this.dying = true;
     }
   }
 }

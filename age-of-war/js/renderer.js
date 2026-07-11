@@ -356,7 +356,8 @@ class Renderer {
 
     switch (ageIndex) {
       case 0: {
-        const ashCount = 12;
+        const intensity = 0.6 + ageIndex * 0.18;
+        const ashCount = Math.round(12 * intensity);
         for (let i = 0; i < ashCount; i++) {
           const ax = ((i * 187 + now * 0.015 * (0.3 + (i % 3) * 0.2)) % (W + 100)) - 50;
           const ay = ((now * 0.02 * (0.4 + (i % 4) * 0.15) + i * 73) % (groundY - 50)) + 50;
@@ -367,7 +368,8 @@ class Renderer {
         break;
       }
       case 1: {
-        const fogParts = 6;
+        const intensity = 0.6 + ageIndex * 0.18;
+        const fogParts = Math.round(6 * intensity);
         for (let i = 0; i < fogParts; i++) {
           const fx = ((i * 350 + now * 0.01 * (0.3 + i * 0.1)) % (W + 400)) - 200;
           const fy = groundY - 30 + Math.sin(now / 3000 + i * 1.5) * 15;
@@ -380,7 +382,8 @@ class Renderer {
         break;
       }
       case 2: {
-        const smokeCount = 5;
+        const intensity = 0.6 + ageIndex * 0.18;
+        const smokeCount = Math.round(5 * intensity);
         for (let i = 0; i < smokeCount; i++) {
           const sx = ((i * 400 + 200 - camX * 0.1) % (W + 300)) - 150;
           const progress = (now / 4000 + i * 0.3) % 1;
@@ -394,7 +397,8 @@ class Renderer {
         break;
       }
       case 3: {
-        const rainCount = 30;
+        const intensity = 0.6 + ageIndex * 0.18;
+        const rainCount = Math.round(30 * intensity);
         ctx.strokeStyle = 'rgba(150,180,200,0.12)';
         ctx.lineWidth = 1;
         for (let i = 0; i < rainCount; i++) {
@@ -408,7 +412,8 @@ class Renderer {
         break;
       }
       case 4: {
-        const dataCount = 15;
+        const intensity = 0.6 + ageIndex * 0.18;
+        const dataCount = Math.round(15 * intensity);
         for (let i = 0; i < dataCount; i++) {
           const dx = ((i * 137 + 20) % W);
           const dy = ((now * 0.03 * (0.2 + (i % 3) * 0.1) + i * 89) % (groundY - 30)) + 20;
@@ -637,8 +642,9 @@ class Renderer {
     return `rgb(${r},${g},30)`;
   }
 
-  drawBase(base, ageIndex) {
+  drawBase(base, ageIndex, occupied) {
     const ctx = this.ctx;
+    occupied = occupied || 0;
     const bw = base.width;
     const bh = base.height;
     const s = this.worldToScreen(base.x - bw / 2, base.y);
@@ -987,7 +993,39 @@ class Renderer {
       }
     }
 
-    const hpFrac = base.hp / base.maxHp;
+    // ── Growing turret tower (scales with occupied turret slots) ──
+    if (occupied > 0) {
+      const dir = base.side === 'player' ? 1 : -1;
+      const ts = this.worldToScreen(base.x + dir * CONFIG.TURRET_SLOT_OFFSET_X, base.y);
+      const tx = ts.x;
+      const pw = 28;
+      const topSlot = groundY - (occupied - 1) * CONFIG.TURRET_SLOT_SPACING;
+      const towerTop = topSlot - 14;
+      const tg = ctx.createLinearGradient(tx - pw / 2, towerTop, tx + pw / 2, groundY);
+      tg.addColorStop(0, age.color);
+      tg.addColorStop(1, '#2a2a3a');
+      ctx.fillStyle = tg;
+      ctx.fillRect(tx - pw / 2, towerTop, pw, groundY - towerTop);
+      ctx.fillStyle = 'rgba(0,0,0,0.25)';
+      for (let yy = towerTop + 6; yy < groundY; yy += 14) {
+        ctx.fillRect(tx - pw / 2, yy, pw, 2);
+      }
+      for (let i = 0; i < occupied; i++) {
+        const ly = groundY - i * CONFIG.TURRET_SLOT_SPACING;
+        ctx.fillStyle = age.color;
+        ctx.fillRect(tx - pw / 2 - 5, ly - 4, pw + 10, 6);
+        ctx.fillStyle = 'rgba(255,255,255,0.12)';
+        ctx.fillRect(tx - pw / 2 - 5, ly - 4, pw + 10, 2);
+      }
+      ctx.fillStyle = sideColor;
+      ctx.globalAlpha = 0.8;
+      ctx.beginPath();
+      ctx.arc(tx, towerTop - 4, 5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = 1;
+    }
+
+    const hpFrac = base.displayHp / base.maxHp;
     const barW = bw + 14;
     const barH = 10;
     const barX = s.x - 7;
@@ -1025,12 +1063,21 @@ class Renderer {
     const sx = s.x;
     const sy = s.y;
     if (sx < -100 || sx > CONFIG.VIEWPORT.WIDTH + 100) return;
-    const bob = unit.attackCooldown > 0 ? 0 : Math.sin(Date.now() / 300 + unit.x * 0.1) * 2;
+    let unitAlpha = 1;
+    let unitScale = 1;
+    if (unit.dying) {
+      const dp = Math.min(1, unit.deathTimer / 0.35);
+      unitAlpha = 1 - dp;
+      unitScale = 1 - dp * 0.5;
+    }
+    const bob = unit.attackCooldown > 0 ? 0 : Math.sin(unit.walkPhase) * 2;
     const lean = unit.attackCooldown > 0 ? 0.05 * (unit.side === 'player' ? 1 : -1) : 0;
 
     ctx.save();
     ctx.translate(s.x, s.y + bob);
+    ctx.scale(unitScale, unitScale);
     ctx.rotate(lean);
+    ctx.globalAlpha = unitAlpha;
 
     if (unit.hitFlash > 0) {
       ctx.globalAlpha = 0.5 + Math.sin(unit.hitFlash * 20) * 0.3;
@@ -1070,7 +1117,7 @@ class Renderer {
       ctx.restore();
     }
 
-    const hpFrac = unit.hp / unit.maxHp;
+    const hpFrac = unit.displayHp / unit.maxHp;
     if (hpFrac < 1) {
       const barW = 36;
       const barH = 5;
@@ -1897,10 +1944,40 @@ class Renderer {
       ctx.fillText(`Sell ${refund}g`, bx + 44, row3Y + 12);
     }
 
+    this._drawHudSeparators(ctx, game, W, y, unitStartX, age, spX, spW, buildingStartX, buildingBtnW, playerTurrets);
+
     this.drawTooltip(ctx);
 
     ctx.restore();
     this.drawPauseButton(game);
+  }
+
+  _drawHudSeparators(ctx, game, W, y, unitStartX, age, spX, spW, buildingStartX, buildingBtnW, playerTurrets) {
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255,255,255,0.07)';
+    ctx.lineWidth = 1;
+
+    ctx.beginPath();
+    ctx.moveTo(10, y + 42); ctx.lineTo(W - 10, y + 42);
+    ctx.moveTo(10, y + 68); ctx.lineTo(W - 10, y + 68);
+    ctx.moveTo(160, y + 4); ctx.lineTo(160, y + 40);
+    ctx.moveTo(694, y + 4); ctx.lineTo(694, y + 40);
+    ctx.moveTo(962, y + 4); ctx.lineTo(962, y + 40);
+    ctx.moveTo(94, y + 42); ctx.lineTo(94, y + 66);
+    ctx.stroke();
+
+    ctx.fillStyle = 'rgba(255,255,255,0.28)';
+    ctx.font = '7px sans-serif';
+    ctx.textAlign = 'center';
+    const unitGroupMid = unitStartX + (age.units.length * 86) / 2 - 6;
+    ctx.fillText('UNITS', unitGroupMid, y + 2);
+    ctx.fillText('SPECIAL', spX + spW / 2, y + 2);
+    ctx.fillText('TURRETS', 100 + (age.turrets.length * 96) / 2 - 4, y + 40);
+    ctx.fillText('BUILD', buildingStartX + (CONFIG.BUILDINGS.length * (buildingBtnW + 8)) / 2 - 4, y + 40);
+    if (playerTurrets.length > 0) {
+      ctx.fillText('SELL', 100 + (playerTurrets.length * 96) / 2 - 4, y + 66);
+    }
+    ctx.restore();
   }
 
   drawTooltip(ctx) {

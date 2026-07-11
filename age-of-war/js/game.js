@@ -54,6 +54,11 @@ class Game {
     this.started = false;
     this.flashTimer = 0;
     this.gameTime = 0;
+    this.baseDamageFlash = 0;
+    this.lowQuality = false;
+    this.fpsAvg = 60;
+    this.lastFrameTime = performance.now();
+    this._playerBaseHpPrev = CONFIG.BASE_HP;
     this.formationMode = 0;
     this._lastAchievementId = null;
     this.totalSpawned = 0;
@@ -115,6 +120,12 @@ class Game {
 
   loop(timestamp) {
     if (!this.running) return;
+
+    const now = performance.now();
+    const frameDelta = now - this.lastFrameTime;
+    this.lastFrameTime = now;
+    if (frameDelta > 0) this.fpsAvg += ((1000 / frameDelta) - this.fpsAvg) * 0.1;
+    this.lowQuality = this.fpsAvg < 45;
 
     const dt = Math.min((timestamp - this.lastTime) / 1000, 0.05);
     this.lastTime = timestamp;
@@ -203,7 +214,7 @@ class Game {
       for (let i = 0; i < this.units.length; i++) {
         const u = this.units[i];
         if (!u.alive) {
-          this.particles.emitBurst(u.x, u.y, u.side === 'player' ? CONFIG.COLORS.PLAYER : CONFIG.COLORS.ENEMY, 12, 4, 0.6, 3);
+          this.particles.emitBurst(u.x, u.y, u.side === 'player' ? CONFIG.COLORS.PLAYER : CONFIG.COLORS.ENEMY, this.lowQuality ? 5 : 12, 4, 0.6, 3);
           this.particles.emitGoldNumber(u.x, u.y, u.goldReward);
 
           if (u.side === 'player') {
@@ -261,6 +272,14 @@ class Game {
     this.renderer.updateShake(dt);
     this.renderer.updateCrossfade(dt);
 
+    this.playerBase.displayHp += (this.playerBase.hp - this.playerBase.displayHp) * Math.min(1, dt * 8);
+    this.enemyBase.displayHp += (this.enemyBase.hp - this.enemyBase.displayHp) * Math.min(1, dt * 8);
+    if (this.playerBase.hp < this._playerBaseHpPrev) {
+      this.baseDamageFlash = 0.35;
+    }
+    this._playerBaseHpPrev = this.playerBase.hp;
+    if (this.baseDamageFlash > 0) this.baseDamageFlash = Math.max(0, this.baseDamageFlash - dt);
+
     if (this.flashTimer > 0) this.flashTimer = Math.max(0, this.flashTimer - dt);
 
     if (this.playerBase.hp < this.playerLowestHp) this.playerLowestHp = this.playerBase.hp;
@@ -278,8 +297,10 @@ class Game {
 
     this.renderer.drawTurretSlots(this);
 
-    this.renderer.drawBase(this.playerBase, this.currentAge);
-    this.renderer.drawBase(this.enemyBase, this.enemyAge);
+    const playerTurretCount = this.turrets.filter(t => t.side === 'player' && t.alive).length;
+    const enemyTurretCount = this.turrets.filter(t => t.side === 'enemy' && t.alive).length;
+    this.renderer.drawBase(this.playerBase, this.currentAge, playerTurretCount);
+    this.renderer.drawBase(this.enemyBase, this.enemyAge, enemyTurretCount);
 
     for (const t of this.turrets) {
       this.renderer.drawTurret(t, t.side === 'player' ? this.currentAge : this.enemyAge);
@@ -320,6 +341,11 @@ class Game {
 
     if (this.flashTimer > 0) {
       ctx.fillStyle = `rgba(255,255,255,${this.flashTimer * 0.4})`;
+      ctx.fillRect(0, 0, CONFIG.VIEWPORT.WIDTH, CONFIG.VIEWPORT.HEIGHT);
+    }
+
+    if (this.baseDamageFlash > 0) {
+      ctx.fillStyle = `rgba(255,40,40,${this.baseDamageFlash * 0.35})`;
       ctx.fillRect(0, 0, CONFIG.VIEWPORT.WIDTH, CONFIG.VIEWPORT.HEIGHT);
     }
   }
@@ -426,6 +452,10 @@ class Game {
     this.formationMode = 0;
     this.totalSpawned = 0;
     this.playerLowestHp = CONFIG.BASE_HP;
+    this.baseDamageFlash = 0;
+    this.lowQuality = false;
+    this.fpsAvg = 60;
+    this._playerBaseHpPrev = CONFIG.BASE_HP;
     this.gameOver = false;
     this.winner = null;
     this.renderer.camera.x = 0;

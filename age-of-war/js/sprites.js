@@ -3,6 +3,7 @@ class SpriteManager {
     this.cache = {};
     this.size = 64;
     this.baseSize = 48;
+    this.renderSize = 112;
   }
 
   getSprite(type, ageIndex) {
@@ -21,11 +22,12 @@ class SpriteManager {
     }
 
     const c = document.createElement('canvas');
-    c.width = this.size;
-    c.height = this.size;
+    c.width = this.renderSize;
+    c.height = this.renderSize;
     const ctx = c.getContext('2d');
-    ctx.imageSmoothingEnabled = false;
-    ctx.drawImage(base, 0, 0, this.baseSize, this.baseSize, 0, 0, this.size, this.size);
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingEnabled = true;
+    ctx.drawImage(base, 0, 0, this.baseSize, this.baseSize, 0, 0, this.renderSize, this.renderSize);
 
     this.cache[key] = c;
     return c;
@@ -39,7 +41,10 @@ class SpriteManager {
     if (facing === -1) {
       ctx.scale(-1, 1);
     }
+    const prevSmoothing = ctx.imageSmoothingEnabled;
+    ctx.imageSmoothingEnabled = true;
     ctx.drawImage(sprite, -s / 2, -s, s, s);
+    ctx.imageSmoothingEnabled = prevSmoothing;
     if (side) {
       ctx.globalAlpha = 0.08;
       ctx.fillStyle = side === 'player' ? CONFIG.COLORS.PLAYER : CONFIG.COLORS.ENEMY;
@@ -52,6 +57,15 @@ class SpriteManager {
   rect(ctx, x, y, w, h, color) {
     ctx.fillStyle = color;
     ctx.fillRect(x, y, w, h);
+    const topH = Math.max(1, Math.round(h * 0.28));
+    const botH = Math.max(1, Math.round(h * 0.22));
+    ctx.globalAlpha = 0.18;
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(x, y, w, topH);
+    ctx.globalAlpha = 0.22;
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(x, y + h - botH, w, botH);
+    ctx.globalAlpha = 1;
   }
 
   // ── Melee units (5 ages) ──
