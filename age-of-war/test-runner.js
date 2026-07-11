@@ -17,12 +17,14 @@ global.document = {
             lineCap: 'butt', lineJoin: 'miter', miterLimit: 10,
             shadowBlur: 0, shadowColor: '', shadowOffsetX: 0, shadowOffsetY: 0,
             globalAlpha: 1, font: '', textAlign: 'left', textBaseline: 'alphabetic',
-            save() {}, restore() {}, beginPath() {}, closePath() {},
-            moveTo() {}, lineTo() {}, fill() {}, stroke() {},
+            save() {}, restore() {},             beginPath() {}, closePath() {}, clip() {},
+            moveTo() {}, lineTo() {}, arcTo() {}, quadraticCurveTo() {}, rect() {}, fill() {}, stroke() {},
             arc() {}, ellipse() {}, fillRect() {}, strokeRect() {}, clearRect() {},
             fillText() {}, strokeText() {},
             measureText(t) { return { width: t.length * 6 }; },
             createLinearGradient() { return { addColorStop() {} }; },
+            createRadialGradient() { return { addColorStop() {} }; },
+            arcTo() {}, quadraticCurveTo() {}, clip() {}, rect() {},
             setLineDash() {}, translate() {}, rotate() {}, scale() {}, drawImage() {},
           };
         },
@@ -39,7 +41,7 @@ global.performance = { now: () => Date.now() };
 const jsDir = path.join(__dirname, 'js');
 const files = [
   'config.js', 'utils.js', 'sprites.js', 'entities.js', 'renderer.js',
-  'input.js', 'ai.js', 'particles.js', 'audio.js', 'minimap.js', 'balance.js', 'game.js',
+  'input.js', 'ai.js', 'particles.js', 'audio.js', 'minimap.js', 'achievements.js', 'balance.js', 'game.js',
 ];
 
 for (const f of files) {
@@ -50,6 +52,8 @@ for (const f of files) {
     console.error(`Error loading ${f}:`, e.message);
   }
 }
+
+global.spriteManager = new SpriteManager();
 
 let allResults = [];
 
@@ -331,6 +335,219 @@ function runTests() {
     g.ai = { update() {} };
     runFrames(g, 3);
     assert('gameTime advances', g.gameTime > 0, `gameTime=${g.gameTime}`);
+  }
+
+  console.log('\n--- CONFIG Invariants ---');
+  {
+    assert('5 ages defined', CONFIG.AGES.length === 5);
+    assert('EVOLVE_XP has 5 entries', CONFIG.EVOLVE_XP.length === 5);
+    assert('TURRET_SLOTS is 4', CONFIG.TURRET_SLOTS === 4);
+    assert('TURRET_REFUND_RATE is 0.5', CONFIG.TURRET_REFUND_RATE === 0.5);
+    assert('SPECIAL_COOLDOWN is 40', CONFIG.SPECIAL_COOLDOWN === 40);
+    assert('HUD_HEIGHT is 145', CONFIG.HUD_HEIGHT === 145);
+    assert('Each age has 3 turrets', CONFIG.AGES.every(a => a.turrets.length === 3));
+    assert('Special damage scales 250->1000', CONFIG.AGES.map(a => a.specialDamage).join(',') === '250,400,550,700,1000');
+  }
+
+  console.log('\n--- Evolution Heals Base ---');
+  {
+    const g = makeGame();
+    g.playerBase.hp = 2500;
+    g.xp = 5000;
+    g.evolve();
+    assert('Base healed by EVOLVE_HEAL (25%)', g.playerBase.hp > 2500, `hp=${g.playerBase.hp}`);
+    assert('Heal amount is 1250', g.playerBase.hp === 3750, `hp=${g.playerBase.hp}`);
+  }
+
+  console.log('\n--- Special Damage by Age ---');
+  {
+    const g = makeGame();
+    g.ai = { update() {} };
+    g.currentAge = 2; // Renaissance, specialDamage 550
+    g.specialCooldown = 0;
+    g.enemyGold = 100000;
+    g.spawnEnemyUnit(0);
+    const e = g.units[0];
+    e.hp = 1000; e.maxHp = 1000;
+    g.useSpecial();
+    runFrames(g, 3);
+    assert('Special anim cleared after duration', g.specialAnim === null);
+    assert('Special dealt age damage', e.hp === 450, `hp=${e.hp}`);
+  }
+
+  console.log('\n--- Turret Stats & Slot Cap ---');
+  {
+    const g = makeGame();
+    g.gold = 100000;
+    g.playerSlotsBought = 4;
+    g.currentAge = 0;
+    g.spawnTurret(2); // Primit. Catapult
+    const t = g.turrets[g.turrets.length - 1];
+    const data = CONFIG.AGES[0].turrets[2];
+    assert('Turret damage matches config', t.damage === data.damage);
+    assert('Turret hp matches config', t.hp === data.hp);
+    assert('Turret stores turretIndex', t.turretIndex === 2);
+
+    for (let i = 0; i < 5; i++) g.spawnTurret(0);
+    assert('Cannot exceed TURRET_SLOTS', g.turrets.filter(tt => tt.side === 'player').length === 4);
+  }
+
+  console.log('\n--- Sell Turret Refund ---');
+  {
+    const g = makeGame();
+    g.gold = 2000;
+    g.playerSlotsBought = 4;
+    g.spawnTurret(0); // cost 100 at age 0
+    const cost = g.turrets[0].cost;
+    const before = g.gold;
+    g.sellTurret(0);
+    assert('Refund = floor(cost * 0.5)', g.gold === before + Math.floor(cost * 0.5), `refund=${g.gold - before}`);
+  }
+
+  console.log('\n--- Unit Upgrades ---');
+  {
+    const g = makeGame();
+    g.gold = 100000;
+    const cost0 = g.getUnitUpgradeCost(0);
+    g.upgradeUnit(0);
+    assert('Tier incremented to 1', g.unitUpgrades[0] === 1);
+    const cost1 = g.getUnitUpgradeCost(0);
+    assert('Upgrade cost scales up', cost1 > cost0, `c0=${cost0} c1=${cost1}`);
+    g.upgradeUnit(0);
+    assert('Tier incremented to 2 (max)', g.unitUpgrades[0] === CONFIG.MAX_UPGRADE_TIER);
+    g.upgradeUnit(0);
+    assert('No upgrade past max tier', g.unitUpgrades[0] === CONFIG.MAX_UPGRADE_TIER);
+  }
+
+  console.log('\n--- Hero Spawn & Cooldown ---');
+  {
+    const g = makeGame();
+    g.gold = 100000;
+    g.spawnHero('player');
+    assert('Hero spawned', g.units.some(u => u.isHero));
+    const count = g.units.length;
+    g.spawnHero('player');
+    assert('Hero blocked while cooldown active', g.units.length === count);
+  }
+
+  console.log('\n--- Buildings: Gold Mine Income ---');
+  {
+    const g = makeGame();
+    g.ai = { update() {} };
+    g.gold = 1000;
+    g.buyBuilding(0); // Gold Mine
+    assert('Building placed', g.buildings.length === 1);
+    const before = g.gold;
+    runFrames(g, 5);
+    assert('Gold mine produces gold', g.gold > before, `before=${before} now=${g.gold}`);
+  }
+
+  console.log('\n--- Buildings: Barracks Heal ---');
+  {
+    const g = makeGame();
+    g.ai = { update() {} };
+    g.gold = 100000;
+    g.spawnUnit(0);
+    const u = g.units[0];
+    u.hp = 10;
+    g.buyBuilding(1); // Barracks (heal 2/s radius 80)
+    runFrames(g, 3);
+    assert('Barracks heals nearby units', u.hp > 10, `hp=${u.hp.toFixed(1)}`);
+  }
+
+  console.log('\n--- Achievements ---');
+  {
+    const a = new Achievements();
+    a.unlocked = [];
+    a.unlock('test_id');
+    assert('Unlock records id', a.isUnlocked('test_id'));
+    a.unlock('test_id');
+    assert('Unlock is idempotent', a.unlocked.filter(x => x === 'test_id').length === 1);
+
+    const g = makeGame();
+    g.gold = 60000;
+    g.achievements.update(0.1, g);
+    assert('Gold hoarder unlocks at 50k', g.achievements.isUnlocked('gold_hoarder'));
+  }
+
+  console.log('\n--- applyEnemyScaling ---');
+  {
+    const g = makeGame();
+    g.difficulty = 1; // Harder 1.3x
+    const fake = { hp: 100, maxHp: 0, damage: 50 };
+    g.applyEnemyScaling(fake, 100, 50);
+    assert('HP scaled by 1.3', fake.hp === 130);
+    assert('Damage scaled by 1.3', fake.damage === 65);
+    assert('maxHp mirrors hp', fake.maxHp === 130);
+  }
+
+  console.log('\n--- AI Waves ---');
+  {
+    const g = makeGame();
+    g.enemyGold = 100000;
+    g.ai = new AI(g);
+    runFrames(g, 15);
+    assert('AI spawns enemy units over time', g.units.some(u => u.side === 'enemy'));
+  }
+
+  console.log('\n--- Debug Click: Add Gold ---');
+  {
+    const g = makeGame();
+    g.debugOpen = true;
+    const panelY = (CONFIG.VIEWPORT.HEIGHT - 600) / 2;
+    const panelX = CONFIG.VIEWPORT.WIDTH / 2 - 620 / 2;
+    g.input.mouseX = panelX + 10;       // col1X (RESOURCES +5000)
+    g.input.mouseY = panelY + 40 + 18;  // first button row
+    const before = g.gold;
+    g.handleDebugClick();
+    assert('Debug +5000 gold applied', g.gold === before + 5000, `delta=${g.gold - before}`);
+  }
+
+  console.log('\n--- Renderer Draw All Ages ---');
+  {
+    const g = makeGame();
+    let ok = true;
+    try {
+      for (let a = 0; a < 5; a++) {
+        for (let i = 0; i < CONFIG.AGES[a].units.length; i++) {
+          g.renderer.drawUnit(new Unit(500, 450, 'player', a, i, 0, false), a);
+        }
+        for (let ti = 0; ti < CONFIG.AGES[a].turrets.length; ti++) {
+          g.renderer.drawTurret(new Turret(500, 450, 'player', a, ti), a, ti);
+        }
+        g.renderer.drawBuilding(new Building(500, 430, 'player', 0), a);
+      }
+      g.renderer.roundRect(g.renderer.ctx, 0, 0, 10, 10, 3);
+    } catch (e) { ok = false; console.log('  draw error:', e.message); }
+    assert('All age rendering runs without throwing', ok);
+  }
+
+  console.log('\n--- SpriteManager ---');
+  {
+    const sm = new SpriteManager();
+    const ctx2 = document.createElement('canvas').getContext('2d');
+    const types = ['melee', 'ranged', 'fast', 'siege', 'armored', 'elite', 'hero'];
+    let ok = true;
+    try {
+      for (let a = 0; a < 5; a++) {
+        for (const t of types) sm.draw(ctx2, t, a, 100, 300, 1, 'player');
+      }
+    } catch (e) { ok = false; console.log('  sprite error:', e.message); }
+    assert('SpriteManager draws all ages/types', ok && sm.cache.size > 0, `cache=${sm.cache.size}`);
+  }
+
+  console.log('\n--- Particles & Minimap ---');
+  {
+    const g = makeGame();
+    let ok = true;
+    try {
+      g.particles.emitDamageNumber(100, 100, 50, '#fff');
+      g.particles.emitGoldNumber(100, 100, 30);
+      g.particles.update(0.1);
+      g.particles.draw(g.renderer.ctx, g.renderer);
+      new Minimap().draw(g.renderer.ctx, g.units, g.turrets, [g.playerBase, g.enemyBase], 0, g.buildings);
+    } catch (e) { ok = false; console.log('  fx error:', e.message); }
+    assert('Particles and minimap render without throwing', ok);
   }
 
   const passed = allResults.filter(r => r.pass).length;
