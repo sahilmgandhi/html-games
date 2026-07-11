@@ -15,7 +15,7 @@ Open http://localhost:8081 in your browser.
 
 - **Spawn units** by clicking their buttons in the bottom HUD
 - **Evolve** to the next age by clicking the Evolve button (costs XP)
-- **Special attack** damages all enemies on screen (30s cooldown)
+- **Special attack** damages all enemies on screen (40s cooldown)
 - **Scroll the camera** by moving your mouse to the screen edges, or use WASD/arrow keys
 - **Destroy the enemy base** to win
 
@@ -33,13 +33,13 @@ Open http://localhost:8081 in your browser.
 
 | Age | Units | Special |
 |---|---|---|
-| Stone | Clubman, Slingshot, Raptor Rider | Meteor Shower |
-| Castle | Swordsman, Archer, Cavalry | Arrow Volley |
-| Renaissance | Pikeman, Musketeer, Cannon | Artillery Strike |
-| Modern | Rifleman, Tank, Helicopter | Airstrike |
-| Future | Laser Mech, Super Soldier, Drone | Orbital Laser |
+| Stone | Clubman, Slingshot, Dino Rider | Meteor Shower |
+| Castle | Swordsman, Archer, Knight | Arrow Volley |
+| Renaissance | Dueler, Musketeer, Cannoneer | Artillery Strike |
+| Modern | Melee Infantry, Infantry, Tank | Airstrike |
+| Future | God's Blade, Blaster, War Machine (+ Super Soldier elite) | Orbital Laser |
 
 ## Resources
 
-- **Gold** — Earned passively and from kills. Spawns units and turrets.
-- **XP** — Earned passively and from kills. Used to evolve to the next age.
+- **Gold** — Earned from kills and the Gold Mine building. Spawns units and turrets.
+- **XP** — Earned from kills. Used to evolve to the next age.

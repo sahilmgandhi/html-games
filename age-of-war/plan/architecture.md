@@ -45,19 +45,29 @@ age-of-war/
 - **Turret**: Stationary defender, auto-targets nearest enemy in range, fires projectiles
 - **Projectile**: Directional movement, hit detection against enemy units, splash damage support
 
+### sprites.js
+- **SpriteManager**: Caches one offscreen canvas per (type, ageIndex, side) at `renderSize = 256`, downsampled to ~160px on screen
+- `draw(ctx, type, ageIndex, x, y, facingRight, side)` renders a cached sprite centered at a unit's feet
+- `drawSprite()` dispatches to `draw_${type}` renderers: melee, ranged, fast, siege, armored, elite, hero
+- Themed per-age characters (e.g. caveman+club, knight+horse, musketeer) with per-age palette `AGE_PAL`; team color (player blue / enemy red) appears only as a sash, cape, shield face, or turret
+- Shared helpers: `_humanoid`, `_blade`, `_shield`, `_helmetGreat`, `_fillRoundRect`
+- Mounted units (Stone `fast` = Dino Rider, Castle `fast` = Knight) skip leg drawing via `opt.noLegs`
+
 ### renderer.js
 - **Camera**: `worldToScreen()` coordinate transform, `scrollTo()` with clamping
-- **Terrain**: Era-specific sky gradients, ground color, grid lines
-- **Bases**: Era-colored rectangles with HP bars
-- **Units**: 15 unique canvas-drawn sprites via `drawUnitSprite(type, ageIndex)` switch statement
-- **Turrets**: Era-colored structures with side-colored barrel
+- **Terrain**: Era-specific sky gradients, ground color, parallax grid lines, weather effects
+- **Bases**: Era-colored towers with HP bars; turret tower grows (wider, glowing, orb on top) as slots are occupied
+- **Units**: Sprites from SpriteManager (160px display), with hit flash, bob animation, HP bars
+- **Turrets**: Three distinct designs per age with gradients, outlines, and team-colored accents
+- **Buildings**: Gold Mine and Barracks with team-tinted styling
 - **Projectiles**: Color-coded dots (yellow=player, red=enemy)
-- **HUD**: Unit spawn buttons (cost, affordability), evolve button, special attack button, gold/XP display, age name
+- **HUD**: 145px bar (`CONFIG.HUD_HEIGHT`) at screen bottom, organized into rows: unit buttons (with upgrade pips) + evolve + hero + special on top; turret and building buy buttons in the middle; sell buttons below; speed + formation controls. Layout constants `UNIT_START_X` and `UNIT_SPACING` live in CONFIG.
+- **Debug panel**: 620×600 password-gated overlay drawn by `drawDebugScreen`
 - **Minimap**: Position strip with unit dots, turret markers, base rectangles, camera viewport outline
 
 ### input.js
 - **InputHandler**: Mouse position tracking, keyboard state, mouse-edge camera scrolling
-- **HUD click detection**: Maps click coordinates to unit buttons, evolve button, special button
+- **HUD click detection**: Maps click coordinates to unit buttons, evolve button, special button, turret/building buy, sell, speed/formation. Uses the same `CONFIG.HUD_HEIGHT`, `UNIT_START_X`, `UNIT_SPACING` constants as the renderer.
 
 ### ai.js
 - **AI**: Think timer (2.5s interval), decision logic:
@@ -156,5 +166,5 @@ requestAnimationFrame
 - **World coordinates**: 0 to 2400 (horizontal), 0 to 600 (vertical)
 - **Screen coordinates**: 0 to 1200 (horizontal), 0 to 600 (vertical)
 - Camera offset: `screenX = worldX - camera.x`
-- Ground level: y = 500 (VIEWPORT.HEIGHT - 100)
-- Base positions: Player at (100, 500), Enemy at (2300, 500)
+- Ground level: `y = CONFIG.GROUND_Y = 450`
+- Base positions: Player at (100, 450), Enemy at (2300, 450)

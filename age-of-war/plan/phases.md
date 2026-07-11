@@ -26,8 +26,8 @@
 **Files**: `js/renderer.js` (terrain section)
 - Camera class with worldToScreen transform and scroll clamping
 - Era-specific sky gradients and ground colors
-- Ground line and grid decoration
-- Parallax-style vertical grid lines
+- Ground line at `CONFIG.GROUND_Y = 450` and grid decoration
+- Parallax-style vertical grid lines and weather effects
 
 ## Phase 5: Base Rendering
 **Files**: `js/renderer.js` (base section)
@@ -37,25 +37,22 @@
 - HP text display
 
 ## Phase 6: Unit Sprites
-**Files**: `js/renderer.js` (unit sprite section)
-- 15 unique canvas-drawn unit types via switch statement
-- Stone Age: simple shapes (club, slingshot arc, raptor body)
-- Castle Age: armored figures (helmet, bow, horse)
-- Renaissance: period clothing (pikeman, musketeer, cannon)
-- Modern Age: military (rifleman, tank treads, helicopter rotors)
-- Future Age: neon glow effects (laser mech, energy weapons, drone)
+**Files**: `js/sprites.js`, `js/renderer.js` (drawUnit)
+- `SpriteManager` caches one offscreen canvas per (type, ageIndex, side) at 256px, downsampled to ~160px on screen
+- Themed per-age characters (caveman+club, knight+horse, musketeer, tank, energy soldier) with per-age palette; team color only as sash/cape/shield/turret
+- 7 type renderers (melee, ranged, fast, siege, armored, elite, hero) plus mounted riders (Dino Rider, Knight)
 - Hit flash effect, bob animation, HP bars
 
 ## Phase 7: Input + HUD
 **Files**: `js/input.js`, `js/renderer.js` (HUD section)
 - Mouse-edge camera scrolling (50px margin)
 - Keyboard controls (WASD, arrow keys)
-- HUD bar at bottom of screen
-- Unit spawn buttons (name, cost, affordability indicator)
-- Evolve button (XP cost, availability)
+- HUD bar at bottom, 145px (`CONFIG.HUD_HEIGHT`): unit buttons + evolve + hero + special on top, turret/building buys in the middle, sell below, speed/formation controls
+- Unit spawn buttons (name, cost, affordability indicator, upgrade pips)
+- Evolve button (XP threshold, availability)
 - Special attack button (cooldown display, ready state)
 - Gold and XP display
-- Click detection for all HUD elements
+- Click detection for all HUD elements; renderer and input share `CONFIG.HUD_HEIGHT`, `UNIT_START_X`, `UNIT_SPACING`
 
 ## Phase 8: Unit Spawning + Movement
 **Files**: `js/game.js` (spawn methods), `js/entities.js` (movement)
@@ -96,8 +93,8 @@
 
 ## Phase 12: Special Attacks
 **Files**: `js/game.js` (useSpecial methods)
-- Per-age AoE damage (300 → 1200)
-- 30-second cooldown
+- Per-age AoE damage (250 → 1000)
+- 40-second cooldown (`CONFIG.SPECIAL_COOLDOWN`)
 - Affects all enemy units on screen
 - Visual particle burst
 - Sound effect
