@@ -1090,9 +1090,7 @@ class Renderer {
     if (!unit.alive) return;
     const ctx = this.ctx;
     const s = this.worldToScreen(unit.x, unit.y);
-    const sx = s.x;
-    const sy = s.y;
-    if (sx < -100 || sx > CONFIG.VIEWPORT.WIDTH + 100) return;
+    if (s.x < -100 || s.x > CONFIG.VIEWPORT.WIDTH + 100) return;
     let unitAlpha = 1;
     let unitScale = 1;
     if (unit.dying) {
@@ -1454,9 +1452,7 @@ class Renderer {
     if (!proj.alive) return;
     const ctx = this.ctx;
     const s = this.worldToScreen(proj.x, proj.y);
-    const sx = s.x;
-    const sy = s.y;
-    if (sx < -100 || sx > CONFIG.VIEWPORT.WIDTH + 100) return;
+    if (s.x < -100 || s.x > CONFIG.VIEWPORT.WIDTH + 100) return;
     const isPlayer = proj.side === 'player';
     const speed = Math.sqrt(proj.vx * proj.vx + proj.vy * proj.vy);
 
@@ -1644,7 +1640,7 @@ class Renderer {
   drawHUD(game) {
     const ctx = this.ctx;
     const W = CONFIG.VIEWPORT.WIDTH;
-    const HH = 145;
+    const HH = CONFIG.HUD_HEIGHT;
     const y = CONFIG.VIEWPORT.HEIGHT - HH;
 
     this._currentAge = game.age;
@@ -1746,10 +1742,10 @@ class Renderer {
     ctx.font = '9px sans-serif';
     ctx.fillText(diffName, 100, barY + 78);
 
-    const unitStartX = 168;
+    const unitStartX = CONFIG.UNIT_START_X;
     for (let i = 0; i < age.units.length; i++) {
       const u = age.units[i];
-      const bx = unitStartX + i * 86;
+      const bx = unitStartX + i * CONFIG.UNIT_SPACING;
       const tier = game.unitUpgrades[i] || 0;
       const tierHpMult = CONFIG.UNIT_UPGRADE_HP_MULT[tier];
       const tierDmgMult = CONFIG.UNIT_UPGRADE_DMG_MULT[tier];
@@ -1848,7 +1844,7 @@ class Renderer {
     }
 
     const evoNeeded = CONFIG.EVOLVE_XP[game.currentAge + 1];
-    const evoX = unitStartX + age.units.length * 86 + 8;
+    const evoX = unitStartX + age.units.length * CONFIG.UNIT_SPACING + 8;
     const evoW = 80;
     const evoH = 34;
     const evoY = y + 6;
@@ -1889,7 +1885,7 @@ class Renderer {
       ctx.fillText(`${evoNeeded} XP`, evoX + evoW / 2, evoY + 26);
     }
 
-    const heroBtnX = evoNeeded !== undefined ? evoX + evoW + 8 : unitStartX + age.units.length * 86 + 8;
+    const heroBtnX = evoNeeded !== undefined ? evoX + evoW + 8 : unitStartX + age.units.length * CONFIG.UNIT_SPACING + 8;
     const heroBtnW = 80;
     const heroBtnH = 34;
     const heroBtnY = y + 6;
@@ -2138,7 +2134,7 @@ class Renderer {
     ctx.fillStyle = 'rgba(255,255,255,0.28)';
     ctx.font = '7px sans-serif';
     ctx.textAlign = 'center';
-    const unitGroupMid = unitStartX + (age.units.length * 86) / 2 - 6;
+    const unitGroupMid = unitStartX + (age.units.length * CONFIG.UNIT_SPACING) / 2 - 6;
     ctx.fillText('UNITS', unitGroupMid, y + 2);
     ctx.fillText('SPECIAL', spX + spW / 2, y + 2);
     ctx.fillText('TURRETS', 100 + (age.turrets.length * 96) / 2 - 4, y + 52);

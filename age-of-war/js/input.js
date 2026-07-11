@@ -90,15 +90,15 @@ class InputHandler {
   }
 
   handleClick(game) {
-    const HH = 145;
+    const HH = CONFIG.HUD_HEIGHT;
     const y = CONFIG.VIEWPORT.HEIGHT - HH;
     if (this.mouseY < y) return;
 
     const age = CONFIG.AGES[game.currentAge];
-    const unitStartX = 168;
+    const unitStartX = CONFIG.UNIT_START_X;
 
     for (let i = 0; i < age.units.length; i++) {
-      const bx = unitStartX + i * 86;
+      const bx = unitStartX + i * CONFIG.UNIT_SPACING;
       if (pointInRect(this.mouseX, this.mouseY, bx, y + 6, 68, 34)) {
         game.spawnUnit(i);
         return;
@@ -112,14 +112,14 @@ class InputHandler {
 
     const evoNeeded = CONFIG.EVOLVE_XP[game.currentAge + 1];
     if (evoNeeded !== undefined) {
-      const evoX = unitStartX + age.units.length * 86 + 8;
+      const evoX = unitStartX + age.units.length * CONFIG.UNIT_SPACING + 8;
       if (pointInRect(this.mouseX, this.mouseY, evoX, y + 6, 80, 34)) {
         game.evolve();
         return;
       }
     }
 
-    const heroBtnX = evoNeeded !== undefined ? unitStartX + age.units.length * 86 + 8 + 80 + 8 : unitStartX + age.units.length * 86 + 8;
+    const heroBtnX = evoNeeded !== undefined ? unitStartX + age.units.length * CONFIG.UNIT_SPACING + 8 + 80 + 8 : unitStartX + age.units.length * CONFIG.UNIT_SPACING + 8;
     if (pointInRect(this.mouseX, this.mouseY, heroBtnX, y + 6, 80, 34)) {
       game.spawnHero('player');
       return;

@@ -215,7 +215,10 @@ class Game {
       if (hits.length > 0) {
         this.audio.play('hit');
         for (const hit of hits) {
-          const color = hit.entity instanceof Unit ? (hit.entity.side === 'player' ? CONFIG.COLORS.PLAYER : CONFIG.COLORS.ENEMY) : hit.entity instanceof Turret ? (hit.entity.side === 'player' ? CONFIG.COLORS.PLAYER : CONFIG.COLORS.ENEMY) : '#ff8800';
+          const combatant = hit.entity instanceof Unit || hit.entity instanceof Turret;
+          const color = combatant
+            ? (hit.entity.side === 'player' ? CONFIG.COLORS.PLAYER : CONFIG.COLORS.ENEMY)
+            : '#ff8800';
           this.particles.emitDamageNumber(hit.entity.x, hit.entity.y, hit.damage, color);
         }
       }
@@ -777,6 +780,15 @@ class Game {
     this.spawnTurretForSide('enemy', turretIndex);
   }
 
+  applyEnemyScaling(entity, hp, damage) {
+    const diff = CONFIG.DIFFICULTIES[this.difficulty];
+    entity.hp = Math.round(hp * diff.enemyHpMult);
+    entity.maxHp = entity.hp;
+    if (damage !== undefined) {
+      entity.damage = Math.round(damage * diff.enemyDmgMult);
+    }
+  }
+
   spawnTurretForSide(side, turretIndex) {
     const isPlayer = side === 'player';
     const slotsBought = isPlayer ? this.playerSlotsBought : this.enemySlotsBought;
@@ -801,11 +813,7 @@ class Game {
     const pos = slotPositions[occupiedCount];
     const t = new Turret(pos.x, pos.y, side, isPlayer ? this.currentAge : this.enemyAge, turretIndex);
 
-    if (!isPlayer) {
-      const diff = CONFIG.DIFFICULTIES[this.difficulty];
-      t.hp = Math.round(data.hp * diff.enemyHpMult);
-      t.maxHp = t.hp;
-    }
+    if (!isPlayer) this.applyEnemyScaling(t, data.hp);
 
     this.turrets.push(t);
     this.staticDirty = true;
@@ -917,12 +925,7 @@ class Game {
 
     const u = new Unit(spawnX, CONFIG.GROUND_Y, side, isPlayer ? this.currentAge : this.enemyAge, unitIndex, isPlayer ? (this.unitUpgrades[unitIndex] || 0) : 0);
 
-    if (!isPlayer) {
-      const diff = CONFIG.DIFFICULTIES[this.difficulty];
-      u.hp = Math.round(data.hp * diff.enemyHpMult);
-      u.maxHp = u.hp;
-      u.damage = Math.round(data.damage * diff.enemyDmgMult);
-    }
+    if (!isPlayer) this.applyEnemyScaling(u, data.hp, data.damage);
 
     this.units.push(u);
     if (isPlayer) {
@@ -958,12 +961,7 @@ class Game {
       : CONFIG.WORLD.WIDTH - CONFIG.BASE_X_OFFSET - 30;
     const u = new Unit(spawnX, CONFIG.GROUND_Y, side, isPlayer ? this.currentAge : this.enemyAge, 0, 0, true);
 
-    if (!isPlayer) {
-      const diff = CONFIG.DIFFICULTIES[this.difficulty];
-      u.hp = Math.round(u.hp * diff.enemyHpMult);
-      u.maxHp = u.hp;
-      u.damage = Math.round(u.damage * diff.enemyDmgMult);
-    }
+    if (!isPlayer) this.applyEnemyScaling(u, u.hp, u.damage);
 
     this.units.push(u);
     this.audio.play('special');

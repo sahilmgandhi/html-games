@@ -445,13 +445,9 @@ class Projectile {
       const nearby = spatialHash.queryRadius(this.x, this.y, hitRadius);
       for (let i = 0; i < nearby.length; i++) {
         const e = nearby[i];
-        if (e.side !== this.side) {
-          if (dist(this.x, this.y, e.x, e.y) < (this.splashRadius > 0 ? hitRadius : 15)) {
-            if (!this.splashRadius || dist(this.x, this.y, e.x, e.y) <= this.splashRadius) {
-              e.takeDamage(this.damage);
-              hits.push({ entity: e, damage: this.damage });
-            }
-          }
+        if (e.side !== this.side && dist(this.x, this.y, e.x, e.y) < hitRadius) {
+          e.takeDamage(this.damage);
+          hits.push({ entity: e, damage: this.damage });
         }
       }
       if (hits.length > 0) {
