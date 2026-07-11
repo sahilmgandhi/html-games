@@ -4,9 +4,11 @@ class Game {
     this.ctx = ctx;
     this.renderer = new Renderer(canvas, ctx);
     this.input = new InputHandler(canvas, this.renderer);
+    this.input.setGame(this);
     this.particles = new ParticleSystem();
     this.minimap = new Minimap();
     this.audio = new AudioManager();
+    this.achievements = new Achievements();
     this.ai = null;
 
     this.gold = CONFIG.STARTING_GOLD;
@@ -26,10 +28,17 @@ class Game {
 
     this.units = [];
     this.turrets = [];
-    this.projectiles = [];
+    this.buildings = [];
+    this.projectilePool = new ProjectilePool(64);
+    this.spatialHash = new SpatialHash(128);
+    this.staticHash = new SpatialHash(128);
+    this.staticDirty = true;
 
     this.playerSlotsBought = 0;
     this.enemySlotsBought = 0;
+    this.unitUpgrades = {};
+    this.heroCooldown = 0;
+    this.enemyHeroCooldown = 0;
     this.turretSlotPositions = this.computeSlotPositions(CONFIG.BASE_X_OFFSET, 1);
     this.enemyTurretSlotPositions = this.computeSlotPositions(CONFIG.WORLD.WIDTH - CONFIG.BASE_X_OFFSET, -1);
 
@@ -45,6 +54,11 @@ class Game {
     this.started = false;
     this.flashTimer = 0;
     this.gameTime = 0;
+    this.formationMode = 0;
+    this._lastAchievementId = null;
+    this.totalSpawned = 0;
+    this.totalGoldSpent = 0;
+    this.playerLowestHp = CONFIG.BASE_HP;
     this.musicWereOn = false;
     this.sfxWereOn = false;
 
@@ -121,14 +135,32 @@ class Game {
 
     if (this.specialCooldown > 0) this.specialCooldown -= dt;
     if (this.enemySpecialCooldown > 0) this.enemySpecialCooldown -= dt;
+    if (this.heroCooldown > 0) this.heroCooldown -= dt;
+    if (this.enemyHeroCooldown > 0) this.enemyHeroCooldown -= dt;
     this.updateSpecialAnim(dt);
 
     this.ai.update(dt);
 
+    this.spatialHash.clear();
     for (const u of this.units) {
-      const prevProjCount = this.projectiles.length;
-      const attackResult = u.update(dt, this.units, this.turrets, u.side === 'player' ? this.enemyBase : this.playerBase, this.projectiles);
-      if (this.projectiles.length > prevProjCount) {
+      if (u.alive) this.spatialHash.insert(u);
+    }
+
+    if (this.staticDirty) {
+      this.staticHash.clear();
+      for (const t of this.turrets) {
+        if (t.alive) this.staticHash.insert(t);
+      }
+      for (const b of this.buildings) {
+        if (b.alive) this.staticHash.insert(b);
+      }
+      this.staticDirty = false;
+    }
+
+    for (const u of this.units) {
+      const prevProjCount = this.projectilePool.active.length;
+      const attackResult = u.update(dt, this.units, this.turrets, u.side === 'player' ? this.enemyBase : this.playerBase, this.projectilePool, this.spatialHash);
+      if (this.projectilePool.active.length > prevProjCount) {
         this.audio.play('fire');
       } else if (attackResult === 'melee') {
         this.audio.play('hit');
@@ -136,16 +168,16 @@ class Game {
     }
 
     for (const t of this.turrets) {
-      const prevProjCount = this.projectiles.length;
-      t.update(dt, this.units, this.projectiles);
-      if (this.projectiles.length > prevProjCount) {
+      const prevProjCount = this.projectilePool.active.length;
+      t.update(dt, this.units, this.projectilePool, this.spatialHash);
+      if (this.projectilePool.active.length > prevProjCount) {
         this.audio.play('fire');
       }
     }
 
-    for (const p of this.projectiles) {
+    for (const p of this.projectilePool.active) {
       p.update(dt);
-      const hits = p.checkHit(this.units, this.turrets, [this.playerBase, this.enemyBase]);
+      const hits = p.checkHit(this.units, this.turrets, [this.playerBase, this.enemyBase], this.spatialHash);
       if (hits.length > 0) {
         this.audio.play('hit');
         for (const hit of hits) {
@@ -154,40 +186,63 @@ class Game {
         }
       }
     }
+    this.projectilePool.releaseDead();
 
-    for (let i = this.units.length - 1; i >= 0; i--) {
-      const u = this.units[i];
-      if (!u.alive) {
-        this.particles.emit(u.x, u.y, u.side === 'player' ? CONFIG.COLORS.PLAYER : CONFIG.COLORS.ENEMY, 8, 3, 0.5, 2);
-        this.particles.emitGoldNumber(u.x, u.y, u.goldReward);
+    for (const b of this.buildings) {
+      if (!b.alive) continue;
+      const produced = b.update(dt, this.units);
+      if (produced > 0 && b.side === 'player') {
+        this.gold += produced;
+      } else if (produced > 0) {
+        this.enemyGold += produced;
+      }
+    }
 
-        if (u.side === 'player') {
-          this.enemyGold += u.goldReward * CONFIG.DIFFICULTIES[this.difficulty].enemyGoldMult;
-          this.enemyXp += u.xpReward;
+    {
+      let write = 0;
+      for (let i = 0; i < this.units.length; i++) {
+        const u = this.units[i];
+        if (!u.alive) {
+          this.particles.emitBurst(u.x, u.y, u.side === 'player' ? CONFIG.COLORS.PLAYER : CONFIG.COLORS.ENEMY, 12, 4, 0.6, 3);
+          this.particles.emitGoldNumber(u.x, u.y, u.goldReward);
+
+          if (u.side === 'player') {
+            this.enemyGold += u.goldReward * CONFIG.DIFFICULTIES[this.difficulty].enemyGoldMult;
+            this.enemyXp += u.xpReward;
+          } else {
+            this.gold += u.goldReward;
+            this.xp += u.xpReward;
+          }
+
+          this.audio.play('death');
+          this.audio.play('gold');
         } else {
-          this.gold += u.goldReward;
-          this.xp += u.xpReward;
+          this.units[write++] = u;
         }
-
-        this.audio.play('death');
-        this.audio.play('gold');
-        this.units.splice(i, 1);
       }
+      this.units.length = write;
     }
 
-    for (let i = this.projectiles.length - 1; i >= 0; i--) {
-      if (!this.projectiles[i].alive) {
-        this.projectiles.splice(i, 1);
+    {
+      let write = 0;
+      for (let i = 0; i < this.turrets.length; i++) {
+        const t = this.turrets[i];
+        if (!t.alive) {
+          this.particles.emit(t.x, t.y, t.side === 'player' ? CONFIG.COLORS.PLAYER : CONFIG.COLORS.ENEMY, 8, 3, 0.5, 2);
+          this.audio.play('death');
+        } else {
+          this.turrets[write++] = t;
+        }
       }
+      this.turrets.length = write;
     }
 
-    for (let i = this.turrets.length - 1; i >= 0; i--) {
-      const t = this.turrets[i];
-      if (!t.alive) {
-        this.particles.emit(t.x, t.y, t.side === 'player' ? CONFIG.COLORS.PLAYER : CONFIG.COLORS.ENEMY, 8, 3, 0.5, 2);
-        this.audio.play('death');
-        this.turrets.splice(i, 1);
+    {
+      let write = 0;
+      for (let i = 0; i < this.buildings.length; i++) {
+        if (this.buildings[i].alive) this.buildings[write++] = this.buildings[i];
       }
+      this.buildings.length = write;
     }
 
     if (this.invincible) {
@@ -203,9 +258,15 @@ class Game {
     }
 
     this.particles.update(dt);
+    this.renderer.updateShake(dt);
+    this.renderer.updateCrossfade(dt);
 
     if (this.flashTimer > 0) this.flashTimer = Math.max(0, this.flashTimer - dt);
 
+    if (this.playerBase.hp < this.playerLowestHp) this.playerLowestHp = this.playerBase.hp;
+
+    this.achievements.update(dt, this);
+    this.achievements.check(this);
     balanceTracker.update(this);
   }
 
@@ -224,12 +285,17 @@ class Game {
       this.renderer.drawTurret(t, t.side === 'player' ? this.currentAge : this.enemyAge);
     }
 
+    for (const b of this.buildings) {
+      if (!b.alive) continue;
+      this.renderer.drawBuilding(b, b.side === 'player' ? this.currentAge : this.enemyAge);
+    }
+
     for (const u of this.units) {
       this.renderer.drawUnit(u, u.side === 'player' ? this.currentAge : this.enemyAge);
     }
 
-    for (const p of this.projectiles) {
-      this.renderer.drawProjectile(p);
+    for (const p of this.projectilePool.active) {
+      this.renderer.drawProjectile(p, p.side === 'player' ? this.currentAge : this.enemyAge);
     }
 
     this.particles.draw(ctx, this.renderer);
@@ -239,7 +305,8 @@ class Game {
     }
 
     this.renderer.drawHUD(this);
-    this.minimap.draw(ctx, this.units, this.turrets, [this.playerBase, this.enemyBase], this.renderer.camera.x);
+    this.drawAchievementPopup();
+    this.minimap.draw(ctx, this.units, this.turrets, [this.playerBase, this.enemyBase], this.renderer.camera.x, this.buildings);
 
     if (this.gameOver) {
       this.drawGameOver();
@@ -257,6 +324,44 @@ class Game {
     }
   }
 
+  drawAchievementPopup() {
+    const popup = this.achievements.getCurrentPopup();
+    if (popup && popup.id !== this._lastAchievementId) {
+      this._lastAchievementId = popup.id;
+      this.particles.emitBurst(CONFIG.VIEWPORT.WIDTH - 116, 48, '#ffd700', 8, 4, 0.5, 2);
+      this.audio.play('gold');
+    }
+    if (!popup) return;
+    const ctx = this.ctx;
+    const W = CONFIG.VIEWPORT.WIDTH;
+    const pw = 200;
+    const ph = 40;
+    const px = W - pw - 16;
+    const py = 28;
+
+    ctx.save();
+    ctx.globalAlpha = 0.95;
+    ctx.fillStyle = 'rgba(20,20,40,0.95)';
+    this.renderer.roundRect(ctx, px, py, pw, ph, 8);
+    ctx.fill();
+
+    ctx.strokeStyle = '#ffd700';
+    ctx.lineWidth = 1.5;
+    this.renderer.roundRect(ctx, px, py, pw, ph, 8);
+    ctx.stroke();
+
+    ctx.fillStyle = '#ffd700';
+    ctx.font = 'bold 9px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText('Achievement!', px + 10, py + 14);
+
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 11px sans-serif';
+    ctx.fillText(popup.name, px + 10, py + 30);
+
+    ctx.restore();
+  }
+
   drawGameOver() {
     const ctx = this.ctx;
     ctx.fillStyle = 'rgba(0,0,0,0.75)';
@@ -264,22 +369,28 @@ class Game {
 
     const isWin = this.winner === 'player';
     const color = isWin ? CONFIG.COLORS.PLAYER : CONFIG.COLORS.ENEMY;
+    const cx = CONFIG.VIEWPORT.WIDTH / 2;
 
-    ctx.shadowColor = color;
-    ctx.shadowBlur = 30;
     ctx.fillStyle = color;
-    ctx.font = 'bold 56px sans-serif';
+    ctx.font = 'bold 48px sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText(
-      isWin ? 'VICTORY!' : 'DEFEAT!',
-      CONFIG.VIEWPORT.WIDTH / 2,
-      CONFIG.VIEWPORT.HEIGHT / 2 - 30
-    );
-    ctx.shadowBlur = 0;
+    ctx.fillText(isWin ? 'VICTORY!' : 'DEFEAT!', cx, CONFIG.VIEWPORT.HEIGHT / 2 - 80);
+
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.font = '13px monospace';
+    const stats = [
+      `Time: ${Math.floor(this.gameTime)}s`,
+      `Units Spawned: ${this.totalSpawned}`,
+      `Age Reached: ${CONFIG.AGES[this.currentAge].name}`,
+      `Gold Spent: ${Math.floor(this.totalGoldSpent)}`,
+    ];
+    for (let i = 0; i < stats.length; i++) {
+      ctx.fillText(stats[i], cx, CONFIG.VIEWPORT.HEIGHT / 2 - 30 + i * 18);
+    }
 
     ctx.fillStyle = 'rgba(255,255,255,0.6)';
-    ctx.font = '20px sans-serif';
-    ctx.fillText('Click to Restart', CONFIG.VIEWPORT.WIDTH / 2, CONFIG.VIEWPORT.HEIGHT / 2 + 30);
+    ctx.font = '18px sans-serif';
+    ctx.fillText('Click to Restart', cx, CONFIG.VIEWPORT.HEIGHT / 2 + 60);
   }
 
   restart() {
@@ -293,17 +404,28 @@ class Game {
     this.enemySpecialCooldown = 0;
     this.specialAnim = null;
     this.gameTime = 0;
+    this.totalGoldSpent = 0;
     balanceTracker.reset();
     this.units = [];
     this.turrets = [];
-    this.projectiles = [];
+    this.buildings = [];
+    this.projectilePool = new ProjectilePool(64);
+    this.spatialHash = new SpatialHash(128);
+    this.staticHash = new SpatialHash(128);
+    this.staticDirty = true;
     this.particles = new ParticleSystem();
     this.playerSlotsBought = 0;
     this.enemySlotsBought = 0;
+    this.unitUpgrades = {};
+    this.heroCooldown = 0;
+    this.enemyHeroCooldown = 0;
     this.paused = false;
     this.debugOpen = false;
     this.invincible = false;
     this.gameSpeed = 1;
+    this.formationMode = 0;
+    this.totalSpawned = 0;
+    this.playerLowestHp = CONFIG.BASE_HP;
     this.gameOver = false;
     this.winner = null;
     this.renderer.camera.x = 0;
@@ -527,6 +649,7 @@ class Game {
     if (this.playerSlotsBought >= CONFIG.TURRET_SLOTS) return;
     if (this.gold < CONFIG.TURRET_SLOT_COST) return;
     this.gold -= CONFIG.TURRET_SLOT_COST;
+    this.totalGoldSpent += CONFIG.TURRET_SLOT_COST;
     this.playerSlotsBought++;
     this.audio.play('spawn');
   }
@@ -552,8 +675,12 @@ class Game {
     const gold = isPlayer ? this.gold : this.enemyGold;
     if (gold < data.cost) return;
 
-    if (isPlayer) this.gold -= data.cost;
-    else this.enemyGold -= data.cost;
+    if (isPlayer) {
+      this.gold -= data.cost;
+      this.totalGoldSpent += data.cost;
+    } else {
+      this.enemyGold -= data.cost;
+    }
 
     const slotPositions = isPlayer ? this.turretSlotPositions : this.enemyTurretSlotPositions;
     const pos = slotPositions[occupiedCount];
@@ -566,6 +693,7 @@ class Game {
     }
 
     this.turrets.push(t);
+    this.staticDirty = true;
     if (isPlayer) this.audio.play('spawn');
   }
 
@@ -577,8 +705,55 @@ class Game {
     const refund = Math.floor(t.cost * CONFIG.TURRET_REFUND_RATE);
     this.gold += refund;
     t.alive = false;
+    this.staticDirty = true;
     this.particles.emitGoldNumber(t.x, t.y, refund);
     this.audio.play('gold');
+  }
+
+  getUnitUpgradeCost(unitIndex) {
+    const tier = this.unitUpgrades[unitIndex] || 0;
+    if (tier >= CONFIG.MAX_UPGRADE_TIER) return null;
+    const age = CONFIG.AGES[this.currentAge];
+    const baseCost = age.units[unitIndex].cost;
+    return Math.round(baseCost * CONFIG.UNIT_UPGRADE_COSTS[tier + 1]);
+  }
+
+  upgradeUnit(unitIndex) {
+    const tier = this.unitUpgrades[unitIndex] || 0;
+    if (tier >= CONFIG.MAX_UPGRADE_TIER) return;
+    const cost = this.getUnitUpgradeCost(unitIndex);
+    if (cost === null || this.gold < cost) return;
+    this.gold -= cost;
+    this.totalGoldSpent += cost;
+    this.unitUpgrades[unitIndex] = tier + 1;
+    this.audio.play('evolve');
+    this.audio.play('ui_click');
+  }
+
+  getBuildingCount(side) {
+    return this.buildings.filter(b => b.side === side && b.alive).length;
+  }
+
+  buyBuilding(buildingIndex) {
+    const data = CONFIG.BUILDINGS[buildingIndex];
+    if (this.gold < data.cost) return;
+    this.gold -= data.cost;
+    this.totalGoldSpent += data.cost;
+    const px = CONFIG.BASE_X_OFFSET + 30 + (this.getBuildingCount('player') + 1) * 10;
+    const b = new Building(px, CONFIG.GROUND_Y - 20, 'player', buildingIndex);
+    this.buildings.push(b);
+    this.staticDirty = true;
+    this.audio.play('spawn');
+  }
+
+  buyEnemyBuilding(buildingIndex) {
+    const data = CONFIG.BUILDINGS[buildingIndex];
+    if (this.enemyGold < data.cost) return;
+    this.enemyGold -= data.cost;
+    const px = CONFIG.WORLD.WIDTH - CONFIG.BASE_X_OFFSET - 30 - (this.getBuildingCount('enemy') + 1) * 10;
+    const b = new Building(px, CONFIG.GROUND_Y - 20, 'enemy', buildingIndex);
+    this.buildings.push(b);
+    this.staticDirty = true;
   }
 
   buyEnemySlot() {
@@ -601,13 +776,31 @@ class Game {
     const gold = isPlayer ? this.gold : this.enemyGold;
     if (gold < data.cost) return;
 
-    if (isPlayer) this.gold -= data.cost;
-    else this.enemyGold -= data.cost;
+    if (isPlayer) {
+      this.gold -= data.cost;
+      this.totalGoldSpent += data.cost;
+    } else {
+      this.enemyGold -= data.cost;
+    }
 
-    const spawnX = isPlayer
+    let spawnX = isPlayer
       ? CONFIG.BASE_X_OFFSET + 30
       : CONFIG.WORLD.WIDTH - CONFIG.BASE_X_OFFSET - 30;
-    const u = new Unit(spawnX, CONFIG.GROUND_Y, side, isPlayer ? this.currentAge : this.enemyAge, unitIndex);
+
+    if (isPlayer && this.formationMode > 0) {
+      const sameTypeUnits = this.units.filter(u => u.side === 'player' && u.unitIndex === unitIndex && u.alive);
+      const count = sameTypeUnits.length;
+      const spacing = 20;
+      if (this.formationMode === 1) {
+        spawnX += (count % 5) * spacing - Math.min(count, 5) * spacing / 2;
+      } else if (this.formationMode === 2) {
+        const row = Math.floor(count / 5);
+        const col = count % 5;
+        spawnX += (col - 2) * spacing * (1 - row * 0.15);
+      }
+    }
+
+    const u = new Unit(spawnX, CONFIG.GROUND_Y, side, isPlayer ? this.currentAge : this.enemyAge, unitIndex, isPlayer ? (this.unitUpgrades[unitIndex] || 0) : 0);
 
     if (!isPlayer) {
       const diff = CONFIG.DIFFICULTIES[this.difficulty];
@@ -617,7 +810,48 @@ class Game {
     }
 
     this.units.push(u);
-    if (isPlayer) this.audio.play('spawn');
+    if (isPlayer) {
+      this.totalSpawned++;
+      this.audio.play('spawn');
+      this.audio.play('ui_click');
+    }
+  }
+
+  spawnHero(side) {
+    const isPlayer = side === 'player';
+    const age = CONFIG.AGES[isPlayer ? this.currentAge : this.enemyAge];
+    if (!age.hero) return;
+
+    const cooldown = isPlayer ? this.heroCooldown : this.enemyHeroCooldown;
+    if (cooldown > 0) return;
+
+    const gold = isPlayer ? this.gold : this.enemyGold;
+    if (gold < age.hero.cost) return;
+
+    if (isPlayer) {
+      this.gold -= age.hero.cost;
+      this.totalGoldSpent += age.hero.cost;
+    } else {
+      this.enemyGold -= age.hero.cost;
+    }
+
+    if (isPlayer) this.heroCooldown = CONFIG.HERO_COOLDOWN;
+    else this.enemyHeroCooldown = CONFIG.HERO_COOLDOWN;
+
+    const spawnX = isPlayer
+      ? CONFIG.BASE_X_OFFSET + 30
+      : CONFIG.WORLD.WIDTH - CONFIG.BASE_X_OFFSET - 30;
+    const u = new Unit(spawnX, CONFIG.GROUND_Y, side, isPlayer ? this.currentAge : this.enemyAge, 0, 0, true);
+
+    if (!isPlayer) {
+      const diff = CONFIG.DIFFICULTIES[this.difficulty];
+      u.hp = Math.round(u.hp * diff.enemyHpMult);
+      u.maxHp = u.hp;
+      u.damage = Math.round(u.damage * diff.enemyDmgMult);
+    }
+
+    this.units.push(u);
+    this.audio.play('special');
   }
 
   evolve() {
@@ -638,11 +872,13 @@ class Game {
 
     if (isPlayer) {
       this.xp -= cost;
+      const prevAge = this.currentAge;
       this.currentAge++;
       this.playerBase.healFraction(CONFIG.EVOLVE_HEAL);
       this.audio.play('evolve');
       this.audio.updateMusicAge(this.currentAge);
       this.flashTimer = 0.8;
+      this.renderer.startAgeTransition(prevAge, this.currentAge);
     } else {
       this.enemyXp -= cost;
       this.enemyAge++;
@@ -786,13 +1022,14 @@ class Game {
             p.x += p.vx * dt * 60;
             p.y += p.vy * dt * 60;
             p.vy += 2 * dt;
-            if (p.y >= CONFIG.GROUND_Y) {
-              p.exploded = true;
-              this.particles.emit(
-                p.x, CONFIG.GROUND_Y,
-                '#ff6600', 15, 8, 0.6, 4
-              );
-            }
+              if (p.y >= CONFIG.GROUND_Y) {
+                p.exploded = true;
+                this.particles.emitBurst(
+                  p.x, CONFIG.GROUND_Y,
+                  '#ff6600', 18, 6, 0.6, 5
+                );
+                this.renderer.screenShake(3, 0.15);
+              }
           } else {
             p.explosionRadius = Math.min(p.explosionRadius + dt * 200, 50);
           }
@@ -819,10 +1056,11 @@ class Game {
               bomb.vy += 5 * dt;
               if (bomb.y >= CONFIG.GROUND_Y) {
                 bomb.exploded = true;
-                this.particles.emit(
+                this.particles.emitBurst(
                   bomb.x, CONFIG.GROUND_Y,
-                  '#ff8800', 12, 6, 0.5, 3
+                  '#ff8800', 15, 5, 0.5, 4
                 );
+                this.renderer.screenShake(2, 0.1);
               }
             } else {
               bomb.explosionRadius = Math.min(bomb.explosionRadius + dt * 180, 40);
@@ -862,11 +1100,81 @@ class Game {
     }
   }
 
+  saveGame(slot) {
+    const data = {
+      gold: this.gold,
+      xp: this.xp,
+      currentAge: this.currentAge,
+      enemyGold: this.enemyGold,
+      enemyXp: this.enemyXp,
+      enemyAge: this.enemyAge,
+      specialCooldown: this.specialCooldown,
+      enemySpecialCooldown: this.enemySpecialCooldown,
+      heroCooldown: this.heroCooldown,
+      enemyHeroCooldown: this.enemyHeroCooldown,
+      playerBaseHp: this.playerBase.hp,
+      enemyBaseHp: this.enemyBase.hp,
+      unitUpgrades: { ...this.unitUpgrades },
+      playerSlotsBought: this.playerSlotsBought,
+      enemySlotsBought: this.enemySlotsBought,
+      gameSpeed: this.gameSpeed,
+      difficulty: this.difficulty,
+      gameTime: this.gameTime,
+      totalGoldSpent: this.totalGoldSpent,
+      buildings: this.buildings.filter(b => b.side === 'player' && b.alive).map(b => b.buildingIndex),
+    };
+    try {
+      localStorage.setItem(`age_of_war_save_${slot}`, JSON.stringify(data));
+      this.audio.play('evolve');
+    } catch (e) { /* storage full or unavailable */ }
+  }
+
+  loadGame(slot) {
+    try {
+      const raw = localStorage.getItem(`age_of_war_save_${slot}`);
+      if (!raw) return;
+      const data = JSON.parse(raw);
+      this.restart();
+      this.gold = data.gold;
+      this.xp = data.xp;
+      this.currentAge = data.currentAge;
+      this.enemyGold = data.enemyGold;
+      this.enemyXp = data.enemyXp;
+      this.enemyAge = data.enemyAge;
+      this.specialCooldown = data.specialCooldown;
+      this.enemySpecialCooldown = data.enemySpecialCooldown;
+      this.heroCooldown = data.heroCooldown || 0;
+      this.enemyHeroCooldown = data.enemyHeroCooldown || 0;
+      this.playerBase.hp = data.playerBaseHp;
+      this.playerBase.maxHp = data.playerBaseHp;
+      this.enemyBase.hp = data.enemyBaseHp;
+      this.enemyBase.maxHp = data.enemyBaseHp;
+      this.unitUpgrades = data.unitUpgrades || {};
+      this.playerSlotsBought = data.playerSlotsBought;
+      this.enemySlotsBought = data.enemySlotsBought;
+      this.gameSpeed = data.gameSpeed;
+      this.difficulty = data.difficulty;
+      this.gameTime = data.gameTime;
+      this.totalGoldSpent = data.totalGoldSpent || 0;
+      this.playerBase.healFraction(0);
+      this.enemyBase.healFraction(0);
+      if (data.buildings) {
+        for (const idx of data.buildings) {
+          this.buyBuilding(idx);
+        }
+      }
+      this.audio.play('evolve');
+      this.audio.updateMusicAge(this.currentAge);
+    } catch (e) { /* corrupted save */ }
+  }
+
   dealSpecialDamage() {
     const anim = this.specialAnim;
     if (!anim) return;
     const age = CONFIG.AGES[anim.ageIndex];
     const targetSide = anim.side === 'player' ? 'enemy' : 'player';
+
+    this.renderer.screenShake(8, 0.4);
 
     for (const u of this.units) {
       if (u.side === targetSide && u.alive) {

@@ -28,6 +28,19 @@ const CONFIG = {
 
   SPECIAL_COOLDOWN: 40,
 
+  UNIT_UPGRADE_COSTS: [0, 1.5, 2.5],
+  UNIT_UPGRADE_HP_MULT: [1.0, 1.3, 1.75],
+  UNIT_UPGRADE_DMG_MULT: [1.0, 1.25, 1.6],
+  UNIT_UPGRADE_SPD_MULT: [1.0, 1.05, 1.1],
+  MAX_UPGRADE_TIER: 2,
+
+  HERO_COOLDOWN: 60,
+
+  BUILDINGS: [
+    { name: 'Gold Mine', cost: 200, hp: 200, produceAmount: 3, produceInterval: 4 },
+    { name: 'Barracks', cost: 300, hp: 300, healAmount: 2, healRadius: 80 },
+  ],
+
   TURRET_SLOTS: 4,
   TURRET_SLOT_COST: 250,
   TURRET_REFUND_RATE: 0.5,
@@ -55,6 +68,7 @@ const CONFIG = {
         { name: 'Slingshot', type: 'ranged', cost: 25, hp: 42, damage: 12, speed: 0.6, range: 150, attackSpeed: 1.2, projectileSpeed: 4, goldReward: 33, xpReward: 15 },
         { name: 'Dino Rider', type: 'fast', cost: 100, hp: 160, damage: 40, speed: 1.8, range: 30, attackSpeed: 0.8, goldReward: 130, xpReward: 40 },
       ],
+      hero: { name: 'Shaman', type: 'melee', cost: 300, hp: 250, damage: 45, speed: 0.9, range: 35, attackSpeed: 0.9, goldReward: 400, xpReward: 80, auraRadius: 120, auraHeal: 3 },
       turrets: [
         { name: 'Rock Slingshot', cost: 100, hp: 150, damage: 12, range: 200, attackSpeed: 0.75, projectileSpeed: 5 },
         { name: 'Egg Automatic', cost: 200, hp: 200, damage: 5, range: 180, attackSpeed: 0.28, projectileSpeed: 6 },
@@ -73,6 +87,7 @@ const CONFIG = {
         { name: 'Archer', type: 'ranged', cost: 75, hp: 80, damage: 20, speed: 0.65, range: 170, attackSpeed: 1.3, projectileSpeed: 5, goldReward: 98, xpReward: 25 },
         { name: 'Knight', type: 'fast', cost: 500, hp: 300, damage: 60, speed: 1.4, range: 30, attackSpeed: 1.1, goldReward: 650, xpReward: 80 },
       ],
+      hero: { name: 'Paladin', type: 'melee', cost: 800, hp: 500, damage: 80, speed: 1.0, range: 30, attackSpeed: 0.9, goldReward: 1000, xpReward: 150, auraRadius: 140, auraBuff: 1.2 },
       turrets: [
         { name: 'Catapult', cost: 500, hp: 400, damage: 40, range: 250, attackSpeed: 1.75, projectileSpeed: 5 },
         { name: 'Fire Catapult', cost: 750, hp: 500, damage: 50, range: 250, attackSpeed: 1.75, projectileSpeed: 5, splashRadius: 25 },
@@ -91,6 +106,7 @@ const CONFIG = {
         { name: 'Musketeer', type: 'ranged', cost: 400, hp: 160, damage: 40, speed: 0.6, range: 180, attackSpeed: 1.5, projectileSpeed: 6, goldReward: 520, xpReward: 60 },
         { name: 'Cannoneer', type: 'siege', cost: 1000, hp: 600, damage: 120, speed: 0.4, range: 200, attackSpeed: 2.5, projectileSpeed: 4, splashRadius: 40, goldReward: 1300, xpReward: 100 },
       ],
+      hero: { name: 'War Engineer', type: 'siege', cost: 2500, hp: 800, damage: 180, speed: 0.5, range: 220, attackSpeed: 2.0, projectileSpeed: 5, splashRadius: 50, goldReward: 3200, xpReward: 250 },
       turrets: [
         { name: 'Small Cannon', cost: 1500, hp: 600, damage: 30, range: 300, attackSpeed: 1.75, projectileSpeed: 6 },
         { name: 'Large Cannon', cost: 3000, hp: 800, damage: 70, range: 300, attackSpeed: 1.75, projectileSpeed: 6, splashRadius: 20 },
@@ -109,6 +125,7 @@ const CONFIG = {
         { name: 'Infantry', type: 'ranged', cost: 2000, hp: 300, damage: 60, speed: 0.7, range: 170, attackSpeed: 1.2, projectileSpeed: 7, goldReward: 2600, xpReward: 200 },
         { name: 'Tank', type: 'armored', cost: 7000, hp: 1200, damage: 300, speed: 0.4, range: 180, attackSpeed: 2.0, projectileSpeed: 8, goldReward: 9100, xpReward: 500 },
       ],
+      hero: { name: 'Commander', type: 'ranged', cost: 12000, hp: 1500, damage: 200, speed: 0.7, range: 220, attackSpeed: 1.0, projectileSpeed: 8, goldReward: 16000, xpReward: 600, auraRadius: 160, auraBuff: 1.3 },
       turrets: [
         { name: 'Single Turret', cost: 7000, hp: 800, damage: 70, range: 300, attackSpeed: 1.0, projectileSpeed: 8 },
         { name: 'Rocket Turret', cost: 9000, hp: 900, damage: 100, range: 300, attackSpeed: 1.25, projectileSpeed: 8 },
@@ -128,6 +145,7 @@ const CONFIG = {
         { name: 'War Machine', type: 'armored', cost: 20000, hp: 3000, damage: 600, speed: 0.35, range: 200, attackSpeed: 2.5, projectileSpeed: 8, goldReward: 26000, xpReward: 1000 },
         { name: 'Super Soldier', type: 'elite', cost: 150000, hp: 4000, damage: 400, speed: 0.8, range: 150, attackSpeed: 1.0, projectileSpeed: 10, goldReward: 200000, xpReward: 0 },
       ],
+      hero: { name: 'Titan', type: 'armored', cost: 40000, hp: 5000, damage: 800, speed: 0.5, range: 200, attackSpeed: 1.5, projectileSpeed: 10, splashRadius: 60, goldReward: 50000, xpReward: 1500 },
       turrets: [
         { name: 'Titanium Shooter', cost: 24000, hp: 1000, damage: 100, range: 250, attackSpeed: 1.0, projectileSpeed: 9 },
         { name: 'Lazer Cannon', cost: 40000, hp: 1200, damage: 40, range: 300, attackSpeed: 0.25, projectileSpeed: 10 },

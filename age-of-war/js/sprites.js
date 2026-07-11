@@ -1,26 +1,37 @@
 class SpriteManager {
   constructor() {
     this.cache = {};
-    this.size = 48;
+    this.size = 64;
+    this.baseSize = 48;
   }
 
   getSprite(type, ageIndex) {
     const key = `${type}_${ageIndex}`;
     if (this.cache[key]) return this.cache[key];
 
+    const base = document.createElement('canvas');
+    base.width = this.baseSize;
+    base.height = this.baseSize;
+    const baseCtx = base.getContext('2d');
+    baseCtx.imageSmoothingEnabled = false;
+    if (type === 'hero') {
+      this['draw_hero_' + ageIndex](baseCtx);
+    } else {
+      this['draw_' + type](baseCtx, ageIndex);
+    }
+
     const c = document.createElement('canvas');
     c.width = this.size;
     c.height = this.size;
     const ctx = c.getContext('2d');
     ctx.imageSmoothingEnabled = false;
-
-    this['draw_' + type](ctx, ageIndex);
+    ctx.drawImage(base, 0, 0, this.baseSize, this.baseSize, 0, 0, this.size, this.size);
 
     this.cache[key] = c;
     return c;
   }
 
-  draw(ctx, type, ageIndex, x, y, facing) {
+  draw(ctx, type, ageIndex, x, y, facing, side) {
     const sprite = this.getSprite(type, ageIndex);
     const s = this.size;
     ctx.save();
@@ -29,6 +40,12 @@ class SpriteManager {
       ctx.scale(-1, 1);
     }
     ctx.drawImage(sprite, -s / 2, -s, s, s);
+    if (side) {
+      ctx.globalAlpha = 0.08;
+      ctx.fillStyle = side === 'player' ? CONFIG.COLORS.PLAYER : CONFIG.COLORS.ENEMY;
+      ctx.fillRect(-s / 2, -s, s, s);
+      ctx.globalAlpha = 1;
+    }
     ctx.restore();
   }
 
@@ -413,6 +430,141 @@ class SpriteManager {
       s(31, 32, 4, 1, '#66ffff');
       s(5, 33, 28, 1, 'rgba(0,229,255,0.3)'); // ground glow
     }
+  }
+
+  // ── Hero sprites (5 ages) ──
+  draw_hero_0(ctx) {
+    const s = this.rect.bind(this, ctx);
+    // Shaman — larger caveman with headdress
+    s(16, 2, 14, 12, '#D2B48C');    // head
+    s(17, 3, 12, 6, '#c4a070');     // face
+    s(18, 5, 4, 2, '#222');         // eyes
+    s(24, 5, 4, 2, '#222');
+    s(19, 7, 3, 1, '#c44');         // mouth
+    s(14, 0, 18, 3, '#ff4400');     // feather headdress
+    s(16, -1, 2, 4, '#ff6600');
+    s(22, -1, 2, 4, '#ffaa00');
+    s(28, -1, 2, 4, '#ff4400');
+    s(14, 14, 18, 14, '#8B6040');   // torso
+    s(16, 15, 14, 12, '#9a7050');   // torso highlight
+    s(18, 16, 10, 4, '#ff6600');    // mystical marking
+    s(14, 28, 6, 10, '#7a5030');    // left leg
+    s(26, 28, 6, 10, '#7a5030');    // right leg
+    s(14, 34, 6, 4, '#5a3020');     // feet
+    s(26, 34, 6, 4, '#5a3020');
+    s(32, 14, 5, 14, '#6B4020');    // right arm (staff)
+    s(34, 4, 3, 12, '#8B5030');     // staff
+    s(34, 2, 4, 4, '#ff6600');      // staff orb glow
+    s(35, 3, 2, 2, '#ffaa00');      // orb highlight
+    s(12, 16, 4, 10, '#7a5030');    // left arm
+  }
+
+  draw_hero_1(ctx) {
+    const s = this.rect.bind(this, ctx);
+    // Paladin — armored knight with shield
+    s(17, 3, 12, 10, '#D2B48C');    // head
+    s(15, 1, 16, 5, '#aaa');        // full helm
+    s(17, 2, 12, 3, '#ccc');        // helm highlight
+    s(19, 5, 3, 2, '#222');         // eye slit
+    s(25, 5, 3, 2, '#222');
+    s(14, 13, 18, 15, '#999');      // plate armor
+    s(16, 14, 14, 13, '#bbb');      // armor highlight
+    s(19, 15, 8, 4, '#4444aa');     // blue tabard
+    s(20, 16, 6, 2, '#6666cc');     // tabard light
+    s(14, 28, 6, 10, '#777');       // legs
+    s(26, 28, 6, 10, '#777');
+    s(14, 34, 6, 4, '#555');        // boots
+    s(26, 34, 6, 4, '#555');
+    s(32, 13, 5, 14, '#aaa');       // right arm
+    s(34, 3, 3, 14, '#ddd');        // sword
+    s(35, 2, 1, 2, '#fff');         // tip
+    s(32, 13, 3, 3, '#8B7355');     // crossguard
+    s(6, 14, 8, 12, '#4444aa');     // shield
+    s(7, 15, 6, 10, '#5555bb');     // shield mid
+    s(9, 17, 2, 6, '#ffd700');      // shield cross
+    s(8, 19, 4, 2, '#ffd700');
+  }
+
+  draw_hero_2(ctx) {
+    const s = this.rect.bind(this, ctx);
+    // War Engineer — person with large cannon device
+    s(17, 3, 12, 10, '#D2B48C');
+    s(15, 1, 16, 4, '#5a3a00');     // wide hat
+    s(16, 2, 14, 2, '#6a4a10');
+    s(19, 5, 3, 2, '#222');
+    s(25, 5, 3, 2, '#222');
+    s(14, 13, 18, 15, '#5a4a30');   // coat
+    s(16, 14, 14, 13, '#6a5a40');
+    s(18, 16, 10, 3, '#8B6914');    // gold belt
+    s(14, 28, 6, 10, '#3a3a2a');    // legs
+    s(26, 28, 6, 10, '#3a3a2a');
+    s(14, 34, 6, 4, '#2a2a1a');
+    s(26, 34, 6, 4, '#2a2a1a');
+    // Backpack cannon
+    s(32, 10, 12, 8, '#555');
+    s(34, 11, 8, 6, '#666');
+    s(42, 12, 4, 4, '#444');        // barrel
+    s(44, 13, 2, 2, '#ff6600');     // fuse glow
+    s(6, 14, 8, 10, '#5a4a30');     // left arm
+    s(2, 18, 5, 4, '#8B6914');      // tool belt
+  }
+
+  draw_hero_3(ctx) {
+    const s = this.rect.bind(this, ctx);
+    // Commander — officer with radio
+    s(18, 5, 10, 9, '#D2B48C');
+    s(16, 2, 14, 5, '#2a3a2a');     // officer cap
+    s(17, 3, 12, 3, '#3a4a3a');
+    s(19, 4, 4, 1, '#ffd700');      // cap badge
+    s(20, 8, 2, 2, '#222');
+    s(25, 8, 2, 2, '#222');
+    s(14, 14, 18, 14, '#3a4a2a');   // uniform
+    s(16, 15, 14, 12, '#4a5a3a');
+    s(19, 15, 8, 4, '#ffd700');     // medals
+    s(20, 16, 6, 2, '#ff4444');     // ribbon
+    s(14, 28, 6, 10, '#2a3a1a');    // legs
+    s(26, 28, 6, 10, '#2a3a1a');
+    s(14, 34, 6, 4, '#1a2a1a');     // boots
+    s(26, 34, 6, 4, '#1a2a1a');
+    s(32, 14, 5, 12, '#3a4a2a');    // right arm
+    s(34, 10, 4, 6, '#333');        // radio
+    s(35, 8, 2, 3, '#444');         // antenna
+    s(35, 6, 2, 2, '#ff4444');      // antenna light
+    s(8, 16, 6, 8, '#3a4a2a');      // left arm (pointing)
+    s(2, 16, 7, 3, '#3a4a2a');
+  }
+
+  draw_hero_4(ctx) {
+    const s = this.rect.bind(this, ctx);
+    // Titan — massive mech
+    s(14, 2, 18, 12, '#0a1a3a');    // head
+    s(16, 4, 14, 8, '#1a2a4a');     // head mid
+    s(18, 5, 10, 4, '#00e5ff');     // visor
+    s(19, 4, 8, 1, '#66ffff');      // visor highlight
+    s(20, 6, 6, 1, '#aaffff');
+    s(10, 14, 26, 16, '#0a1a3a');   // torso
+    s(12, 16, 22, 12, '#1a2a4a');   // torso mid
+    s(14, 17, 18, 6, '#00e5ff');    // core
+    s(16, 18, 14, 4, '#66ffff');    // core glow
+    s(18, 19, 10, 2, '#aaffff');    // core highlight
+    s(10, 30, 8, 10, '#0a1a3a');    // left leg
+    s(12, 32, 4, 8, '#1a2a4a');
+    s(28, 30, 8, 10, '#0a1a3a');    // right leg
+    s(30, 32, 4, 8, '#1a2a4a');
+    s(10, 38, 8, 4, '#00e5ff');     // boots
+    s(28, 38, 8, 4, '#00e5ff');
+    // Massive arms
+    s(0, 14, 12, 6, '#0a1a3a');     // left arm
+    s(1, 15, 10, 4, '#1a2a4a');
+    s(-4, 12, 6, 10, '#ff3333');    // left blade
+    s(-3, 13, 4, 8, '#ff6666');
+    s(34, 14, 12, 6, '#0a1a3a');    // right arm
+    s(35, 15, 10, 4, '#1a2a4a');
+    s(44, 12, 6, 10, '#ff3333');    // right blade
+    s(45, 13, 4, 8, '#ff6666');
+    // Head crest
+    s(18, -2, 8, 4, '#00e5ff');
+    s(20, -3, 4, 2, '#66ffff');
   }
 
   // ── Elite: Super Soldier (Future) ──

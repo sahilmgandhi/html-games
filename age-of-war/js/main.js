@@ -12,6 +12,11 @@ const DIFF_BTN_W = 140;
 const DIFF_BTN_H = 32;
 const DIFF_BTN_Y = 370;
 
+const audio = new AudioManager();
+const ach = new Achievements();
+let showSettings = false;
+let showAchievements = false;
+
 function getDiffBtnRect(i) {
   const totalW = CONFIG.DIFFICULTIES.length * (DIFF_BTN_W + 10) - 10;
   const startX = (canvas.width - totalW) / 2;
@@ -23,18 +28,16 @@ function drawTitleScreen() {
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   const t = Date.now() / 1000;
+  const cx = canvas.width / 2;
+  const cy = canvas.height / 2;
 
   drawTitleBackground(t);
 
-  ctx.shadowColor = '#e6a817';
-  ctx.shadowBlur = 30;
   ctx.fillStyle = '#e6a817';
   ctx.font = 'bold 64px "Segoe UI", sans-serif';
   ctx.textAlign = 'center';
   ctx.fillText('AGE OF WAR', canvas.width / 2, 170);
-  ctx.shadowBlur = 15;
   ctx.fillText('AGE OF WAR', canvas.width / 2, 170);
-  ctx.shadowBlur = 0;
 
   ctx.fillStyle = 'rgba(255,255,255,0.5)';
   ctx.font = '18px "Segoe UI", sans-serif';
@@ -71,19 +74,131 @@ function drawTitleScreen() {
     ctx.fillText(d.name, r.x + r.w / 2, r.y + 21);
   }
 
+  // Settings gear
+  const gearX = 20;
+  const gearY = 20;
+  const gearS = 24;
+  if (!showSettings) {
+    ctx.fillStyle = 'rgba(255,255,255,0.08)';
+    ctx.beginPath();
+    ctx.arc(gearX + gearS / 2, gearY + gearS / 2, gearS / 2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#aaa';
+    ctx.font = 'bold 14px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('\u2699', gearX + gearS / 2, gearY + gearS / 2);
+    ctx.textBaseline = 'alphabetic';
+  }
+
+  // Settings panel
+  if (showSettings) {
+    const panelX = 10;
+    const panelY = 10;
+    const panelW = 200;
+    const panelH = 90;
+    ctx.fillStyle = 'rgba(8,8,20,0.95)';
+    ctx.fillRect(panelX, panelY, panelW, panelH);
+    ctx.strokeStyle = '#555';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(panelX, panelY, panelW, panelH);
+
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 12px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText('Settings', panelX + 12, panelY + 18);
+
+    ctx.fillStyle = audio.musicEnabled ? '#2a4a2a' : '#4a2a2a';
+    ctx.fillRect(panelX + 12, panelY + 30, 176, 22);
+    ctx.strokeStyle = audio.musicEnabled ? '#4a8' : '#844';
+    ctx.strokeRect(panelX + 12, panelY + 30, 176, 22);
+    ctx.fillStyle = '#fff';
+    ctx.font = '11px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Music: ' + (audio.musicEnabled ? 'ON' : 'OFF'), panelX + 100, panelY + 44);
+
+    ctx.fillStyle = audio.sfxEnabled ? '#2a4a2a' : '#4a2a2a';
+    ctx.fillRect(panelX + 12, panelY + 56, 176, 22);
+    ctx.strokeStyle = audio.sfxEnabled ? '#4a8' : '#844';
+    ctx.strokeRect(panelX + 12, panelY + 56, 176, 22);
+    ctx.fillStyle = '#fff';
+    ctx.textAlign = 'center';
+    ctx.fillText('SFX: ' + (audio.sfxEnabled ? 'ON' : 'OFF'), panelX + 100, panelY + 70);
+  }
+
+  // Achievement gallery button
+  const achY = DIFF_BTN_Y + 36;
+  ctx.fillStyle = 'rgba(255,200,50,0.08)';
+  ctx.fillRect(cx - 110, achY, 220, 24);
+  ctx.strokeStyle = 'rgba(255,200,50,0.3)';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(cx - 110, achY, 220, 24);
+  ctx.fillStyle = '#ffd700';
+  ctx.font = 'bold 12px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Achievements (' + ach.unlocked.length + '/' + ach.defs.length + ')', cx, achY + 16);
+
+  // Achievement panel
+  if (showAchievements) {
+    const panelW = 400;
+    const panelH = 420;
+    const panelX = cx - panelW / 2;
+    const panelY = cy - panelH / 2;
+    ctx.fillStyle = 'rgba(8,8,20,0.95)';
+    ctx.fillRect(panelX, panelY, panelW, panelH);
+    ctx.strokeStyle = '#ffd700';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(panelX, panelY, panelW, panelH);
+
+    ctx.fillStyle = '#ffd700';
+    ctx.font = 'bold 16px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Achievements', cx, panelY + 24);
+
+    for (let i = 0; i < ach.defs.length; i++) {
+      const d = ach.defs[i];
+      const unY = panelY + 40 + i * 30;
+      const unlocked = ach.isUnlocked(d.id);
+      ctx.fillStyle = unlocked ? 'rgba(255,215,0,0.1)' : 'rgba(40,40,40,0.3)';
+      ctx.fillRect(panelX + 10, unY, panelW - 20, 26);
+      ctx.strokeStyle = unlocked ? 'rgba(255,215,0,0.3)' : 'rgba(60,60,60,0.3)';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(panelX + 10, unY, panelW - 20, 26);
+
+      ctx.fillStyle = unlocked ? '#ffd700' : '#555';
+      ctx.font = 'bold 11px sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText(unlocked ? '\u2605 ' + d.name : '  ' + d.name, panelX + 16, unY + 16);
+      ctx.fillStyle = unlocked ? '#aaa' : '#444';
+      ctx.font = '9px sans-serif';
+      ctx.fillText(d.desc, panelX + 16, unY + 24);
+    }
+
+    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    ctx.font = '10px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Click anywhere to close', cx, panelY + panelH - 8);
+  }
+
   const pulse = 0.6 + Math.sin(Date.now() / 500) * 0.4;
-  ctx.shadowColor = '#e6a817';
-  ctx.shadowBlur = 10;
   ctx.fillStyle = '#e6a817';
   ctx.font = 'bold 22px "Segoe UI", sans-serif';
   ctx.globalAlpha = pulse;
-  ctx.fillText('Click to Start', canvas.width / 2, 430);
-  ctx.shadowBlur = 0;
+  ctx.fillText('Click to Start', cx, 430);
   ctx.globalAlpha = 1;
 
-  ctx.fillStyle = '#555';
-  ctx.font = '13px "Segoe UI", sans-serif';
-  ctx.fillText('WASD or Arrow Keys to scroll  |  Click units in HUD to spawn  |  ESC to pause', canvas.width / 2, 470);
+  const hintY = DIFF_BTN_Y + 76;
+  ctx.fillStyle = 'rgba(255,255,255,0.25)';
+  ctx.font = '9px sans-serif';
+  ctx.textAlign = 'center';
+  const hints = [
+    '1-9: Spawn units | Space: Special | E: Evolve | H: Hero',
+    'T: Speed | F5: Save | F8: Load | B/N: Buildings',
+    '\u2191\u2193\u2190\u2192/A/D: Scroll | ESC/P: Pause',
+  ];
+  for (let i = 0; i < hints.length; i++) {
+    ctx.fillText(hints[i], cx, hintY + i * 14);
+  }
 
 }
 
@@ -165,6 +280,41 @@ canvas.addEventListener('click', (e) => {
     const rect = canvas.getBoundingClientRect();
     const mx = e.clientX - rect.left;
     const my = e.clientY - rect.top;
+    const cx = canvas.width / 2;
+
+    // Settings gear
+    if (!showSettings && pointInRect(mx, my, 20, 20, 24, 24)) {
+      showSettings = true;
+      return;
+    }
+
+    // Settings panel
+    if (showSettings) {
+      if (pointInRect(mx, my, 22, 40, 176, 22)) {
+        audio.musicEnabled = !audio.musicEnabled;
+        return;
+      }
+      if (pointInRect(mx, my, 22, 66, 176, 22)) {
+        audio.sfxEnabled = !audio.sfxEnabled;
+        return;
+      }
+      if (!pointInRect(mx, my, 10, 10, 200, 100)) {
+        showSettings = false;
+        return;
+      }
+      return;
+    }
+
+    // Achievement gallery
+    if (showAchievements) {
+      showAchievements = false;
+      return;
+    }
+    const achY = DIFF_BTN_Y + 36;
+    if (pointInRect(mx, my, cx - 110, achY, 220, 24)) {
+      showAchievements = true;
+      return;
+    }
 
     for (let i = 0; i < CONFIG.DIFFICULTIES.length; i++) {
       const r = getDiffBtnRect(i);

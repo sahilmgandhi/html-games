@@ -8,6 +8,10 @@ class AudioManager {
     this.musicNodes = [];
     this.musicTimer = null;
     this.currentAgeIndex = 0;
+    this.musicSection = 0;
+    this.ambientNodes = [];
+    this.ambientTimer = null;
+    this.currentAmbient = -1;
   }
 
   init() {
@@ -28,11 +32,14 @@ class AudioManager {
     if (!this.ctx || !this.musicEnabled) return;
     this.currentAgeIndex = ageIndex;
     this.musicPlaying = true;
+    this.musicSection = 0;
     this.playMusicLoop(ageIndex);
+    this.startAmbient(ageIndex);
   }
 
   stopMusic() {
     this.musicPlaying = false;
+    this.stopAmbient();
     if (this.musicTimer) {
       clearTimeout(this.musicTimer);
       this.musicTimer = null;
@@ -205,6 +212,7 @@ class AudioManager {
 
     this.musicTimer = setTimeout(() => {
       this.musicNodes = [];
+      this.musicSection = (this.musicSection + 1) % 4;
       this.playMusicLoop(ageIndex);
     }, totalDur * 1000);
   }
@@ -270,6 +278,81 @@ class AudioManager {
     this.musicNodes.push(noise);
   }
 
+  startAmbient(ageIndex) {
+    this.stopAmbient();
+    if (!this.ctx || !this.musicEnabled) return;
+    this.currentAmbient = ageIndex;
+
+    const now = this.ctx.currentTime;
+    const dur = 2;
+
+    if (ageIndex === 0) {
+      const filter = this.ctx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(400, now);
+
+      const noise = this.createNoise(dur);
+      const gain = this.ctx.createGain();
+      gain.gain.setValueAtTime(0, now);
+      gain.gain.linearRampToValueAtTime(0.02, now + 0.5);
+      gain.gain.setValueAtTime(0.02, now + dur - 0.5);
+      gain.gain.linearRampToValueAtTime(0, now + dur);
+      noise.connect(filter);
+      filter.connect(gain);
+      gain.connect(this.ctx.destination);
+      noise.start(now);
+      noise.stop(now + dur);
+      this.ambientNodes.push(noise);
+    } else if (ageIndex === 3) {
+      const filter = this.ctx.createBiquadFilter();
+      filter.type = 'highpass';
+      filter.frequency.setValueAtTime(3000, now);
+
+      const noise = this.createNoise(dur);
+      const gain = this.ctx.createGain();
+      gain.gain.setValueAtTime(0, now);
+      gain.gain.linearRampToValueAtTime(0.015, now + 0.3);
+      gain.gain.setValueAtTime(0.01, now + dur - 0.3);
+      gain.gain.linearRampToValueAtTime(0, now + dur);
+      noise.connect(filter);
+      filter.connect(gain);
+      gain.connect(this.ctx.destination);
+      noise.start(now);
+      noise.stop(now + dur);
+      this.ambientNodes.push(noise);
+    } else if (ageIndex === 4) {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(60, now);
+      gain.gain.setValueAtTime(0, now);
+      gain.gain.linearRampToValueAtTime(0.01, now + 0.3);
+      gain.gain.setValueAtTime(0.01, now + dur - 0.3);
+      gain.gain.linearRampToValueAtTime(0, now + dur);
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start(now);
+      osc.stop(now + dur);
+      this.ambientNodes.push(osc);
+    }
+
+    this.ambientTimer = setTimeout(() => {
+      this.ambientNodes = [];
+      this.startAmbient(ageIndex);
+    }, dur * 1000);
+  }
+
+  stopAmbient() {
+    if (this.ambientTimer) {
+      clearTimeout(this.ambientTimer);
+      this.ambientTimer = null;
+    }
+    for (const n of this.ambientNodes) {
+      try { n.stop(); } catch (e) {}
+    }
+    this.ambientNodes = [];
+  }
+
   createNoise(duration) {
     const sampleRate = this.ctx.sampleRate;
     const length = sampleRate * duration;
@@ -289,6 +372,21 @@ class AudioManager {
       const now = this.ctx.currentTime;
 
       switch (type) {
+        case 'ui_click': {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(600, now);
+          osc.frequency.exponentialRampToValueAtTime(400, now + 0.04);
+          gain.gain.setValueAtTime(0.04, now);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
+          osc.start(now);
+          osc.stop(now + 0.05);
+          break;
+        }
+
         case 'spawn': {
           const osc = this.ctx.createOscillator();
           const gain = this.ctx.createGain();
