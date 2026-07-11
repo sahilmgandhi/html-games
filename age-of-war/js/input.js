@@ -90,7 +90,7 @@ class InputHandler {
   }
 
   handleClick(game) {
-    const HH = 108;
+    const HH = 145;
     const y = CONFIG.VIEWPORT.HEIGHT - HH;
     if (this.mouseY < y) return;
 
@@ -147,7 +147,7 @@ class InputHandler {
       return;
     }
 
-    const row2Y = y + 44;
+    const row2Y = y + 56;
     if (pointInRect(this.mouseX, this.mouseY, 12, row2Y, 80, 22)) {
       game.buySlot();
       return;
@@ -171,7 +171,7 @@ class InputHandler {
     }
 
     const playerTurrets = game.turrets.filter(t => t.side === 'player');
-    const row3Y = row2Y + 26;
+    const row3Y = row2Y + 34;
     for (let i = 0; i < playerTurrets.length; i++) {
       const bx = 100 + i * 96;
       if (pointInRect(this.mouseX, this.mouseY, bx, row3Y, 88, 18)) {

@@ -998,29 +998,59 @@ class Renderer {
       const dir = base.side === 'player' ? 1 : -1;
       const ts = this.worldToScreen(base.x + dir * CONFIG.TURRET_SLOT_OFFSET_X, base.y);
       const tx = ts.x;
-      const pw = 28;
+      const pw = 38;
       const topSlot = groundY - (occupied - 1) * CONFIG.TURRET_SLOT_SPACING;
-      const towerTop = topSlot - 14;
+      const towerTop = topSlot - 18;
+      const towerH = groundY - towerTop;
+
+      ctx.save();
+      ctx.shadowColor = age.color;
+      ctx.shadowBlur = 8 + occupied * 4;
       const tg = ctx.createLinearGradient(tx - pw / 2, towerTop, tx + pw / 2, groundY);
       tg.addColorStop(0, age.color);
-      tg.addColorStop(1, '#2a2a3a');
+      tg.addColorStop(0.4, '#3a3a50');
+      tg.addColorStop(1, '#1a1a2a');
       ctx.fillStyle = tg;
-      ctx.fillRect(tx - pw / 2, towerTop, pw, groundY - towerTop);
-      ctx.fillStyle = 'rgba(0,0,0,0.25)';
-      for (let yy = towerTop + 6; yy < groundY; yy += 14) {
-        ctx.fillRect(tx - pw / 2, yy, pw, 2);
+      this.roundRect(ctx, tx - pw / 2, towerTop, pw, towerH, 3);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.restore();
+
+      ctx.fillStyle = 'rgba(0,0,0,0.3)';
+      for (let yy = towerTop + 8; yy < groundY; yy += 12) {
+        ctx.fillRect(tx - pw / 2 + 2, yy, pw - 4, 2);
       }
+
       for (let i = 0; i < occupied; i++) {
         const ly = groundY - i * CONFIG.TURRET_SLOT_SPACING;
-        ctx.fillStyle = age.color;
-        ctx.fillRect(tx - pw / 2 - 5, ly - 4, pw + 10, 6);
-        ctx.fillStyle = 'rgba(255,255,255,0.12)';
-        ctx.fillRect(tx - pw / 2 - 5, ly - 4, pw + 10, 2);
+        const barGrad = ctx.createLinearGradient(tx - pw / 2 - 8, ly, tx + pw / 2 + 8, ly);
+        barGrad.addColorStop(0, 'rgba(255,255,255,0.08)');
+        barGrad.addColorStop(0.5, age.color);
+        barGrad.addColorStop(1, 'rgba(255,255,255,0.08)');
+        ctx.fillStyle = barGrad;
+        this.roundRect(ctx, tx - pw / 2 - 8, ly - 5, pw + 16, 8, 2);
+        ctx.fill();
+        ctx.fillStyle = 'rgba(255,255,255,0.2)';
+        ctx.fillRect(tx - pw / 2 - 8, ly - 5, pw + 16, 2);
       }
-      ctx.fillStyle = sideColor;
-      ctx.globalAlpha = 0.8;
+
+      const orbRadius = 6 + occupied;
+      const orbGlow = ctx.createRadialGradient(tx, towerTop - 6, 0, tx, towerTop - 6, orbRadius * 2);
+      orbGlow.addColorStop(0, age.color);
+      orbGlow.addColorStop(0.5, 'rgba(255,255,255,0.3)');
+      orbGlow.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.fillStyle = orbGlow;
       ctx.beginPath();
-      ctx.arc(tx, towerTop - 4, 5, 0, Math.PI * 2);
+      ctx.arc(tx, towerTop - 6, orbRadius * 2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = sideColor;
+      ctx.globalAlpha = 0.9;
+      ctx.beginPath();
+      ctx.arc(tx, towerTop - 6, orbRadius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,0.5)';
+      ctx.beginPath();
+      ctx.arc(tx - 2, towerTop - 8, orbRadius * 0.4, 0, Math.PI * 2);
       ctx.fill();
       ctx.globalAlpha = 1;
     }
@@ -1476,7 +1506,7 @@ class Renderer {
   drawHUD(game) {
     const ctx = this.ctx;
     const W = CONFIG.VIEWPORT.WIDTH;
-    const HH = 108;
+    const HH = 145;
     const y = CONFIG.VIEWPORT.HEIGHT - HH;
 
     this.hudTime = (this.hudTime || 0) + 1 / 60;
@@ -1842,7 +1872,7 @@ class Renderer {
     ctx.textAlign = 'center';
     ctx.fillText('Form: ' + formNames[game.formationMode], formX + formW / 2, formY + 11);
 
-    const row2Y = y + 44;
+    const row2Y = y + 56;
     const slotsFull = game.playerSlotsBought >= CONFIG.TURRET_SLOTS;
     const canBuySlot = game.gold >= CONFIG.TURRET_SLOT_COST && !slotsFull;
 
@@ -1924,7 +1954,7 @@ class Renderer {
     }
 
     const playerTurrets = game.turrets.filter(t => t.side === 'player');
-    const row3Y = row2Y + 26;
+    const row3Y = row2Y + 34;
     for (let i = 0; i < playerTurrets.length; i++) {
       const t = playerTurrets[i];
       const bx = 100 + i * 96;
@@ -1958,12 +1988,12 @@ class Renderer {
     ctx.lineWidth = 1;
 
     ctx.beginPath();
-    ctx.moveTo(10, y + 42); ctx.lineTo(W - 10, y + 42);
-    ctx.moveTo(10, y + 68); ctx.lineTo(W - 10, y + 68);
-    ctx.moveTo(160, y + 4); ctx.lineTo(160, y + 40);
-    ctx.moveTo(694, y + 4); ctx.lineTo(694, y + 40);
-    ctx.moveTo(962, y + 4); ctx.lineTo(962, y + 40);
-    ctx.moveTo(94, y + 42); ctx.lineTo(94, y + 66);
+    ctx.moveTo(10, y + 50); ctx.lineTo(W - 10, y + 50);
+    ctx.moveTo(10, y + 88); ctx.lineTo(W - 10, y + 88);
+    ctx.moveTo(160, y + 4); ctx.lineTo(160, y + 56);
+    ctx.moveTo(694, y + 4); ctx.lineTo(694, y + 56);
+    ctx.moveTo(962, y + 4); ctx.lineTo(962, y + 56);
+    ctx.moveTo(94, y + 50); ctx.lineTo(94, y + 86);
     ctx.stroke();
 
     ctx.fillStyle = 'rgba(255,255,255,0.28)';
@@ -1972,10 +2002,10 @@ class Renderer {
     const unitGroupMid = unitStartX + (age.units.length * 86) / 2 - 6;
     ctx.fillText('UNITS', unitGroupMid, y + 2);
     ctx.fillText('SPECIAL', spX + spW / 2, y + 2);
-    ctx.fillText('TURRETS', 100 + (age.turrets.length * 96) / 2 - 4, y + 40);
-    ctx.fillText('BUILD', buildingStartX + (CONFIG.BUILDINGS.length * (buildingBtnW + 8)) / 2 - 4, y + 40);
+    ctx.fillText('TURRETS', 100 + (age.turrets.length * 96) / 2 - 4, y + 52);
+    ctx.fillText('BUILD', buildingStartX + (CONFIG.BUILDINGS.length * (buildingBtnW + 8)) / 2 - 4, y + 52);
     if (playerTurrets.length > 0) {
-      ctx.fillText('SELL', 100 + (playerTurrets.length * 96) / 2 - 4, y + 66);
+      ctx.fillText('SELL', 100 + (playerTurrets.length * 96) / 2 - 4, y + 90);
     }
     ctx.restore();
   }
@@ -2182,11 +2212,11 @@ class Renderer {
     const w = CONFIG.VIEWPORT.WIDTH;
     const h = CONFIG.VIEWPORT.HEIGHT;
     const cx = w / 2;
-    const panelW = 560;
-    const panelH = 540;
+    const panelW = 620;
+    const panelH = 600;
     const panelX = cx - panelW / 2;
     const panelY = (h - panelH) / 2;
-    const bw = 170;
+    const bw = 185;
     const bh = 26;
     const col1X = panelX + 10;
     const col2X = panelX + 10 + bw + 10;
@@ -2216,55 +2246,55 @@ class Renderer {
       ctx.fillText(label, x + bw / 2, y + 16);
     };
 
-    let y = panelY + 36;
+    let y = panelY + 40;
 
     ctx.fillStyle = '#aaa';
     ctx.font = 'bold 11px sans-serif';
     ctx.textAlign = 'left';
     ctx.fillText('RESOURCES', col1X, y);
-    y += 16;
+    y += 18;
 
     drawBtn(col1X, y, 'Gold +5,000', true);
     drawBtn(col2X, y, 'XP +10,000', true);
-    y += 30;
+    y += 34;
 
     drawBtn(col1X, y, 'Gold +50,000', true);
     drawBtn(col2X, y, 'XP +100,000', true);
-    y += 36;
+    y += 42;
 
     ctx.fillStyle = '#aaa';
     ctx.font = 'bold 11px sans-serif';
     ctx.textAlign = 'left';
     ctx.fillText('COMBAT', col1X, y);
-    y += 16;
+    y += 18;
 
     drawBtn(col1X, y, 'Kill Enemies', false);
     drawBtn(col2X, y, 'Kill Players', false);
-    y += 30;
+    y += 34;
 
     drawBtn(col1X, y, 'Full Heal Base', true);
     drawBtn(col2X, y, 'Instant Win', false);
-    y += 36;
+    y += 42;
 
     ctx.fillStyle = '#aaa';
     ctx.font = 'bold 11px sans-serif';
     ctx.textAlign = 'left';
     ctx.fillText('EVOLUTION & STATUS', col1X, y);
-    y += 16;
+    y += 18;
 
     drawBtn(col1X, y, 'Evolve Player', true);
     drawBtn(col2X, y, 'Evolve Enemy', true);
-    y += 30;
+    y += 34;
 
     drawBtn(col1X, y, `Invincible: ${game.invincible ? 'ON' : 'OFF'}`, game.invincible);
     drawBtn(col2X, y, `Speed: ${game.gameSpeed}x (click)`, game.gameSpeed > 1);
-    y += 36;
+    y += 42;
 
     ctx.fillStyle = '#aaa';
     ctx.font = 'bold 11px sans-serif';
     ctx.textAlign = 'left';
     ctx.fillText('SPAWN UNIT', col1X, y);
-    y += 16;
+    y += 18;
 
     const age = CONFIG.AGES[game.currentAge];
     const unitNames = age.units.map((u, i) => u.name.substring(0, 14));
@@ -2272,7 +2302,7 @@ class Renderer {
     for (let i = 0; i < unitNames.length; i++) {
       const useTwoCols = unitNames.length <= 3;
       const rowX = useTwoCols ? (i < 2 ? col1X : col2X) : col1X;
-      const rowY = useTwoCols ? y + (i % 2) * 26 : y + i * 26;
+      const rowY = useTwoCols ? y + (i % 2) * 28 : y + i * 28;
       ctx.fillStyle = '#2a3a2a';
       ctx.fillRect(rowX, rowY, spawnColW, bh);
       ctx.strokeStyle = '#4a8';
@@ -2294,43 +2324,43 @@ class Renderer {
       ctx.fillText('E', rowX + spawnColW + 16, rowY + 16);
     }
     if (unitNames.length <= 2) {
-      y += 26;
+      y += 28;
     } else if (unitNames.length <= 3) {
-      y += 52;
+      y += 56;
     } else {
-      y += 4 * 26;
+      y += 4 * 28;
     }
-    y += 6;
+    y += 8;
 
     ctx.fillStyle = '#aaa';
     ctx.font = 'bold 11px sans-serif';
     ctx.textAlign = 'left';
     ctx.fillText('SCENARIOS', col1X, y);
-    y += 16;
+    y += 18;
 
     drawBtn(col1X, y, 'Wave Defense', false);
     drawBtn(col2X, y, 'Boss Rush', false);
-    y += 30;
+    y += 34;
 
     drawBtn(col1X, y, 'Max Evolution', false);
     drawBtn(col2X, y, 'Reset Game', false);
-    y += 36;
+    y += 42;
 
     ctx.fillStyle = '#aaa';
     ctx.font = 'bold 11px sans-serif';
     ctx.textAlign = 'left';
     ctx.fillText('DATA', col1X, y);
-    y += 16;
+    y += 18;
 
     drawBtn(col1X, y, 'Export JSON', false);
     drawBtn(col2X, y, 'Export CSV', false);
-    y += 36;
+    y += 42;
 
     ctx.fillStyle = '#aaa';
     ctx.font = 'bold 11px sans-serif';
     ctx.textAlign = 'left';
     ctx.fillText('STATS', col1X, y);
-    y += 14;
+    y += 16;
 
     const pUnits = game.units.filter(u => u.side === 'player' && u.alive).length;
     const eUnits = game.units.filter(u => u.side === 'enemy' && u.alive).length;

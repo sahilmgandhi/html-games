@@ -605,23 +605,26 @@ class Game {
     const mx = this.input.mouseX;
     const my = this.input.mouseY;
     const cx = CONFIG.VIEWPORT.WIDTH / 2;
-    const panelW = 560;
-    const panelH = 540;
+    const panelW = 620;
+    const panelH = 600;
     const panelX = cx - panelW / 2;
     const panelY = (CONFIG.VIEWPORT.HEIGHT - panelH) / 2;
-    const bw = 170;
+    const bw = 185;
     const bh = 26;
     const col1X = panelX + 10;
     const col2X = panelX + 10 + bw + 10;
 
-    let y = panelY + 52;
+    let y = panelY + 40;
+    y += 18;
+
     if (pointInRect(mx, my, col1X, y, bw, bh)) { this.gold += 5000; return; }
     if (pointInRect(mx, my, col2X, y, bw, bh)) { this.xp += 10000; return; }
-    y += 30;
+    y += 34;
     if (pointInRect(mx, my, col1X, y, bw, bh)) { this.gold += 50000; return; }
     if (pointInRect(mx, my, col2X, y, bw, bh)) { this.xp += 100000; return; }
 
-    y = panelY + 134;
+    y += 42;
+    y += 18;
     if (pointInRect(mx, my, col1X, y, bw, bh)) {
       for (const u of this.units) {
         if (u.side === 'enemy' && u.alive) {
@@ -640,7 +643,7 @@ class Game {
       }
       return;
     }
-    y += 30;
+    y += 34;
     if (pointInRect(mx, my, col1X, y, bw, bh)) { this.playerBase.hp = this.playerBase.maxHp; return; }
     if (pointInRect(mx, my, col2X, y, bw, bh)) {
       for (const u of this.units) { if (u.side === 'enemy' && u.alive) u.alive = false; }
@@ -651,7 +654,8 @@ class Game {
       return;
     }
 
-    y = panelY + 216;
+    y += 42;
+    y += 18;
     if (pointInRect(mx, my, col1X, y, bw, bh)) {
       if (this.currentAge < CONFIG.AGES.length - 1) {
         this.currentAge++;
@@ -668,7 +672,7 @@ class Game {
       }
       return;
     }
-    y += 30;
+    y += 34;
     if (pointInRect(mx, my, col1X, y, bw, bh)) { this.invincible = !this.invincible; return; }
     if (pointInRect(mx, my, col2X, y, bw, bh)) {
       const speeds = [1, 2, 3, 5, 10];
@@ -677,12 +681,13 @@ class Game {
       return;
     }
 
-    y = panelY + 298;
+    y += 42;
+    y += 18;
     const age = CONFIG.AGES[this.currentAge];
     for (let i = 0; i < age.units.length; i++) {
       const useTwoCols = age.units.length <= 3;
       const rowX = useTwoCols ? (i < 2 ? col1X : col2X) : col1X;
-      const rowY = useTwoCols ? y + (i % 2) * 26 : y + i * 26;
+      const rowY = useTwoCols ? y + (i % 2) * 28 : y + i * 28;
       if (pointInRect(mx, my, rowX, rowY, bw, bh)) {
         this.spawnUnit(i);
         return;
@@ -693,7 +698,10 @@ class Game {
       }
     }
 
-    y += age.units.length <= 2 ? 32 : age.units.length <= 3 ? 58 : 4 * 26 + 6;
+    if (age.units.length <= 2) { y += 28; } else if (age.units.length <= 3) { y += 56; } else { y += 4 * 28; }
+    y += 8;
+
+    y += 18;
     if (pointInRect(mx, my, col1X, y, bw, bh)) {
       this.gold = 100000;
       this.xp = 500000;
@@ -709,7 +717,7 @@ class Game {
       if (lastIdx > 0) this.spawnEnemyUnit(lastIdx - 1);
       return;
     }
-    y += 30;
+    y += 34;
     if (pointInRect(mx, my, col1X, y, bw, bh)) {
       this.gold = 999999;
       this.xp = 999999;
@@ -725,7 +733,9 @@ class Game {
       this.restart();
       return;
     }
-    y += 36;
+
+    y += 42;
+    y += 18;
     if (pointInRect(mx, my, col1X, y, bw, bh)) {
       balanceTracker.download(`balance_${Math.floor(this.gameTime)}s.json`, 'json');
       return;

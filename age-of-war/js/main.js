@@ -10,10 +10,11 @@ let selectedDifficulty = 0;
 
 const DIFF_BTN_W = 140;
 const DIFF_BTN_H = 32;
-const DIFF_BTN_Y = 370;
+const DIFF_BTN_Y = 390;
 
 const audio = new AudioManager();
 const ach = new Achievements();
+const spriteManager = new SpriteManager();
 let showSettings = false;
 let showAchievements = false;
 
@@ -126,8 +127,7 @@ function drawTitleScreen() {
     ctx.fillText('SFX: ' + (audio.sfxEnabled ? 'ON' : 'OFF'), panelX + 100, panelY + 70);
   }
 
-  // Achievement gallery button
-  const achY = DIFF_BTN_Y + 36;
+  const achY = DIFF_BTN_Y + 40;
   ctx.fillStyle = 'rgba(255,200,50,0.08)';
   ctx.fillRect(cx - 110, achY, 220, 24);
   ctx.strokeStyle = 'rgba(255,200,50,0.3)';
@@ -184,10 +184,10 @@ function drawTitleScreen() {
   ctx.fillStyle = '#e6a817';
   ctx.font = 'bold 22px "Segoe UI", sans-serif';
   ctx.globalAlpha = pulse;
-  ctx.fillText('Click to Start', cx, 430);
+  ctx.fillText('Click to Start', cx, 470);
   ctx.globalAlpha = 1;
 
-  const hintY = DIFF_BTN_Y + 76;
+  const hintY = 490;
   ctx.fillStyle = 'rgba(255,255,255,0.25)';
   ctx.font = '9px sans-serif';
   ctx.textAlign = 'center';
@@ -203,7 +203,7 @@ function drawTitleScreen() {
 }
 
 function drawTitleBackground(t) {
-  const groundY = 380;
+  const groundY = 310;
 
   const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
   grad.addColorStop(0, '#0a0a1e');
@@ -248,20 +248,18 @@ function drawTitleBackground(t) {
 function drawTitleUnits() {
   const t = Date.now() / 1000;
   const cx = canvas.width / 2;
-  const groundY = 380;
+  const groundY = 310;
 
   const units = [
-    { type: 'melee', age: 0, x: -160 },
-    { type: 'melee', age: 1, x: -50 },
-    { type: 'armored', age: 3, x: 60 },
-    { type: 'ranged', age: 4, x: 170 },
+    { type: 'melee', age: 0, x: -100 },
+    { type: 'melee', age: 2, x: 0 },
+    { type: 'ranged', age: 4, x: 100 },
   ];
 
   for (const u of units) {
     ctx.save();
     ctx.translate(cx + u.x, groundY);
-    ctx.scale(1.8, 1.8);
-    const bob = Math.sin(t * 3 + u.x * 0.01) * 3;
+    const bob = Math.sin(t * 3 + u.x * 0.01) * 2;
     ctx.translate(0, bob);
     spriteManager.draw(ctx, u.type, u.age, 0, 0, 1);
     ctx.restore();
@@ -310,7 +308,7 @@ canvas.addEventListener('click', (e) => {
       showAchievements = false;
       return;
     }
-    const achY = DIFF_BTN_Y + 36;
+    const achY = DIFF_BTN_Y + 40;
     if (pointInRect(mx, my, cx - 110, achY, 220, 24)) {
       showAchievements = true;
       return;
