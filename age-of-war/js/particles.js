@@ -43,23 +43,6 @@ class ParticleSystem {
     }
   }
 
-  emitTrail(x, y, color, size) {
-    this.particles.push({
-      x: x + (Math.random() - 0.5) * 4,
-      y: y + (Math.random() - 0.5) * 4,
-      vx: (Math.random() - 0.5) * 0.3,
-      vy: -0.3 - Math.random() * 0.3,
-      life: 0.4 + Math.random() * 0.3,
-      maxLife: 0.6,
-      color,
-      size: size || 2,
-      gravity: -0.5,
-      rotation: 0,
-      rotationSpeed: 0,
-      shrink: true,
-    });
-  }
-
   emitDamageNumber(x, y, amount, color) {
     this.particles.push({
       x, y: y - 20,

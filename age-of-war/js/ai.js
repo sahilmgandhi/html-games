@@ -5,7 +5,6 @@ class AI {
     this.thinkInterval = CONFIG.AI_THINK_INTERVAL / 1000 * CONFIG.DIFFICULTIES[game.difficulty].aiThinkMult;
     this.waveTimer = 0;
     this.waveCooldown = 8;
-    this.lastWaveSize = 0;
     this.aggression = 0.5;
     this.strategy = 'balanced';
   }
@@ -125,7 +124,6 @@ class AI {
     if (waveSize < 2) return false;
 
     this.waveTimer = 0;
-    this.lastWaveSize = waveSize;
     for (let i = 0; i < waveSize; i++) {
       const idx = this.pickUnitIndex(g, age, playerUnits);
       if (idx !== null) g.spawnEnemyUnit(idx);

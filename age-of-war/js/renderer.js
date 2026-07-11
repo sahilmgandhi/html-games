@@ -1,6 +1,5 @@
 class Renderer {
   constructor(canvas, ctx) {
-    this.canvas = canvas;
     this.ctx = ctx;
     this.camera = { x: 0, y: 0 };
     this.shakeX = 0;
@@ -994,6 +993,7 @@ class Renderer {
     }
 
     // ── Growing turret tower (scales with occupied turret slots) ──
+    const age = CONFIG.AGES[ageIndex];
     if (occupied > 0) {
       const dir = base.side === 'player' ? 1 : -1;
       const ts = this.worldToScreen(base.x + dir * CONFIG.TURRET_SLOT_OFFSET_X, base.y);
@@ -1166,9 +1166,7 @@ class Renderer {
     if (!turret.alive) return;
     const ctx = this.ctx;
     const s = this.worldToScreen(turret.x, turret.y);
-    const sx = s.x;
-    const sy = s.y;
-    if (sx < -100 || sx > CONFIG.VIEWPORT.WIDTH + 100) return;
+    if (s.x < -100 || s.x > CONFIG.VIEWPORT.WIDTH + 100) return;
     const age = CONFIG.AGES[ageIndex];
     const sideColor = turret.side === 'player' ? CONFIG.COLORS.PLAYER : CONFIG.COLORS.ENEMY;
 
@@ -1176,64 +1174,130 @@ class Renderer {
       ctx.globalAlpha = 0.5 + Math.sin(turret.hitFlash * 20) * 0.3;
     }
 
+    ctx.lineJoin = 'round';
     switch (ageIndex) {
-      case 0: // Stone — wooden post + rock
-        ctx.fillStyle = '#5a4a30';
+      case 0: { // Stone — wooden post + rock
+        const postG = ctx.createLinearGradient(s.x - 4, 0, s.x + 4, 0);
+        postG.addColorStop(0, '#3f3320');
+        postG.addColorStop(0.5, '#6a5638');
+        postG.addColorStop(1, '#3f3320');
+        ctx.fillStyle = postG;
         ctx.fillRect(s.x - 4, s.y - 30, 8, 30);
-        ctx.fillStyle = '#7a6a5a';
+        ctx.fillStyle = sideColor;
+        ctx.fillRect(s.x - 4, s.y - 14, 8, 3);
+        const rockG = ctx.createRadialGradient(s.x - 2, s.y - 36, 2, s.x, s.y - 34, 9);
+        rockG.addColorStop(0, '#9a8a78');
+        rockG.addColorStop(1, '#5a4f42');
+        ctx.fillStyle = rockG;
         ctx.beginPath();
         ctx.arc(s.x, s.y - 34, 8, 0, Math.PI * 2);
         ctx.fill();
-        ctx.fillStyle = '#6a5a4a';
-        ctx.beginPath();
-        ctx.arc(s.x, s.y - 34, 5, 0, Math.PI * 2);
-        ctx.fill();
+        ctx.strokeStyle = '#2a241b';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
         break;
-      case 1: // Castle — stone tower
-        ctx.fillStyle = '#4a4a6a';
-        ctx.fillRect(s.x - 7, s.y - 36, 14, 36);
+      }
+      case 1: { // Castle — crenellated stone tower + team flag
+        const towG = ctx.createLinearGradient(s.x - 7, 0, s.x + 7, 0);
+        towG.addColorStop(0, '#2f2f47');
+        towG.addColorStop(0.5, '#5a5a7a');
+        towG.addColorStop(1, '#2f2f47');
+        ctx.fillStyle = towG;
+        this.roundRect(ctx, s.x - 7, s.y - 36, 14, 36, 2);
+        ctx.fill();
+        ctx.strokeStyle = '#1d1d2e';
+        ctx.lineWidth = 1;
+        ctx.stroke();
         ctx.fillStyle = '#3a3a5a';
         for (let i = 0; i < 3; i++) {
-          ctx.fillRect(s.x - 8 + i * 6, s.y - 40, 5, 5);
+          ctx.fillRect(s.x - 8 + i * 6, s.y - 41, 5, 5);
         }
+        ctx.strokeStyle = sideColor;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(s.x, s.y - 41);
+        ctx.lineTo(s.x, s.y - 52);
+        ctx.stroke();
         ctx.fillStyle = sideColor;
-        ctx.fillRect(s.x - 1, s.y - 46, 2, 8);
-        ctx.fillStyle = '#ff4444';
-        ctx.fillRect(s.x - 4, s.y - 46, 6, 4);
+        ctx.beginPath();
+        ctx.moveTo(s.x, s.y - 52);
+        ctx.lineTo(s.x + 7, s.y - 49);
+        ctx.lineTo(s.x, s.y - 46);
+        ctx.fill();
         break;
-      case 2: // Renaissance — cannon on mount
-        ctx.fillStyle = '#6a5a40';
-        ctx.fillRect(s.x - 6, s.y - 28, 12, 28);
-        ctx.fillStyle = '#888';
-        ctx.fillRect(s.x - 10, s.y - 32, 20, 6);
-        ctx.fillStyle = '#666';
-        ctx.fillRect(s.x + 8, s.y - 34, 12, 4);
-        ctx.fillStyle = '#444';
-        ctx.fillRect(s.x - 8, s.y - 2, 16, 4);
+      }
+      case 2: { // Renaissance — cannon on wooden mount
+        const mountG = ctx.createLinearGradient(s.x - 6, 0, s.x + 6, 0);
+        mountG.addColorStop(0, '#4a3c28');
+        mountG.addColorStop(1, '#2f2618');
+        ctx.fillStyle = mountG;
+        this.roundRect(ctx, s.x - 6, s.y - 22, 12, 22, 2);
+        ctx.fill();
+        ctx.fillStyle = sideColor;
+        ctx.fillRect(s.x - 6, s.y - 14, 12, 3);
+        const barrelG = ctx.createLinearGradient(s.x - 10, 0, s.x + 10, 0);
+        barrelG.addColorStop(0, '#3a3a3a');
+        barrelG.addColorStop(0.5, '#9a9a9a');
+        barrelG.addColorStop(1, '#444');
+        ctx.fillStyle = barrelG;
+        this.roundRect(ctx, s.x - 11, s.y - 33, 26, 7, 3);
+        ctx.fill();
+        ctx.fillStyle = '#222';
+        ctx.beginPath();
+        ctx.arc(s.x + 14, s.y - 29.5, 3.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#1a1a1a';
+        ctx.lineWidth = 1;
+        ctx.stroke();
         break;
-      case 3: // Modern — gun turret
-        ctx.fillStyle = '#4a5a2a';
+      }
+      case 3: { // Modern — gun turret
+        const baseG = ctx.createLinearGradient(s.x - 8, 0, s.x + 8, 0);
+        baseG.addColorStop(0, '#2f3a1a');
+        baseG.addColorStop(0.5, '#5a6b30');
+        baseG.addColorStop(1, '#2f3a1a');
+        ctx.fillStyle = baseG;
         ctx.fillRect(s.x - 8, s.y - 30, 16, 30);
-        ctx.fillStyle = '#556B2F';
-        ctx.fillRect(s.x - 6, s.y - 36, 12, 8);
-        ctx.fillStyle = '#333';
-        ctx.fillRect(s.x + 4, s.y - 38, 14, 3);
+        ctx.fillStyle = '#3a4a1f';
+        this.roundRect(ctx, s.x - 7, s.y - 38, 14, 12, 3);
+        ctx.fill();
+        ctx.fillStyle = '#2a2a2a';
+        this.roundRect(ctx, s.x + 4, s.y - 40, 16, 4, 2);
+        ctx.fill();
         ctx.fillStyle = sideColor;
-                        ctx.fillRect(s.x - 2, s.y - 40, 4, 6);
-                break;
-      case 4: // Future — energy tower
-        ctx.fillStyle = '#1a2a4a';
-        ctx.fillRect(s.x - 6, s.y - 36, 12, 36);
-        ctx.fillStyle = '#00e5ff';
-                        for (let j = 0; j < 3; j++) {
+        ctx.fillRect(s.x - 6, s.y - 24, 12, 3);
+        ctx.strokeStyle = '#1c2410';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.rect(s.x - 7, s.y - 38, 14, 12);
+        ctx.stroke();
+        break;
+      }
+      case 4: { // Future — energy spire + glowing core
+        const spireG = ctx.createLinearGradient(s.x - 6, 0, s.x + 6, 0);
+        spireG.addColorStop(0, '#0f1c33');
+        spireG.addColorStop(0.5, '#26405f');
+        spireG.addColorStop(1, '#0f1c33');
+        ctx.fillStyle = spireG;
+        this.roundRect(ctx, s.x - 6, s.y - 36, 12, 36, 3);
+        ctx.fill();
+        ctx.strokeStyle = sideColor;
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+        ctx.fillStyle = sideColor;
+        for (let j = 0; j < 3; j++) {
           ctx.fillRect(s.x - 4, s.y - 32 + j * 10, 8, 2);
         }
-        ctx.fillRect(s.x - 2, s.y - 42, 4, 8);
-                ctx.fillStyle = '#ff00ff';
-                        ctx.beginPath();
-        ctx.arc(s.x, s.y - 44, 3, 0, Math.PI * 2);
+        const orbG = ctx.createRadialGradient(s.x, s.y - 42, 1, s.x, s.y - 42, 5);
+        orbG.addColorStop(0, '#ffffff');
+        orbG.addColorStop(0.5, sideColor);
+        orbG.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = orbG;
+        ctx.beginPath();
+        ctx.arc(s.x, s.y - 42, 5, 0, Math.PI * 2);
         ctx.fill();
-                break;
+        break;
+      }
     }
 
     ctx.globalAlpha = 1;
@@ -1260,11 +1324,9 @@ class Renderer {
     if (!building.alive) return;
     const ctx = this.ctx;
     const s = this.worldToScreen(building.x, building.y);
-    const sx = s.x;
-    const sy = s.y;
-    if (sx < -100 || sx > CONFIG.VIEWPORT.WIDTH + 100) return;
-    const age = CONFIG.AGES[ageIndex];
+    if (s.x < -100 || s.x > CONFIG.VIEWPORT.WIDTH + 100) return;
     const isMine = building.buildingIndex === 0;
+    const sideColor = building.side === 'player' ? CONFIG.COLORS.PLAYER : CONFIG.COLORS.ENEMY;
 
     if (building.hitFlash > 0) {
       ctx.globalAlpha = 0.5 + Math.sin(building.hitFlash * 20) * 0.3;
@@ -1273,10 +1335,19 @@ class Renderer {
     const bw = isMine ? 20 : 22;
     const bh = isMine ? 18 : 20;
 
-    ctx.fillStyle = isMine ? '#6a5a3a' : '#4a3a5a';
-    ctx.fillRect(s.x - bw / 2, s.y - bh, bw, bh);
+    const bodyG = ctx.createLinearGradient(s.x, s.y - bh, s.x, s.y);
+    if (isMine) {
+      bodyG.addColorStop(0, '#9a8246');
+      bodyG.addColorStop(1, '#5a4a2a');
+    } else {
+      bodyG.addColorStop(0, '#5a4a6a');
+      bodyG.addColorStop(1, '#34283f');
+    }
+    ctx.fillStyle = bodyG;
+    this.roundRect(ctx, s.x - bw / 2, s.y - bh, bw, bh, 3);
+    ctx.fill();
 
-    ctx.fillStyle = isMine ? '#8a7a4a' : '#5a4a6a';
+    ctx.fillStyle = isMine ? '#b89a55' : '#6a5a7a';
     ctx.fillRect(s.x - bw / 2 + 2, s.y - bh + 2, bw - 4, bh / 2 - 2);
 
     if (isMine) {
@@ -1285,13 +1356,13 @@ class Renderer {
       ctx.fillStyle = '#c8a000';
       ctx.fillRect(s.x - 1, s.y - bh / 2 - 5, 2, 2);
     } else {
-      ctx.fillStyle = '#f44';
+      ctx.fillStyle = sideColor;
       ctx.fillRect(s.x - 6, s.y - bh - 4, 3, 5);
       ctx.fillRect(s.x + 3, s.y - bh - 4, 3, 5);
       ctx.fillRect(s.x - 3, s.y - bh - 6, 6, 3);
     }
 
-    ctx.strokeStyle = isMine ? '#4a3a2a' : '#3a2a4a';
+    ctx.strokeStyle = isMine ? '#4a3a2a' : '#2a1f3a';
     ctx.lineWidth = 1;
     ctx.strokeRect(s.x - bw / 2, s.y - bh, bw, bh);
 
@@ -1509,6 +1580,7 @@ class Renderer {
     const HH = 145;
     const y = CONFIG.VIEWPORT.HEIGHT - HH;
 
+    this._currentAge = game.age;
     this.hudTime = (this.hudTime || 0) + 1 / 60;
     this.tooltip = null;
 
