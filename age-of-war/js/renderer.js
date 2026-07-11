@@ -2247,12 +2247,14 @@ class Renderer {
     ctx.fillText(`Sound Effects: ${sfxOn ? 'ON' : 'OFF'}`, cx, sfxBtnY + 19);
 
     const debugBtnY = panelY + 170;
-    ctx.fillStyle = '#3a2a4a';
-    ctx.fillRect(btnX, debugBtnY, btnW, btnH);
-    ctx.strokeStyle = '#8a6aaa';
-    ctx.strokeRect(btnX, debugBtnY, btnW, btnH);
-    ctx.fillStyle = '#fff';
-    ctx.fillText('Debug Mode', cx, debugBtnY + 19);
+    if (isLocalhost()) {
+      ctx.fillStyle = '#3a2a4a';
+      ctx.fillRect(btnX, debugBtnY, btnW, btnH);
+      ctx.strokeStyle = '#8a6aaa';
+      ctx.strokeRect(btnX, debugBtnY, btnW, btnH);
+      ctx.fillStyle = '#fff';
+      ctx.fillText('Debug Mode', cx, debugBtnY + 19);
+    }
 
     const restartBtnY = panelY + 220;
     ctx.fillStyle = '#4a2a2a';

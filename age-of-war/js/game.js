@@ -536,7 +536,7 @@ class Game {
     }
 
     const debugBtnY = panelY + 170;
-    if (pointInRect(mx, my, cx - 110, debugBtnY, 220, 30)) {
+    if (isLocalhost() && pointInRect(mx, my, cx - 110, debugBtnY, 220, 30)) {
       this.debugPasswordOpen = true;
       this.debugPasswordBuffer = '';
       this.debugPasswordError = false;

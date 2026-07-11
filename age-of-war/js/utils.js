@@ -11,3 +11,8 @@ function dist(x1, y1, x2, y2) {
 function pointInRect(px, py, rx, ry, rw, rh) {
   return px >= rx && px <= rx + rw && py >= ry && py <= ry + rh;
 }
+
+function isLocalhost() {
+  const host = location.hostname;
+  return host === 'localhost' || host === '127.0.0.1' || host === '[::1]' || host === '::1' || host === '';
+}
