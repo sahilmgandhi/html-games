@@ -86,26 +86,22 @@ function runTests() {
   allResults = [];
   console.log('=== Age of War Headless Tests ===\n');
 
-  console.log('--- No Passive Income ---');
+  console.log('--- Passive Income ---');
   {
     const g = makeGame();
     g.ai = { update() {} };
     const startGold = g.gold;
-    const startXp = g.xp;
     const startEnemyGold = g.enemyGold;
-    const startEnemyXp = g.enemyXp;
     runFrames(g, 10);
-    assert('Player gold stays flat', g.gold === startGold, `start=${startGold} now=${Math.floor(g.gold)}`);
-    assert('Player XP stays flat', g.xp === startXp, `start=${startXp} now=${Math.floor(g.xp)}`);
-    assert('Enemy gold stays flat', g.enemyGold === startEnemyGold);
-    assert('Enemy XP stays flat', g.enemyXp === startEnemyXp);
+    assert('Player gold increases over time', g.gold > startGold, `start=${startGold} now=${Math.floor(g.gold)}`);
+    assert('Enemy gold increases over time', g.enemyGold > startEnemyGold);
   }
 
   console.log('\n--- BASE_HP ---');
   {
     const g = makeGame();
-    assert('Player base HP is 5000', g.playerBase.maxHp === 5000);
-    assert('Enemy base HP is 5000', g.enemyBase.maxHp === 5000);
+    assert('Player base HP is 1000', g.playerBase.maxHp === 1000);
+    assert('Enemy base HP is 1000', g.enemyBase.maxHp === 1000);
   }
 
   console.log('\n--- Unit Spawning ---');
@@ -163,11 +159,11 @@ function runTests() {
   console.log('\n--- Evolution ---');
   {
     const g = makeGame();
-    g.xp = 5000;
+    g.xp = 2000;
     g.evolve();
     assert('Evolved to age 1', g.currentAge === 1);
-    assert('XP deducted', g.xp === 1000, `xp=${g.xp}`);
-    g.xp = 20000;
+    assert('XP deducted', g.xp === 500, `xp=${g.xp}`);
+    g.xp = 10000;
     g.evolve();
     assert('Evolved to age 2', g.currentAge === 2);
   }
@@ -206,10 +202,11 @@ function runTests() {
   {
     const g = makeGame();
     g.gold = 1000;
-    g.buySlot();
-    assert('Slot purchased', g.playerSlotsBought === 1);
+    assert('Starts with 1 free turret slot', g.playerSlotsBought === 1);
     g.spawnTurret(0);
     assert('Turret placed in slot', g.turrets.length === 1);
+    g.buySlot();
+    assert('Additional slot purchased', g.playerSlotsBought === 2);
   }
 
   console.log('\n--- Sell Turret ---');
@@ -297,21 +294,19 @@ function runTests() {
     g.enemyGold = 100000;
     g.spawnEnemyUnit(0);
     const e = g.units[0];
-    assert('Harder enemy has boosted HP', e.hp === Math.round(55 * 1.3), `hp=${e.hp}`);
-    assert('Harder enemy has boosted damage', e.damage === Math.round(16 * 1.3), `dmg=${e.damage}`);
+    assert('Harder enemy has boosted HP', e.hp === Math.round(55 * 1.15), `hp=${e.hp}`);
+    assert('Harder enemy has boosted damage', e.damage === Math.round(16 * 1.15), `dmg=${e.damage}`);
 
     const g2 = makeGame();
     g2.difficulty = 2;
     g2.enemyGold = 100000;
     g2.spawnEnemyUnit(0);
     const e2 = g2.units[0];
-    assert('Impossible enemy has 2x HP', e2.hp === 55 * 2, `hp=${e2.hp}`);
-    assert('Impossible enemy has 2x damage', e2.damage === 16 * 2, `dmg=${e2.damage}`);
+    assert('Impossible enemy has boosted HP', e2.hp === Math.round(55 * 1.3), `hp=${e2.hp}`);
+    assert('Impossible enemy has boosted damage', e2.damage === Math.round(16 * 1.3), `dmg=${e2.damage}`);
 
     g.ai = { update() {} };
     runFrames(g, 1);
-    const goldBefore = g.gold;
-    g.gold += 0;
     assert('Difficulty default is 0', makeGame().difficulty === 0);
   }
 
@@ -352,11 +347,11 @@ function runTests() {
   console.log('\n--- Evolution Heals Base ---');
   {
     const g = makeGame();
-    g.playerBase.hp = 2500;
+    g.playerBase.hp = 500;
     g.xp = 5000;
     g.evolve();
-    assert('Base healed by EVOLVE_HEAL (25%)', g.playerBase.hp > 2500, `hp=${g.playerBase.hp}`);
-    assert('Heal amount is 1250', g.playerBase.hp === 3750, `hp=${g.playerBase.hp}`);
+    assert('Base healed by EVOLVE_HEAL (25%)', g.playerBase.hp > 500, `hp=${g.playerBase.hp}`);
+    assert('Heal amount is 250', g.playerBase.hp === 750, `hp=${g.playerBase.hp}`);
   }
 
   console.log('\n--- Special Damage by Age ---');
@@ -473,12 +468,12 @@ function runTests() {
   console.log('\n--- applyEnemyScaling ---');
   {
     const g = makeGame();
-    g.difficulty = 1; // Harder 1.3x
+    g.difficulty = 1; // Harder 1.15x
     const fake = { hp: 100, maxHp: 0, damage: 50 };
     g.applyEnemyScaling(fake, 100, 50);
-    assert('HP scaled by 1.3', fake.hp === 130);
-    assert('Damage scaled by 1.3', fake.damage === 65);
-    assert('maxHp mirrors hp', fake.maxHp === 130);
+    assert('HP scaled by 1.15', fake.hp === 115);
+    assert('Damage scaled by 1.15', fake.damage === 58);
+    assert('maxHp mirrors hp', fake.maxHp === 115);
   }
 
   console.log('\n--- AI Waves ---');

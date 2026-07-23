@@ -36,8 +36,8 @@ class Game {
     this.staticHash = new SpatialHash(128);
     this.staticDirty = true;
 
-    this.playerSlotsBought = 0;
-    this.enemySlotsBought = 0;
+    this.playerSlotsBought = 1;
+    this.enemySlotsBought = 1;
     this.unitUpgrades = {};
     this.heroCooldown = 0;
     this.enemyHeroCooldown = 0;
@@ -166,6 +166,13 @@ class Game {
 
     this.input.update();
     this.gameTime += dt;
+
+    if (CONFIG.PASSIVE_GOLD_RATE) {
+      const pRate = CONFIG.PASSIVE_GOLD_RATE[this.currentAge] || 0;
+      const eRate = (CONFIG.PASSIVE_GOLD_RATE[this.enemyAge] || 0) * (CONFIG.DIFFICULTIES[this.difficulty]?.enemyGoldMult || 1.0);
+      this.gold += pRate * dt;
+      this.enemyGold += eRate * dt;
+    }
 
     if (this.specialCooldown > 0) this.specialCooldown -= dt;
     if (this.enemySpecialCooldown > 0) this.enemySpecialCooldown -= dt;
@@ -468,8 +475,8 @@ class Game {
     this.staticHash = new SpatialHash(128);
     this.staticDirty = true;
     this.particles = new ParticleSystem();
-    this.playerSlotsBought = 0;
-    this.enemySlotsBought = 0;
+    this.playerSlotsBought = 1;
+    this.enemySlotsBought = 1;
     this.unitUpgrades = {};
     this.heroCooldown = 0;
     this.enemyHeroCooldown = 0;
@@ -782,10 +789,10 @@ class Game {
 
   applyEnemyScaling(entity, hp, damage) {
     const diff = CONFIG.DIFFICULTIES[this.difficulty];
-    entity.hp = Math.round(hp * diff.enemyHpMult);
+    entity.hp = Math.round(hp * diff.enemyHpMult + 1e-9);
     entity.maxHp = entity.hp;
     if (damage !== undefined) {
-      entity.damage = Math.round(damage * diff.enemyDmgMult);
+      entity.damage = Math.round(damage * diff.enemyDmgMult + 1e-9);
     }
   }
 
