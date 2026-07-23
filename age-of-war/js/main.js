@@ -266,9 +266,9 @@ function drawTitleUnits() {
   const t = Date.now() / 1000;
   const cx = canvas.width / 2;
   const groundY = 310;
-  const marchSpeed = 28; // px per second
+  const UNIT_SCALE = 0.45;
+  const marchSpeed = 28;
 
-  // Player side (march right), enemy side (march left), meeting in center
   const playerUnits = [
     { type: 'melee',  age: 0, baseX: cx - 420 },
     { type: 'ranged', age: 2, baseX: cx - 280 },
@@ -280,7 +280,6 @@ function drawTitleUnits() {
     { type: 'fast',   age: 4, baseX: cx + 150 },
   ];
 
-  const cycle = 12; // seconds per full march cycle
   const offset = (t * marchSpeed) % (cx * 0.7);
 
   for (const u of playerUnits) {
@@ -288,6 +287,7 @@ function drawTitleUnits() {
     const bob = Math.sin(t * 4 + u.baseX * 0.01) * 2;
     ctx.save();
     ctx.translate(x, groundY + bob);
+    ctx.scale(UNIT_SCALE, UNIT_SCALE);
     spriteManager.draw(ctx, u.type, u.age, 0, 0, 1, 'player');
     ctx.restore();
   }
@@ -296,7 +296,7 @@ function drawTitleUnits() {
     const bob = Math.sin(t * 4 + u.baseX * 0.01) * 2;
     ctx.save();
     ctx.translate(x, groundY + bob);
-    ctx.scale(-1, 1); // flip to face left
+    ctx.scale(-UNIT_SCALE, UNIT_SCALE);
     spriteManager.draw(ctx, u.type, u.age, 0, 0, 1, 'enemy');
     ctx.restore();
   }
