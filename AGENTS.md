@@ -1,4 +1,5 @@
 Be brief/concise. Do not start implementation work until the plan is approved.
+Commit your work often please!
 
 1. Please enter plan mode first, and plan before implementing. Interview me if there are things I wasn't clear about or if you are not sure about. Ask MANY questions, do NOT speculate. Generic solutions are preferred to specific/surgical. When addressing bugs, write test case(s) to verify the bug exists first before writing code to solve it.
 
