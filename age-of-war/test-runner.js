@@ -172,9 +172,12 @@ function runTests() {
   {
     const g = makeGame();
     g.specialCooldown = 0;
+    g.xp = 1000;
+    const cost = CONFIG.SPECIAL_XP_COST[0];
     g.useSpecial();
     assert('Special animation started', g.specialAnim !== null);
     assert('Special cooldown set', g.specialCooldown === 40);
+    assert('Special XP deducted', g.xp === 1000 - cost, `xp=${g.xp}`);
     runFrames(g, 3);
     assert('Special animation finished', g.specialAnim === null);
     assert('Special cooldown active after use', g.specialCooldown > 0);
@@ -360,6 +363,7 @@ function runTests() {
     g.ai = { update() {} };
     g.currentAge = 2; // Renaissance, specialDamage 550
     g.specialCooldown = 0;
+    g.xp = 10000;
     g.enemyGold = 100000;
     g.spawnEnemyUnit(0);
     const e = g.units[0];

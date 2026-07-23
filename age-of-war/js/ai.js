@@ -74,16 +74,27 @@ class AI {
 
   trySpecial(g, playerUnits) {
     if (g.enemySpecialCooldown > 0) return false;
-    const playerCount = playerUnits.length;
-    const nearBase = playerUnits.filter(u => u.x < CONFIG.WORLD.WIDTH * 0.35).length;
+    const cost = (CONFIG.SPECIAL_XP_COST && CONFIG.SPECIAL_XP_COST[g.enemyAge]) || 0;
+    if (g.enemyXp < cost) return false;
 
-    if (playerCount >= 5 || nearBase >= 3 || g.enemyBase.hp < g.enemyBase.maxHp * 0.4) {
-      g.useEnemySpecial();
-      return true;
-    }
-    if (this.aggression > 0.8 && playerCount >= 3) {
-      g.useEnemySpecial();
-      return true;
+    const nearBase = playerUnits.filter(u => u.x > CONFIG.WORLD.WIDTH * 0.65).length;
+    const hpRatio = g.enemyBase.hp / g.enemyBase.maxHp;
+
+    if (g.difficulty === 0) {
+      if ((hpRatio < 0.3 || nearBase >= 4) && Math.random() < 0.3) {
+        g.useEnemySpecial();
+        return true;
+      }
+    } else if (g.difficulty === 1) {
+      if ((hpRatio < 0.4 || nearBase >= 3) && Math.random() < 0.5) {
+        g.useEnemySpecial();
+        return true;
+      }
+    } else {
+      if (hpRatio < 0.5 || nearBase >= 3) {
+        g.useEnemySpecial();
+        return true;
+      }
     }
     return false;
   }

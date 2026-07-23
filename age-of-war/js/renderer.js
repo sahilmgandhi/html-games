@@ -1737,9 +1737,9 @@ class Renderer {
 
     const spX = W - 120;
     const spW = 108;
-    const spH = 34;
-    const spY = y + 6;
-    const spReady = game.specialCooldown <= 0;
+    const spCost = (CONFIG.SPECIAL_XP_COST && CONFIG.SPECIAL_XP_COST[game.currentAge]) || 0;
+    const hasXp = game.xp >= spCost;
+    const spReady = game.specialCooldown <= 0 && hasXp;
 
     const hover = pointInRect(this.mouseX || 0, (this.mouseY || 0), spX, spY, spW, spH);
     const spGrad = ctx.createLinearGradient(spX, spY, spX, spY + spH);
@@ -1766,13 +1766,16 @@ class Renderer {
       ctx.stroke();
     }
 
-    ctx.fillStyle = spReady ? '#fff' : '#555';
+    ctx.fillStyle = spReady ? '#fff' : '#888';
     ctx.font = 'bold 10px sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText(age.specialName, spX + spW / 2, spY + 14);
-    ctx.fillStyle = spReady ? '#ffd700' : '#444';
+    ctx.fillStyle = spReady ? '#ffd700' : (!hasXp ? '#ff6666' : '#555');
     ctx.font = '9px monospace';
-    ctx.fillText(spReady ? 'READY' : `${Math.ceil(game.specialCooldown)}s`, spX + spW / 2, spY + 26);
+    const spStatusText = game.specialCooldown > 0
+      ? `${Math.ceil(game.specialCooldown)}s`
+      : (!hasXp ? `${spCost} XP` : `READY (${spCost}XP)`);
+    ctx.fillText(spStatusText, spX + spW / 2, spY + 26);
 
     const speedBtns = [1, 2, 3];
     const spdStartX = W - 230;

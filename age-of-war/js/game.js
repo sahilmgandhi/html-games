@@ -1020,8 +1020,17 @@ class Game {
     if (cooldown > 0 || this.specialAnim) return;
 
     const ageIndex = isPlayer ? this.currentAge : this.enemyAge;
-    if (isPlayer) this.specialCooldown = CONFIG.SPECIAL_COOLDOWN;
-    else this.enemySpecialCooldown = CONFIG.SPECIAL_COOLDOWN;
+    const cost = (CONFIG.SPECIAL_XP_COST && CONFIG.SPECIAL_XP_COST[ageIndex]) || 0;
+    const currentXp = isPlayer ? this.xp : this.enemyXp;
+    if (currentXp < cost) return;
+
+    if (isPlayer) {
+      this.xp -= cost;
+      this.specialCooldown = CONFIG.SPECIAL_COOLDOWN;
+    } else {
+      this.enemyXp -= cost;
+      this.enemySpecialCooldown = CONFIG.SPECIAL_COOLDOWN;
+    }
     this.audio.play('special');
 
     const duration = [2.0, 1.5, 2.0, 2.5, 1.5][ageIndex];
@@ -1288,24 +1297,28 @@ class Game {
     } catch (e) { /* corrupted save */ }
   }
 
-  dealSpecialDamage() {
+  dealSpecialDamageAt(x, radius, damage) {
     const anim = this.specialAnim;
     if (!anim) return;
     const age = CONFIG.AGES[anim.ageIndex];
     const targetSide = anim.side === 'player' ? 'enemy' : 'player';
-
-    this.renderer.screenShake(8, 0.4);
+    const dmg = damage !== undefined ? damage : age.specialDamage;
 
     for (const u of this.units) {
       if (u.side === targetSide && u.alive) {
-        u.takeDamage(age.specialDamage);
-        this.particles.emit(u.x, u.y, '#ff8800', 6, 4, 0.4, 3);
+        if (x === undefined || Math.abs(u.x - x) <= (radius || 100)) {
+          u.takeDamage(dmg);
+          this.particles.emit(u.x, u.y, '#ff8800', 4, 3, 0.3, 2);
+        }
       }
     }
+  }
 
-    this.particles.emit(
-      CONFIG.VIEWPORT.WIDTH / 2 + this.renderer.camera.x, 100,
-      '#ff4400', 30, 8, 1.0, 4
-    );
+  dealSpecialDamage() {
+    const anim = this.specialAnim;
+    if (!anim) return;
+    const age = CONFIG.AGES[anim.ageIndex];
+    this.renderer.screenShake(8, 0.4);
+    this.dealSpecialDamageAt(undefined, undefined, age.specialDamage);
   }
 }
