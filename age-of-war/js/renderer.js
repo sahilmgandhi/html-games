@@ -1737,6 +1737,8 @@ class Renderer {
 
     const spX = W - 120;
     const spW = 108;
+    const spH = 34;
+    const spY = y + 6;
     const spCost = (CONFIG.SPECIAL_XP_COST && CONFIG.SPECIAL_XP_COST[game.currentAge]) || 0;
     const hasXp = game.xp >= spCost;
     const spReady = game.specialCooldown <= 0 && hasXp;

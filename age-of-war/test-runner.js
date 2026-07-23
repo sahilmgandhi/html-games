@@ -508,6 +508,8 @@ function runTests() {
     let ok = true;
     try {
       for (let a = 0; a < 5; a++) {
+        g.currentAge = a;
+        g.renderer.drawHUD(g);
         for (let i = 0; i < CONFIG.AGES[a].units.length; i++) {
           g.renderer.drawUnit(new Unit(500, 450, 'player', a, i, 0, false), a);
         }
