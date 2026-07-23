@@ -2,7 +2,7 @@ const { TEAM_BLUE, AP, rect, outlineRect, circle, outlineCircle, line, grad, gra
 
 function drawMelee0(ctx){
   const cx=48,ap=AP[0];
-  shadow(ctx,cx,88,24);
+  shadow(ctx,cx,76,24);
   head(ctx,cx,24,10,ap.skin,ap.skinDark,'#4a3422');
   torso(ctx,cx,36,24,18,'#7a5e3e','#5a4228','#8a6e4e');
   sash(ctx,cx,36,18,TEAM_BLUE.accent);
@@ -21,7 +21,7 @@ function drawMelee0(ctx){
 
 function drawRanged0(ctx){
   const cx=48,ap=AP[0];
-  shadow(ctx,cx,88,24);
+  shadow(ctx,cx,76,24);
   head(ctx,cx,24,10,ap.skin,ap.skinDark,'#4a3422');
   torso(ctx,cx,36,22,18,'#7a5e3e','#5a4228','#8a6e4e');
   sash(ctx,cx,36,18,TEAM_BLUE.accent);
@@ -39,7 +39,7 @@ function drawRanged0(ctx){
 
 function drawFast0(ctx){
   const cx=48,ap=AP[0];
-  shadow(ctx,cx,88,30);
+  shadow(ctx,cx,76,30);
   rect(ctx,cx-14,42,32,22,grad(ctx,cx-14,42,32,22,'#6a9a4a','#4a7a2a'));
   outlineRect(ctx,cx-14,42,32,22,'#3a6a1a');
   for(let i=0;i<4;i++){ px(ctx,cx-10+i*7,44,'#5a8a3a'); px(ctx,cx-8+i*7,48,'#5a8a3a'); }
@@ -59,7 +59,7 @@ function drawFast0(ctx){
 
 function drawSiege0(ctx){
   const cx=48,ap=AP[0];
-  shadow(ctx,cx,88,28);
+  shadow(ctx,cx,76,28);
   rect(ctx,cx-18,48,36,14,grad(ctx,cx-18,48,36,14,'#7a5a2a','#5a3a1a'));
   outlineRect(ctx,cx-18,48,36,14,'#3a2a14');
   for(let i=0;i<4;i++) line(ctx,cx-16+i*9,50,cx-16+i*9,60,'#5a3a1a',0.5);
@@ -80,7 +80,7 @@ function drawSiege0(ctx){
 
 function drawArmored0(ctx){
   const cx=48,ap=AP[0];
-  shadow(ctx,cx,88,28);
+  shadow(ctx,cx,76,28);
   circle(ctx,cx,40,18,rgrad(ctx,cx,40,18,'#aaaab2','#7a7a82'));
   outlineCircle(ctx,cx,40,18,'#6a6a72');
   circle(ctx,cx+18,34,13,'#9a9aa2'); outlineCircle(ctx,cx+18,34,13,'#6a6a72');
@@ -103,7 +103,7 @@ function drawArmored0(ctx){
 
 function drawElite0(ctx){
   const cx=48,ap=AP[0];
-  shadow(ctx,cx,88,26);
+  shadow(ctx,cx,76,26);
   head(ctx,cx,20,12,ap.skin,ap.skinDark,'#4a3422');
   rect(ctx,cx-5,17,3,2,'#c23a3a'); rect(ctx,cx+3,19,3,2,'#c23a3a');
   for(let i=0;i<4;i++) rect(ctx,cx-6+i*4,30,2,3,'#f0e8d0');
@@ -123,7 +123,7 @@ function drawElite0(ctx){
 
 function drawHero0(ctx){
   const cx=48,ap=AP[0];
-  shadow(ctx,cx,88,28);
+  shadow(ctx,cx,76,28);
   head(ctx,cx,18,13,ap.skin,ap.skinDark,'#4a3422');
   rect(ctx,cx-10,4,20,4,'#f0e8d0'); outlineRect(ctx,cx-10,4,20,4,'#c8c0a0');
   ctx.fillStyle='#f0e8d0';

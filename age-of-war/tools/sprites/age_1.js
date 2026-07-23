@@ -2,7 +2,7 @@ const { TEAM_BLUE, AP, rect, outlineRect, circle, outlineCircle, line, grad, gra
 
 function drawMelee1(ctx){
   const cx=48,ap=AP[1];
-  shadow(ctx,cx,88,24);
+  shadow(ctx,cx,76,24);
   rect(ctx,cx-10,8,20,18,grad(ctx,cx-10,8,20,18,'#d0d4dc','#9a9aa2'));
   outlineRect(ctx,cx-10,8,20,18,'#7a7e86');
   rect(ctx,cx-7,20,14,3,'#1a1a1a');
@@ -26,7 +26,7 @@ function drawMelee1(ctx){
 
 function drawRanged1(ctx){
   const cx=48,ap=AP[1];
-  shadow(ctx,cx,88,24);
+  shadow(ctx,cx,76,24);
   head(ctx,cx,24,10,ap.skin,ap.skinDark,'#3a2a1a');
   ctx.fillStyle=ap.clothDark; ctx.beginPath(); ctx.arc(cx,20,12,Math.PI*1.1,Math.PI*1.9); ctx.fill();
   rect(ctx,cx-12,20,24,6,ap.clothDark);
@@ -44,7 +44,7 @@ function drawRanged1(ctx){
 
 function drawFast1(ctx){
   const cx=48,ap=AP[1];
-  shadow(ctx,cx,88,30);
+  shadow(ctx,cx,76,30);
   rect(ctx,cx-14,38,32,18,grad(ctx,cx-14,38,32,18,'#a07a4a','#7a5a2a'));
   outlineRect(ctx,cx-14,38,32,18,'#5a3a1a');
   rect(ctx,cx+18,30,12,16,grad(ctx,cx+18,30,12,16,'#a07a4a','#7a5a2a'));
@@ -66,7 +66,7 @@ function drawFast1(ctx){
 
 function drawSiege1(ctx){
   const cx=48,ap=AP[1];
-  shadow(ctx,cx,88,28);
+  shadow(ctx,cx,76,28);
   rect(ctx,cx-16,44,32,10,grad(ctx,cx-16,44,32,10,'#7a5a2a','#5a3a1a'));
   outlineRect(ctx,cx-16,44,32,10,'#3a2a14');
   line(ctx,cx-14,54,cx-8,72,'#5a3a1a',4); line(ctx,cx+14,54,cx+8,72,'#5a3a1a',4);
@@ -84,7 +84,7 @@ function drawSiege1(ctx){
 
 function drawArmored1(ctx){
   const cx=48,ap=AP[1];
-  shadow(ctx,cx,88,26);
+  shadow(ctx,cx,76,26);
   rect(ctx,cx-14,18,28,44,'#6a4a2a'); outlineRect(ctx,cx-14,18,28,44,'#3a2a14');
   for(let i=0;i<6;i++) line(ctx,cx-12,22+i*7,cx+12,22+i*7,'#5a3a1a',0.5);
   rect(ctx,cx-14,12,6,8,'#6a4a2a'); rect(ctx,cx-4,12,6,8,'#6a4a2a'); rect(ctx,cx+6,12,6,8,'#6a4a2a');
@@ -100,7 +100,7 @@ function drawArmored1(ctx){
 
 function drawElite1(ctx){
   const cx=48,ap=AP[1];
-  shadow(ctx,cx,88,26);
+  shadow(ctx,cx,76,26);
   rect(ctx,cx-12,6,24,20,grad(ctx,cx-12,6,24,20,'#d0d4dc','#9a9aa2'));
   outlineRect(ctx,cx-12,6,24,20,'#7a7e86');
   rect(ctx,cx-9,18,18,4,'#1a1a1a');
@@ -123,7 +123,7 @@ function drawElite1(ctx){
 
 function drawHero1(ctx){
   const cx=48,ap=AP[1];
-  shadow(ctx,cx,88,28);
+  shadow(ctx,cx,76,28);
   rect(ctx,cx-14,8,28,22,grad(ctx,cx-14,8,28,22,'#d0d4dc','#9a9aa2'));
   outlineRect(ctx,cx-14,8,28,22,'#7a7e86');
   rect(ctx,cx-10,24,20,4,'#1a1a1a');

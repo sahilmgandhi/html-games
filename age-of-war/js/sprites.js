@@ -3,7 +3,9 @@ class SpriteManager {
         this.cache = new Map();
         this.images = new Map();
         this.renderSize = 96;
-        this.displaySize = 160;
+        this.displaySize = 110;
+        this._shadowY = 76;
+        this._shadowFrac = 76 / 96;
         this._hasImage = typeof Image !== 'undefined';
         this._types = ['melee', 'ranged', 'fast', 'siege', 'armored', 'elite', 'hero'];
         this._ages = [0, 1, 2, 3, 4];
@@ -57,14 +59,15 @@ class SpriteManager {
 
         const dw = this.displaySize;
         const dh = this.displaySize;
+        const drawY = y - Math.round(dh * this._shadowFrac);
 
         ctx.save();
         if (facingRight <= 0) {
             ctx.translate(x, 0);
             ctx.scale(-1, 1);
-            ctx.drawImage(entry.canvas, -dw / 2, y - dh + 2, dw, dh);
+            ctx.drawImage(entry.canvas, -dw / 2, drawY, dw, dh);
         } else {
-            ctx.drawImage(entry.canvas, x - dw / 2, y - dh + 2, dw, dh);
+            ctx.drawImage(entry.canvas, x - dw / 2, drawY, dw, dh);
         }
         ctx.restore();
     }
@@ -86,7 +89,7 @@ class SpriteManager {
         const team = side || 'player';
         const cx = s / 2;
         oc.beginPath();
-        oc.ellipse(cx, s - 6, 34, 8, 0, 0, Math.PI * 2);
+        oc.ellipse(cx, this._shadowY, 34, 8, 0, 0, Math.PI * 2);
         oc.fillStyle = team === 'player' ? 'rgba(58,120,194,0.26)' : 'rgba(194,58,58,0.26)';
         oc.fill();
 
