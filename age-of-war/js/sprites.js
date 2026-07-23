@@ -4,6 +4,7 @@ class SpriteManager {
         this.images = new Map();
         this.renderSize = 96;
         this.displaySize = 110;
+        this.turretDisplaySize = 80;
         this._shadowY = 76;
         this._shadowFrac = 76 / 96;
         this._hasImage = typeof Image !== 'undefined';
@@ -19,6 +20,16 @@ class SpriteManager {
         for (const type of this._types) {
             for (const age of this._ages) {
                 const key = `${type}_${age}`;
+                const img = new Image();
+                img.src = `sprites/${key}.png`;
+                img._loaded = false;
+                img.onload = () => { img._loaded = true; };
+                this.images.set(key, img);
+            }
+        }
+        for (let ti = 0; ti < 3; ti++) {
+            for (const age of this._ages) {
+                const key = `turret_${ti}_${age}`;
                 const img = new Image();
                 img.src = `sprites/${key}.png`;
                 img._loaded = false;
@@ -70,6 +81,55 @@ class SpriteManager {
             ctx.drawImage(entry.canvas, x - dw / 2, drawY, dw, dh);
         }
         ctx.restore();
+    }
+
+    turretKey(turretIndex, ageIndex, side) {
+        return `turret_${turretIndex}_${ageIndex}_${side || 'none'}_${this.renderSize}`;
+    }
+
+    drawTurret(ctx, turretIndex, ageIndex, x, y, side) {
+        const key = this.turretKey(turretIndex, ageIndex, side);
+        let entry = this.cache.get(key);
+        if (!entry) {
+            entry = { canvas: null };
+            this.cache.set(key, entry);
+        }
+
+        if (!entry.canvas) {
+            const imgKey = `turret_${turretIndex}_${ageIndex}`;
+            const img = this.images.get(imgKey);
+
+            if (img && img._loaded) {
+                entry.canvas = this._renderTurretFromPNG(img, side);
+            } else {
+                entry.canvas = null;
+            }
+        }
+
+        if (!entry.canvas) return;
+
+        const dw = this.turretDisplaySize;
+        const dh = this.turretDisplaySize;
+        const drawY = y - Math.round(dh * this._shadowFrac);
+
+        ctx.drawImage(entry.canvas, x - dw / 2, drawY, dw, dh);
+    }
+
+    _renderTurretFromPNG(img, side) {
+        const s = this.renderSize;
+        const offscreen = document.createElement('canvas');
+        offscreen.width = s;
+        offscreen.height = s;
+        const oc = offscreen.getContext('2d');
+        oc.imageSmoothingEnabled = true;
+        oc.imageSmoothingQuality = 'high';
+        oc.drawImage(img, 0, 0, s, s);
+
+        if (side === 'enemy') {
+            this._tintEnemy(oc, s);
+        }
+
+        return offscreen;
     }
 
     _renderFromPNG(img, type, ageIndex, side) {

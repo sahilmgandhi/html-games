@@ -6,13 +6,14 @@ const SIZE = 96;
 const OUT_DIR = path.join(__dirname, '..', 'sprites');
 fs.mkdirSync(OUT_DIR, { recursive: true });
 
+// Unit sprites (7 types × 5 ages)
 const TYPES = ['melee','ranged','fast','siege','armored','elite','hero'];
 const age0 = require('./sprites/age_0');
 const age1 = require('./sprites/age_1');
 const age2 = require('./sprites/age_2');
 const age3 = require('./sprites/age_3');
 const age4 = require('./sprites/age_4');
-const ALL = [...age0, ...age1, ...age2, ...age3, ...age4];
+const ALL_UNITS = [...age0, ...age1, ...age2, ...age3, ...age4];
 
 let idx = 0;
 for (let age = 0; age < 5; age++) {
@@ -20,7 +21,7 @@ for (let age = 0; age < 5; age++) {
     const canvas = createCanvas(SIZE, SIZE);
     const ctx = canvas.getContext('2d');
     ctx.clearRect(0, 0, SIZE, SIZE);
-    ALL[idx](ctx);
+    ALL_UNITS[idx](ctx);
     idx++;
     const buf = canvas.toBuffer('image/png');
     const fname = `${TYPES[t]}_${age}.png`;
@@ -28,4 +29,24 @@ for (let age = 0; age < 5; age++) {
     console.log(`  ${fname} (${buf.length} bytes)`);
   }
 }
-console.log(`\nGenerated ${idx} sprites.`);
+console.log(`\nGenerated ${idx} unit sprites.`);
+
+// Turret sprites (3 turrets × 5 ages)
+const TURRET_TYPES = ['turret_0','turret_1','turret_2'];
+const turrets = require('./sprites/turrets');
+
+let tIdx = 0;
+for (let age = 0; age < 5; age++) {
+  for (let t = 0; t < 3; t++) {
+    const canvas = createCanvas(SIZE, SIZE);
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, SIZE, SIZE);
+    turrets[tIdx](ctx);
+    tIdx++;
+    const buf = canvas.toBuffer('image/png');
+    const fname = `${TURRET_TYPES[t]}_${age}.png`;
+    fs.writeFileSync(path.join(OUT_DIR, fname), buf);
+    console.log(`  ${fname} (${buf.length} bytes)`);
+  }
+}
+console.log(`Generated ${tIdx} turret sprites.`);
