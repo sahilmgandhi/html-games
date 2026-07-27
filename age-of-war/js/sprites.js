@@ -23,7 +23,12 @@ class SpriteManager {
                 const img = new Image();
                 img.src = `sprites/${key}.png`;
                 img._loaded = false;
-                img.onload = () => { img._loaded = true; };
+                img.onload = () => {
+                    img._loaded = true;
+                    for (const side of ['player', 'enemy', 'none']) {
+                        this.cache.delete(this.getKey(type, age, side));
+                    }
+                };
                 this.images.set(key, img);
             }
         }
@@ -33,7 +38,12 @@ class SpriteManager {
                 const img = new Image();
                 img.src = `sprites/${key}.png`;
                 img._loaded = false;
-                img.onload = () => { img._loaded = true; };
+                img.onload = () => {
+                    img._loaded = true;
+                    for (const side of ['player', 'enemy', 'none']) {
+                        this.cache.delete(this.turretKey(ti, age, side));
+                    }
+                };
                 this.images.set(key, img);
             }
         }
@@ -146,13 +156,6 @@ class SpriteManager {
             this._tintEnemy(oc, s);
         }
 
-        const team = side || 'player';
-        const cx = s / 2;
-        oc.beginPath();
-        oc.ellipse(cx, this._shadowY, 34, 8, 0, 0, Math.PI * 2);
-        oc.fillStyle = team === 'player' ? 'rgba(58,120,194,0.26)' : 'rgba(194,58,58,0.26)';
-        oc.fill();
-
         return offscreen;
     }
 
@@ -192,6 +195,12 @@ class SpriteManager {
         ctx.lineJoin = 'round';
         ctx.lineCap = 'round';
 
+        const srcTop = 56, srcBot = 248, dstTop = 6, dstBot = 72;
+        const scaleY = (dstBot - dstTop) / (srcBot - srcTop);
+        ctx.save();
+        ctx.translate(0, dstTop - srcTop * scaleY);
+        ctx.scale(1, scaleY);
+
         const drawFn = this['draw_' + type];
         if (drawFn) {
             drawFn.call(this, ctx, s, cx, ageIndex, ap, ta);
@@ -199,9 +208,11 @@ class SpriteManager {
             this.draw_melee(ctx, s, cx, ageIndex, ap, ta);
         }
 
+        ctx.restore();
+
         ctx.beginPath();
-        ctx.ellipse(cx, s - 6, 34, 8, 0, 0, Math.PI * 2);
-        ctx.fillStyle = team === 'player' ? 'rgba(58,120,194,0.26)' : 'rgba(194,58,58,0.26)';
+        ctx.ellipse(cx, this._shadowY, 34, 8, 0, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(0,0,0,0.18)';
         ctx.fill();
     }
 
