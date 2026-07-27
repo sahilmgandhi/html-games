@@ -332,10 +332,8 @@ class Game {
 
     this.renderer.drawTurretSlots(this);
 
-    const playerTurretCount = this.turrets.filter(t => t.side === 'player' && t.alive).length;
-    const enemyTurretCount = this.turrets.filter(t => t.side === 'enemy' && t.alive).length;
-    this.renderer.drawBase(this.playerBase, this.currentAge, playerTurretCount);
-    this.renderer.drawBase(this.enemyBase, this.enemyAge, enemyTurretCount);
+    this.renderer.drawBase(this.playerBase, this.currentAge, this.occupiedSlotRows('player'));
+    this.renderer.drawBase(this.enemyBase, this.enemyAge, this.occupiedSlotRows('enemy'));
 
     for (const t of this.turrets) {
       this.renderer.drawTurret(t, t.side === 'player' ? this.currentAge : this.enemyAge, t.turretIndex);
@@ -726,6 +724,16 @@ class Game {
       if (!taken.has(i)) return i;
     }
     return null;
+  }
+
+  // Slot rows the base tower has to reach. Not the turret count: a destroyed
+  // turret leaves a gap, so the highest occupied index is what matters.
+  occupiedSlotRows(side) {
+    let rows = 0;
+    for (const t of this.turrets) {
+      if (t.side === side && t.alive) rows = Math.max(rows, t.slotIndex + 1);
+    }
+    return rows;
   }
 
   buySlot() {

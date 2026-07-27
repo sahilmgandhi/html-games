@@ -679,6 +679,15 @@ function runTests() {
     assert('Rebuild fills the freed slot', live.length === 3, `count=${live.length}`);
     const positions = live.map(t => `${t.x},${t.y}`);
     assert('No two live turrets share a position', new Set(positions).size === 3, positions.join(' '));
+
+    g.turrets.find(t => t.slotIndex === 2).alive = false;
+    runFrames(g, 0.05);
+    assert('Base tower spans the highest occupied slot, not the count',
+      g.occupiedSlotRows('player') === 2, `rows=${g.occupiedSlotRows('player')}`);
+    g.turrets.find(t => t.slotIndex === 0).alive = false;
+    runFrames(g, 0.05);
+    assert('Base tower still reaches a turret left in a high slot',
+      g.occupiedSlotRows('player') === 2, `rows=${g.occupiedSlotRows('player')}`);
   }
 
   console.log('\n--- Special Targets Units Only ---');
