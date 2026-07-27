@@ -2,10 +2,6 @@ class Renderer {
   constructor(canvas, ctx) {
     this.ctx = ctx;
     this.camera = { x: 0, y: 0 };
-    this.shakeX = 0;
-    this.shakeY = 0;
-    this.shakeIntensity = 0;
-    this.shakeDuration = 0;
 
     this.terrainCache = null;
     this.terrainCacheAge = -1;
@@ -18,16 +14,13 @@ class Renderer {
     this.hudCacheSlots = -1;
     this.hudCacheSpecial = -1;
 
-    this.xpBarProgress = 0;
-    this.tooltip = null;
     this.hudTime = 0;
 
-    this.crossfadeAge = -1;
-    this.crossfadeTimer = 0;
     this.crossfadeDuration = 0.5;
-    this._crossfadeCanvas = null;
     this.parallaxCache = null;
     this.parallaxCacheAge = -1;
+
+    this.resetView();
   }
 
   resetView() {
@@ -1860,11 +1853,10 @@ class Renderer {
     ctx.fillText(slotsFull ? 'FULL' : `${CONFIG.TURRET_SLOT_COST}g`, 52, row2Y + 19);
 
     const playerTurrets = game.playerTurrets();
-    const occupiedCount = playerTurrets.length;
     for (let i = 0; i < age.turrets.length; i++) {
       const t = age.turrets[i];
       const bx = 100 + i * 96;
-      const canPlace = game.gold >= t.cost && occupiedCount < game.playerSlotsBought;
+      const canPlace = game.gold >= t.cost && playerTurrets.length < game.playerSlotsBought;
       const tw = 88;
       const th = 22;
 
@@ -1950,18 +1942,18 @@ class Renderer {
     this.drawPauseButton(game);
   }
 
-  _drawHudSeparators(ctx, L) {
-    const y = L.y;
-    const unitGroupEndX = L.heroEndX + 6;
-    const speedGroupStartX = L.speedStartX - 8;
+  _drawHudSeparators(ctx, layout) {
+    const { W, y, age, unitStartX, spX, spW, buildingStartX, buildingBtnW, heroEndX, speedStartX, turretCount } = layout;
+    const unitGroupEndX = heroEndX + 6;
+    const speedGroupStartX = speedStartX - 8;
 
     ctx.save();
     ctx.strokeStyle = 'rgba(255,255,255,0.07)';
     ctx.lineWidth = 1;
 
     ctx.beginPath();
-    ctx.moveTo(10, y + 50); ctx.lineTo(L.W - 10, y + 50);
-    ctx.moveTo(10, y + 88); ctx.lineTo(L.W - 10, y + 88);
+    ctx.moveTo(10, y + 50); ctx.lineTo(W - 10, y + 50);
+    ctx.moveTo(10, y + 88); ctx.lineTo(W - 10, y + 88);
     ctx.moveTo(160, y + 4); ctx.lineTo(160, y + 56);
     ctx.moveTo(unitGroupEndX, y + 4); ctx.lineTo(unitGroupEndX, y + 56);
     ctx.moveTo(speedGroupStartX, y + 4); ctx.lineTo(speedGroupStartX, y + 56);
@@ -1971,13 +1963,13 @@ class Renderer {
     ctx.fillStyle = 'rgba(255,255,255,0.28)';
     ctx.font = '7px sans-serif';
     ctx.textAlign = 'center';
-    const unitGroupMid = L.unitStartX + (L.age.units.length * CONFIG.UNIT_SPACING) / 2 - 6;
+    const unitGroupMid = unitStartX + (age.units.length * CONFIG.UNIT_SPACING) / 2 - 6;
     ctx.fillText('UNITS', unitGroupMid, y + 2);
-    ctx.fillText('SPECIAL', L.spX + L.spW / 2, y + 2);
-    ctx.fillText('TURRETS', 100 + (L.age.turrets.length * 96) / 2 - 4, y + 52);
-    ctx.fillText('BUILD', L.buildingStartX + (CONFIG.BUILDINGS.length * (L.buildingBtnW + 8)) / 2 - 4, y + 52);
-    if (L.turretCount > 0) {
-      ctx.fillText('SELL', 100 + (L.turretCount * 96) / 2 - 4, y + 90);
+    ctx.fillText('SPECIAL', spX + spW / 2, y + 2);
+    ctx.fillText('TURRETS', 100 + (age.turrets.length * 96) / 2 - 4, y + 52);
+    ctx.fillText('BUILD', buildingStartX + (CONFIG.BUILDINGS.length * (buildingBtnW + 8)) / 2 - 4, y + 52);
+    if (turretCount > 0) {
+      ctx.fillText('SELL', 100 + (turretCount * 96) / 2 - 4, y + 90);
     }
     ctx.restore();
   }

@@ -578,6 +578,33 @@ function runTests() {
     assert('Particles and minimap render without throwing', ok);
   }
 
+  console.log('\n--- Canvas Click Scaling ---');
+  {
+    // fitCanvas() CSS-scales the canvas, so client coords must be divided by the
+    // CSS/backing-store ratio before they can be hit-tested against HUD rects.
+    const canvas = {
+      width: CONFIG.VIEWPORT.WIDTH,
+      height: CONFIG.VIEWPORT.HEIGHT,
+      getBoundingClientRect: () => ({ left: 40, top: 10, width: 600, height: 300 }),
+    };
+    const p = canvasPoint(canvas, 40 + 300, 10 + 150);
+    assert('Click maps to canvas center on a half-size canvas',
+      p.x === CONFIG.VIEWPORT.WIDTH / 2 && p.y === CONFIG.VIEWPORT.HEIGHT / 2, `x=${p.x} y=${p.y}`);
+    const origin = canvasPoint(canvas, 40, 10);
+    assert('Canvas origin maps to (0,0)', origin.x === 0 && origin.y === 0);
+
+    const unscaled = { ...canvas, getBoundingClientRect: () => ({ left: 0, top: 0, width: 1200, height: 600 }) };
+    const q = canvasPoint(unscaled, 168, 500);
+    assert('Unscaled canvas is a pass-through', q.x === 168 && q.y === 500);
+  }
+
+  console.log('\n--- Key Normalization ---');
+  {
+    assert('Shifted letters normalize', normalizeKey('A') === 'a' && normalizeKey('D') === 'd');
+    assert('Named keys pass through', normalizeKey('ArrowLeft') === 'ArrowLeft' && normalizeKey('F5') === 'F5');
+    assert('Space passes through', normalizeKey(' ') === ' ');
+  }
+
   console.log('\n--- Restart Restores Bases ---');
   {
     const g = makeGame();

@@ -202,7 +202,7 @@ class Game {
 
     for (const u of this.units) {
       const prevProjCount = this.projectilePool.active.length;
-      const attackResult = u.update(dt, this.units, this.turrets, u.side === 'player' ? this.enemyBase : this.playerBase, this.projectilePool, this.spatialHash);
+      const attackResult = u.update(dt, this.units, u.side === 'player' ? this.enemyBase : this.playerBase, this.projectilePool, this.spatialHash);
       if (this.projectilePool.active.length > prevProjCount) {
         this.audio.play('fire');
       } else if (attackResult === 'melee') {
@@ -212,7 +212,7 @@ class Game {
 
     for (const t of this.turrets) {
       const prevProjCount = this.projectilePool.active.length;
-      t.update(dt, this.units, this.projectilePool, this.spatialHash);
+      t.update(dt, this.projectilePool, this.spatialHash);
       if (this.projectilePool.active.length > prevProjCount) {
         this.audio.play('fire');
       }
@@ -220,7 +220,7 @@ class Game {
 
     for (const p of this.projectilePool.active) {
       p.update(dt);
-      const hits = p.checkHit(this.units, this.turrets, [this.playerBase, this.enemyBase], this.spatialHash);
+      const hits = p.checkHit([this.playerBase, this.enemyBase], this.spatialHash);
       if (hits.length > 0) {
         this.audio.play('hit');
         for (const hit of hits) {
