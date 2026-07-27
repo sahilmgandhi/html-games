@@ -1,76 +1,29 @@
 const DEBUG_PASSWORD_HASH = '09a02186ab393005456913adb512de365a1f56681a045078e0a94d0ea03946b7';
 
 class Game {
-  constructor(canvas, ctx) {
+  constructor(canvas, ctx, audio, achievements) {
     this.canvas = canvas;
     this.ctx = ctx;
     this.renderer = new Renderer(canvas, ctx);
     this.input = new InputHandler(canvas, this.renderer);
     this.input.setGame(this);
-    this.particles = new ParticleSystem();
     this.minimap = new Minimap();
-    this.audio = new AudioManager();
-    this.achievements = new Achievements();
+    this.audio = audio || new AudioManager();
+    this.achievements = achievements || new Achievements();
     this.ai = null;
-
-    this.gold = CONFIG.STARTING_GOLD;
-    this.xp = CONFIG.STARTING_XP;
-    this.currentAge = 0;
-
-    this.enemyGold = CONFIG.STARTING_GOLD;
-    this.enemyXp = CONFIG.STARTING_XP;
-    this.enemyAge = 0;
-
-    this.specialCooldown = 0;
-    this.enemySpecialCooldown = 0;
-    this.specialAnim = null;
 
     this.playerBase = new Base(CONFIG.BASE_X_OFFSET, CONFIG.GROUND_Y, 'player');
     this.enemyBase = new Base(CONFIG.WORLD.WIDTH - CONFIG.BASE_X_OFFSET, CONFIG.GROUND_Y, 'enemy');
-
-    this.units = [];
-    this.turrets = [];
-    this.buildings = [];
-    this.projectilePool = new ProjectilePool(64);
-    this.spatialHash = new SpatialHash(128);
-    this.staticHash = new SpatialHash(128);
-    this.staticDirty = true;
-
-    this.playerSlotsBought = 1;
-    this.enemySlotsBought = 1;
-    this.unitUpgrades = {};
-    this.heroCooldown = 0;
-    this.enemyHeroCooldown = 0;
     this.turretSlotPositions = this.computeSlotPositions(CONFIG.BASE_X_OFFSET, 1);
     this.enemyTurretSlotPositions = this.computeSlotPositions(CONFIG.WORLD.WIDTH - CONFIG.BASE_X_OFFSET, -1);
 
     this.lastTime = 0;
-    this.running = false;
-    this.gameOver = false;
-    this.winner = null;
-    this.paused = false;
-    this.debugOpen = false;
-    this.debugPasswordOpen = false;
-    this.debugPasswordBuffer = '';
-    this.debugPasswordError = false;
-    this.invincible = false;
-    this.gameSpeed = 1;
-    this.difficulty = 0;
-    this.started = false;
-    this.flashTimer = 0;
-    this.gameTime = 0;
-    this.baseDamageFlash = 0;
-    this.lowQuality = false;
-    this.fpsAvg = 60;
     this.lastFrameTime = performance.now();
-    this._playerBaseHpPrev = CONFIG.BASE_HP;
-    this.formationMode = 0;
-    this._lastAchievementId = null;
-    this.totalSpawned = 0;
-    this.totalGoldSpent = 0;
-    this.playerLowestHp = CONFIG.BASE_HP;
-    this.musicWereOn = false;
-    this.sfxWereOn = false;
+    this.running = false;
+    this.started = false;
+    this.difficulty = 0;
+
+    this.resetState();
 
     this.canvas.addEventListener('click', () => {
       this.audio.init();
@@ -131,6 +84,64 @@ class Game {
     });
   }
 
+  // Everything a fresh match owns. Called from the constructor and from restart(),
+  // so it must not touch difficulty, started/running, or the collaborators.
+  resetState() {
+    this.gold = CONFIG.STARTING_GOLD;
+    this.xp = CONFIG.STARTING_XP;
+    this.currentAge = 0;
+
+    this.enemyGold = CONFIG.STARTING_GOLD;
+    this.enemyXp = CONFIG.STARTING_XP;
+    this.enemyAge = 0;
+
+    this.specialCooldown = 0;
+    this.enemySpecialCooldown = 0;
+    this.specialAnim = null;
+
+    this.playerBase.reset();
+    this.enemyBase.reset();
+
+    this.units = [];
+    this.turrets = [];
+    this.buildings = [];
+    this.particles = new ParticleSystem();
+    this.projectilePool = new ProjectilePool(64);
+    this.spatialHash = new SpatialHash(128);
+
+    this.playerSlotsBought = 1;
+    this.enemySlotsBought = 1;
+    this.unitUpgrades = {};
+    this.heroCooldown = 0;
+    this.enemyHeroCooldown = 0;
+
+    this.gameOver = false;
+    this.winner = null;
+    this.paused = false;
+    this.debugOpen = false;
+    this.debugPasswordOpen = false;
+    this.debugPasswordBuffer = '';
+    this.debugPasswordError = false;
+    this.invincible = false;
+    this.gameSpeed = 1;
+    this.flashTimer = 0;
+    this.gameTime = 0;
+    this.baseDamageFlash = 0;
+    this.lowQuality = false;
+    this.fpsAvg = 60;
+    this._playerBaseHpPrev = CONFIG.BASE_HP;
+    this.formationMode = 0;
+    this._lastAchievementId = null;
+    this.totalSpawned = 0;
+    this.totalGoldSpent = 0;
+    this.playerLowestHp = CONFIG.BASE_HP;
+
+    this.achievements.queue = [];
+    this.achievements.queueTimer = 0;
+    this.renderer.resetView();
+    balanceTracker.reset();
+  }
+
   start() {
     this.ai = new AI(this);
     this.running = true;
@@ -183,19 +194,10 @@ class Game {
     this.ai.update(dt);
 
     this.spatialHash.clear();
-    for (const u of this.units) {
-      if (u.alive) this.spatialHash.insert(u);
-    }
-
-    if (this.staticDirty) {
-      this.staticHash.clear();
-      for (const t of this.turrets) {
-        if (t.alive) this.staticHash.insert(t);
+    for (const list of [this.units, this.turrets, this.buildings]) {
+      for (const e of list) {
+        if (e.alive) this.spatialHash.insert(e);
       }
-      for (const b of this.buildings) {
-        if (b.alive) this.staticHash.insert(b);
-      }
-      this.staticDirty = false;
     }
 
     for (const u of this.units) {
@@ -222,7 +224,7 @@ class Game {
       if (hits.length > 0) {
         this.audio.play('hit');
         for (const hit of hits) {
-          const combatant = hit.entity instanceof Unit || hit.entity instanceof Turret;
+          const combatant = hit.entity instanceof Unit || hit.entity instanceof Turret || hit.entity instanceof Building;
           const color = combatant
             ? (hit.entity.side === 'player' ? CONFIG.COLORS.PLAYER : CONFIG.COLORS.ENEMY)
             : '#ff8800';
@@ -455,68 +457,18 @@ class Game {
   }
 
   restart() {
-    this.gold = CONFIG.STARTING_GOLD;
-    this.xp = CONFIG.STARTING_XP;
-    this.currentAge = 0;
-    this.enemyGold = CONFIG.STARTING_GOLD;
-    this.enemyXp = CONFIG.STARTING_XP;
-    this.enemyAge = 0;
-    this.specialCooldown = 0;
-    this.enemySpecialCooldown = 0;
-    this.specialAnim = null;
-    this.gameTime = 0;
-    this.totalGoldSpent = 0;
-    balanceTracker.reset();
-    this.units = [];
-    this.turrets = [];
-    this.buildings = [];
-    this.projectilePool = new ProjectilePool(64);
-    this.spatialHash = new SpatialHash(128);
-    this.staticHash = new SpatialHash(128);
-    this.staticDirty = true;
-    this.particles = new ParticleSystem();
-    this.playerSlotsBought = 1;
-    this.enemySlotsBought = 1;
-    this.unitUpgrades = {};
-    this.heroCooldown = 0;
-    this.enemyHeroCooldown = 0;
-    this.paused = false;
-    this.debugOpen = false;
-    this.debugPasswordOpen = false;
-    this.debugPasswordBuffer = '';
-    this.debugPasswordError = false;
-    this.invincible = false;
-    this.gameSpeed = 1;
-    this.formationMode = 0;
-    this.totalSpawned = 0;
-    this.playerLowestHp = CONFIG.BASE_HP;
-    this.baseDamageFlash = 0;
-    this.lowQuality = false;
-    this.fpsAvg = 60;
-    this._playerBaseHpPrev = CONFIG.BASE_HP;
-    this.gameOver = false;
-    this.winner = null;
-    this.renderer.camera.x = 0;
-    this.difficulty = 0;
+    this.resetState();
     this.ai = new AI(this);
+    this.audio.setSuspended(false);
     this.audio.stopMusic();
-    this.audio.startMusic(0);
+    this.audio.startMusic(this.currentAge);
   }
 
   togglePause() {
     this.paused = !this.paused;
-    if (this.paused) {
-      this.musicWereOn = this.audio.musicEnabled;
-      this.sfxWereOn = this.audio.sfxEnabled;
-      this.audio.stopMusic();
-      this.audio.musicEnabled = false;
-      this.audio.sfxEnabled = false;
-    } else {
-      this.audio.musicEnabled = this.musicWereOn;
-      this.audio.sfxEnabled = this.sfxWereOn;
-      if (this.audio.musicEnabled) {
-        this.audio.startMusic(this.currentAge);
-      }
+    this.audio.setSuspended(this.paused);
+    if (!this.paused) {
+      this.audio.startMusic(this.currentAge);
     }
   }
 
@@ -552,9 +504,6 @@ class Game {
 
     const restartBtnY = panelY + 220;
     if (pointInRect(mx, my, cx - 110, restartBtnY, 220, 30)) {
-      this.paused = false;
-      this.audio.musicEnabled = this.musicWereOn;
-      this.audio.sfxEnabled = this.sfxWereOn;
       this.restart();
       return;
     }
@@ -770,6 +719,15 @@ class Game {
     return positions;
   }
 
+  // Lowest slot index on `side` not held by a live entity, or null when full.
+  firstFreeSlot(entities, side, maxSlots) {
+    const taken = new Set(entities.filter(e => e.side === side && e.alive).map(e => e.slotIndex));
+    for (let i = 0; i < maxSlots; i++) {
+      if (!taken.has(i)) return i;
+    }
+    return null;
+  }
+
   buySlot() {
     if (this.playerSlotsBought >= CONFIG.TURRET_SLOTS) return;
     if (this.gold < CONFIG.TURRET_SLOT_COST) return;
@@ -799,10 +757,8 @@ class Game {
   spawnTurretForSide(side, turretIndex) {
     const isPlayer = side === 'player';
     const slotsBought = isPlayer ? this.playerSlotsBought : this.enemySlotsBought;
-    if (slotsBought === 0) return;
-
-    const occupiedCount = this.turrets.filter(t => t.side === side).length;
-    if (occupiedCount >= slotsBought) return;
+    const slot = this.firstFreeSlot(this.turrets, side, slotsBought);
+    if (slot === null) return;
 
     const age = CONFIG.AGES[isPlayer ? this.currentAge : this.enemyAge];
     const data = age.turrets[turretIndex];
@@ -817,25 +773,27 @@ class Game {
     }
 
     const slotPositions = isPlayer ? this.turretSlotPositions : this.enemyTurretSlotPositions;
-    const pos = slotPositions[occupiedCount];
-    const t = new Turret(pos.x, pos.y, side, isPlayer ? this.currentAge : this.enemyAge, turretIndex);
+    const pos = slotPositions[slot];
+    const t = new Turret(pos.x, pos.y, side, isPlayer ? this.currentAge : this.enemyAge, turretIndex, slot);
 
-    if (!isPlayer) this.applyEnemyScaling(t, data.hp);
+    if (!isPlayer) this.applyEnemyScaling(t, data.hp, data.damage);
 
     this.turrets.push(t);
-    this.staticDirty = true;
     if (isPlayer) this.audio.play('spawn');
   }
 
+  playerTurrets() {
+    return this.turrets.filter(t => t.side === 'player' && t.alive);
+  }
+
   sellTurret(turretIndex) {
-    const playerTurrets = this.turrets.filter(t => t.side === 'player');
+    const playerTurrets = this.playerTurrets();
     if (turretIndex >= playerTurrets.length) return;
 
     const t = playerTurrets[turretIndex];
     const refund = Math.floor(t.cost * CONFIG.TURRET_REFUND_RATE);
     this.gold += refund;
     t.alive = false;
-    this.staticDirty = true;
     this.particles.emitGoldNumber(t.x, t.y, refund);
     this.audio.play('gold');
   }
@@ -865,25 +823,35 @@ class Game {
   }
 
   buyBuilding(buildingIndex) {
-    const data = CONFIG.BUILDINGS[buildingIndex];
-    if (this.gold < data.cost) return;
-    this.gold -= data.cost;
-    this.totalGoldSpent += data.cost;
-    const px = CONFIG.BASE_X_OFFSET + 30 + (this.getBuildingCount('player') + 1) * 10;
-    const b = new Building(px, CONFIG.GROUND_Y - 20, 'player', buildingIndex);
-    this.buildings.push(b);
-    this.staticDirty = true;
-    this.audio.play('spawn');
+    this.buyBuildingForSide('player', buildingIndex);
   }
 
   buyEnemyBuilding(buildingIndex) {
+    this.buyBuildingForSide('enemy', buildingIndex);
+  }
+
+  buyBuildingForSide(side, buildingIndex) {
+    const isPlayer = side === 'player';
     const data = CONFIG.BUILDINGS[buildingIndex];
-    if (this.enemyGold < data.cost) return;
-    this.enemyGold -= data.cost;
-    const px = CONFIG.WORLD.WIDTH - CONFIG.BASE_X_OFFSET - 30 - (this.getBuildingCount('enemy') + 1) * 10;
-    const b = new Building(px, CONFIG.GROUND_Y - 20, 'enemy', buildingIndex);
+    const gold = isPlayer ? this.gold : this.enemyGold;
+    if (gold < data.cost) return;
+
+    const slot = this.firstFreeSlot(this.buildings, side, CONFIG.MAX_BUILDINGS);
+    if (slot === null) return;
+
+    if (isPlayer) {
+      this.gold -= data.cost;
+      this.totalGoldSpent += data.cost;
+    } else {
+      this.enemyGold -= data.cost;
+    }
+
+    const dir = isPlayer ? 1 : -1;
+    const baseX = isPlayer ? CONFIG.BASE_X_OFFSET : CONFIG.WORLD.WIDTH - CONFIG.BASE_X_OFFSET;
+    const px = baseX + dir * (CONFIG.BUILDING_OFFSET_X + slot * CONFIG.BUILDING_SPACING);
+    const b = new Building(px, CONFIG.GROUND_Y - CONFIG.BUILDING_Y_OFFSET, side, buildingIndex, slot);
     this.buildings.push(b);
-    this.staticDirty = true;
+    if (isPlayer) this.audio.play('spawn');
   }
 
   buyEnemySlot() {
@@ -1275,9 +1243,9 @@ class Game {
       this.heroCooldown = data.heroCooldown || 0;
       this.enemyHeroCooldown = data.enemyHeroCooldown || 0;
       this.playerBase.hp = data.playerBaseHp;
-      this.playerBase.maxHp = data.playerBaseHp;
+      this.playerBase.displayHp = data.playerBaseHp;
       this.enemyBase.hp = data.enemyBaseHp;
-      this.enemyBase.maxHp = data.enemyBaseHp;
+      this.enemyBase.displayHp = data.enemyBaseHp;
       this.unitUpgrades = data.unitUpgrades || {};
       this.playerSlotsBought = data.playerSlotsBought;
       this.enemySlotsBought = data.enemySlotsBought;
@@ -1285,8 +1253,6 @@ class Game {
       this.difficulty = data.difficulty;
       this.gameTime = data.gameTime;
       this.totalGoldSpent = data.totalGoldSpent || 0;
-      this.playerBase.healFraction(0);
-      this.enemyBase.healFraction(0);
       if (data.buildings) {
         for (const idx of data.buildings) {
           this.buyBuilding(idx);
@@ -1297,28 +1263,19 @@ class Game {
     } catch (e) { /* corrupted save */ }
   }
 
-  dealSpecialDamageAt(x, radius, damage) {
-    const anim = this.specialAnim;
-    if (!anim) return;
-    const age = CONFIG.AGES[anim.ageIndex];
-    const targetSide = anim.side === 'player' ? 'enemy' : 'player';
-    const dmg = damage !== undefined ? damage : age.specialDamage;
-
-    for (const u of this.units) {
-      if (u.side === targetSide && u.alive) {
-        if (x === undefined || Math.abs(u.x - x) <= (radius || 100)) {
-          u.takeDamage(dmg);
-          this.particles.emit(u.x, u.y, '#ff8800', 4, 3, 0.3, 2);
-        }
-      }
-    }
-  }
-
+  // Specials hit enemy units only -- turrets and buildings are immune by design.
   dealSpecialDamage() {
     const anim = this.specialAnim;
     if (!anim) return;
-    const age = CONFIG.AGES[anim.ageIndex];
+    const dmg = CONFIG.AGES[anim.ageIndex].specialDamage;
+    const targetSide = anim.side === 'player' ? 'enemy' : 'player';
     this.renderer.screenShake(8, 0.4);
-    this.dealSpecialDamageAt(undefined, undefined, age.specialDamage);
+
+    for (const u of this.units) {
+      if (u.side === targetSide && u.alive) {
+        u.takeDamage(dmg);
+        this.particles.emit(u.x, u.y, '#ff8800', 4, 3, 0.3, 2);
+      }
+    }
   }
 }

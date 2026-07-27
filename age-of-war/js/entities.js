@@ -87,11 +87,15 @@ class Base {
     this.x = x;
     this.y = y;
     this.side = side;
+    this.width = CONFIG.BASE_WIDTH;
+    this.height = CONFIG.BASE_HEIGHT;
+    this.reset();
+  }
+
+  reset() {
     this.hp = CONFIG.BASE_HP;
     this.maxHp = CONFIG.BASE_HP;
     this.displayHp = this.maxHp;
-    this.width = CONFIG.BASE_WIDTH;
-    this.height = CONFIG.BASE_HEIGHT;
   }
 
   takeDamage(amount) {
@@ -191,7 +195,8 @@ class Unit {
     }
 
     if (closest) {
-      return { target: closest, dist: closestDist, type: closest instanceof Unit ? 'unit' : 'turret' };
+      const type = closest instanceof Unit ? 'unit' : (closest instanceof Turret ? 'turret' : 'building');
+      return { target: closest, dist: closestDist, type };
     }
 
     return { target: enemyBase, dist: baseDist, type: 'base' };
@@ -229,6 +234,7 @@ class Unit {
 
     const info = this.getTarget(allUnits, allTurrets, enemyBase, spatialHash);
     const target = info.target;
+    this.displayHp += (this.hp - this.displayHp) * Math.min(1, dt * 8);
 
     if (info.dist <= this.range) {
       if (this.attackCooldown <= 0) {
@@ -241,7 +247,6 @@ class Unit {
       this.x += this.speed * dir * dt * 60;
       this.walkPhase += dt * this.speed * 4;
     }
-    this.displayHp += (this.hp - this.displayHp) * Math.min(1, dt * 8);
     return null;
   }
 
@@ -271,12 +276,13 @@ class Unit {
 }
 
 class Turret {
-  constructor(x, y, side, ageIndex, turretIndex) {
+  constructor(x, y, side, ageIndex, turretIndex, slotIndex) {
     this.x = x;
     this.y = y;
     this.side = side;
     this.ageIndex = ageIndex;
     this.turretIndex = turretIndex;
+    this.slotIndex = slotIndex || 0;
 
     const data = CONFIG.AGES[ageIndex].turrets[turretIndex];
     this.name = data.name;
@@ -349,12 +355,13 @@ class Turret {
 }
 
 class Building {
-  constructor(x, y, side, buildingIndex) {
+  constructor(x, y, side, buildingIndex, slotIndex) {
     const data = CONFIG.BUILDINGS[buildingIndex];
     this.x = x;
     this.y = y;
     this.side = side;
     this.buildingIndex = buildingIndex;
+    this.slotIndex = slotIndex || 0;
     this.name = data.name;
     this.produceAmount = data.produceAmount || 0;
     this.produceInterval = data.produceInterval || 0;

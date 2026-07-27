@@ -52,19 +52,22 @@ class SpriteManager {
             this.cache.set(key, entry);
         }
 
-        if (!entry.canvas) {
-            const imgKey = `${type}_${ageIndex}`;
-            const img = this.images.get(imgKey);
+        // A sprite drawn before its PNG arrives falls back to procedural art; re-render
+        // from the PNG on the first draw after it loads instead of caching the fallback.
+        if (!entry.canvas || entry.fallback) {
+            const img = this.images.get(`${type}_${ageIndex}`);
 
             if (img && img._loaded) {
                 entry.canvas = this._renderFromPNG(img, type, ageIndex, side);
-            } else {
+                entry.fallback = false;
+            } else if (!entry.canvas) {
                 const offscreen = document.createElement('canvas');
                 offscreen.width = this.renderSize;
                 offscreen.height = this.renderSize;
                 const oc = offscreen.getContext('2d');
                 this.drawSprite(oc, type, ageIndex, side);
                 entry.canvas = offscreen;
+                entry.fallback = true;
             }
         }
 

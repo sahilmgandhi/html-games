@@ -55,7 +55,6 @@ function drawTitleScreen() {
   ctx.font = 'bold 64px "Segoe UI", sans-serif';
   ctx.textAlign = 'center';
   ctx.fillText('AGE OF WAR', canvas.width / 2, 170);
-  ctx.fillText('AGE OF WAR', canvas.width / 2, 170);
 
   ctx.fillStyle = 'rgba(255,255,255,0.5)';
   ctx.font = '18px "Segoe UI", sans-serif';
@@ -292,9 +291,7 @@ function titleLoop() {
 
 canvas.addEventListener('click', (e) => {
   if (gameState === 'title') {
-    const rect = canvas.getBoundingClientRect();
-    const mx = e.clientX - rect.left;
-    const my = e.clientY - rect.top;
+    const { x: mx, y: my } = canvasPoint(canvas, e.clientX, e.clientY);
     const cx = canvas.width / 2;
 
     // Settings gear
@@ -345,7 +342,7 @@ canvas.addEventListener('click', (e) => {
 });
 
 function startGame() {
-  game = new Game(canvas, ctx);
+  game = new Game(canvas, ctx, audio, ach);
   game.difficulty = selectedDifficulty;
   game.start();
 }

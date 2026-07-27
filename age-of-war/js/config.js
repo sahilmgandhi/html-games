@@ -10,7 +10,6 @@ const CONFIG = {
     ENEMY_LIGHT: '#f88',
   },
 
-  KILL_GOLD_REWARD_MULT: 1.3,
   PASSIVE_GOLD_RATE: [2, 4, 8, 16, 32],
 
   HUD_HEIGHT: 145,
@@ -46,6 +45,11 @@ const CONFIG = {
     { name: 'Gold Mine', cost: 200, hp: 200, produceAmount: 3, produceInterval: 4 },
     { name: 'Barracks', cost: 300, hp: 300, healAmount: 2, healRadius: 80 },
   ],
+  MAX_BUILDINGS: 4,
+  // Measured from the base, far enough out to clear the 80px turret sprite column.
+  BUILDING_OFFSET_X: 90,
+  BUILDING_SPACING: 28,
+  BUILDING_Y_OFFSET: 20,
 
   TURRET_SLOTS: 4,
   TURRET_SLOT_COST: 250,

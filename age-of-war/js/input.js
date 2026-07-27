@@ -7,21 +7,16 @@ class InputHandler {
     this.mouseY = 0;
     this.keys = {};
 
-    canvas.addEventListener('mousemove', (e) => {
-      const rect = canvas.getBoundingClientRect();
-      this.mouseX = (e.clientX - rect.left) * (canvas.width / rect.width);
-      this.mouseY = (e.clientY - rect.top) * (canvas.height / rect.height);
-      this.renderer.mouseX = this.mouseX;
-      this.renderer.mouseY = this.mouseY;
-    });
+    const trackPointer = (e) => {
+      const p = canvasPoint(canvas, e.clientX, e.clientY);
+      this.mouseX = p.x;
+      this.mouseY = p.y;
+      this.renderer.mouseX = p.x;
+      this.renderer.mouseY = p.y;
+    };
 
-    canvas.addEventListener('click', (e) => {
-      const rect = canvas.getBoundingClientRect();
-      this.mouseX = (e.clientX - rect.left) * (canvas.width / rect.width);
-      this.mouseY = (e.clientY - rect.top) * (canvas.height / rect.height);
-      this.renderer.mouseX = this.mouseX;
-      this.renderer.mouseY = this.mouseY;
-    });
+    canvas.addEventListener('mousemove', trackPointer);
+    canvas.addEventListener('click', trackPointer);
 
     canvas.addEventListener('mouseleave', () => {
       this.mouseX = CONFIG.VIEWPORT.WIDTH / 2;
@@ -31,31 +26,32 @@ class InputHandler {
     });
 
     window.addEventListener('keydown', (e) => {
-      this.keys[e.key] = true;
+      const key = normalizeKey(e.key);
+      this.keys[key] = true;
       if (this.game && this.game.started && !this.game.gameOver && !this.game.debugOpen) {
-        if (e.key >= '1' && e.key <= '9') {
-          const idx = parseInt(e.key) - 1;
+        if (key >= '1' && key <= '9') {
+          const idx = parseInt(key) - 1;
           const age = CONFIG.AGES[this.game.currentAge];
           if (idx < age.units.length) this.game.spawnUnit(idx);
-        } else if (e.key === ' ') {
+        } else if (key === ' ') {
           e.preventDefault();
           this.game.useSpecial();
-        } else if (e.key === 'e' || e.key === 'E') {
+        } else if (key === 'e') {
           this.game.evolve();
-        } else if (e.key === 'h' || e.key === 'H') {
+        } else if (key === 'h') {
           this.game.spawnHero('player');
-        } else if (e.key === 'b' || e.key === 'B') {
+        } else if (key === 'b') {
           this.game.buyBuilding(0);
-        } else if (e.key === 'n' || e.key === 'N') {
+        } else if (key === 'n') {
           this.game.buyBuilding(1);
-        } else if (e.key === 't' || e.key === 'T') {
+        } else if (key === 't') {
           const speeds = [1, 2, 3];
           const idx = speeds.indexOf(this.game.gameSpeed);
           this.game.gameSpeed = speeds[(idx + 1) % speeds.length];
-        } else if (e.key === 'F5') {
+        } else if (key === 'F5') {
           e.preventDefault();
           this.game.saveGame(0);
-        } else if (e.key === 'F8') {
+        } else if (key === 'F8') {
           e.preventDefault();
           this.game.loadGame(0);
         }
@@ -63,7 +59,7 @@ class InputHandler {
     });
 
     window.addEventListener('keyup', (e) => {
-      this.keys[e.key] = false;
+      this.keys[normalizeKey(e.key)] = false;
     });
 
     let touchActive = false;
@@ -72,15 +68,7 @@ class InputHandler {
     let touchStartY = 0;
     let cameraStartX = 0;
 
-    const touchToCanvas = (t) => {
-      const rect = canvas.getBoundingClientRect();
-      return {
-        x: (t.clientX - rect.left) * (canvas.width / rect.width),
-        y: (t.clientY - rect.top) * (canvas.height / rect.height),
-        clientX: t.clientX,
-        clientY: t.clientY,
-      };
-    };
+    const touchToCanvas = (t) => canvasPoint(canvas, t.clientX, t.clientY);
 
     canvas.addEventListener('touchstart', (e) => {
       e.preventDefault();
@@ -231,7 +219,7 @@ class InputHandler {
       }
     }
 
-    const playerTurrets = game.turrets.filter(t => t.side === 'player');
+    const playerTurrets = game.playerTurrets();
     const row3Y = row2Y + 34;
     for (let i = 0; i < playerTurrets.length; i++) {
       const bx = 100 + i * 96;

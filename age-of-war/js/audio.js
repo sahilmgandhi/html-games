@@ -1,17 +1,34 @@
+// Minimum seconds between two plays of the same effect. Combat can fire dozens of
+// these per frame, and each one allocates fresh AudioNodes.
+const SFX_MIN_INTERVAL = {
+  hit: 0.06,
+  fire: 0.05,
+  death: 0.08,
+  gold: 0.08,
+};
+
 class AudioManager {
   constructor() {
     this.ctx = null;
     this.musicEnabled = true;
     this.sfxEnabled = true;
+    this.suspended = false;
     this.initialized = false;
     this.musicPlaying = false;
     this.musicNodes = [];
     this.musicTimer = null;
     this.currentAgeIndex = 0;
-    this.musicSection = 0;
     this.ambientNodes = [];
     this.ambientTimer = null;
     this.currentAmbient = -1;
+    this.lastPlayed = {};
+  }
+
+  // Orthogonal to the music/SFX preferences: pausing silences everything without
+  // touching what the player chose.
+  setSuspended(on) {
+    this.suspended = on;
+    if (on) this.stopMusic();
   }
 
   init() {
@@ -29,10 +46,9 @@ class AudioManager {
 
   startMusic(ageIndex) {
     this.stopMusic();
-    if (!this.ctx || !this.musicEnabled) return;
+    if (!this.ctx || !this.musicEnabled || this.suspended) return;
     this.currentAgeIndex = ageIndex;
     this.musicPlaying = true;
-    this.musicSection = 0;
     this.playMusicLoop(ageIndex);
     this.startAmbient(ageIndex);
   }
@@ -212,7 +228,6 @@ class AudioManager {
 
     this.musicTimer = setTimeout(() => {
       this.musicNodes = [];
-      this.musicSection = (this.musicSection + 1) % 4;
       this.playMusicLoop(ageIndex);
     }, totalDur * 1000);
   }
@@ -367,10 +382,17 @@ class AudioManager {
   }
 
   play(type) {
-    if (!this.ctx || !this.sfxEnabled) return;
-    try {
-      const now = this.ctx.currentTime;
+    if (!this.ctx || !this.sfxEnabled || this.suspended) return false;
 
+    const now = this.ctx.currentTime;
+    const minInterval = SFX_MIN_INTERVAL[type];
+    if (minInterval !== undefined) {
+      const last = this.lastPlayed[type];
+      if (last !== undefined && now - last < minInterval) return false;
+      this.lastPlayed[type] = now;
+    }
+
+    try {
       switch (type) {
         case 'ui_click': {
           const osc = this.ctx.createOscillator();
@@ -590,5 +612,6 @@ class AudioManager {
     } catch (e) {
       // silent fail
     }
+    return true;
   }
 }

@@ -38,6 +38,13 @@ global.document = {
 global.window = { addEventListener() {}, AudioContext: null, webkitAudioContext: null };
 global.performance = { now: () => Date.now() };
 
+global.localStorage = {
+  _data: new Map(),
+  getItem(k) { return this._data.has(k) ? this._data.get(k) : null; },
+  setItem(k, v) { this._data.set(k, String(v)); },
+  removeItem(k) { this._data.delete(k); },
+};
+
 const jsDir = path.join(__dirname, 'js');
 const files = [
   'config.js', 'utils.js', 'sprites.js', 'entities.js', 'renderer.js',
@@ -80,6 +87,26 @@ function runFrames(game, seconds, speed = 1) {
   for (let i = 0; i < frames; i++) {
     game.update(dt * speed);
   }
+}
+
+function makeAudioContext() {
+  const param = () => ({
+    setValueAtTime() {}, linearRampToValueAtTime() {}, exponentialRampToValueAtTime() {},
+  });
+  const node = () => ({
+    connect() {}, start() {}, stop() {},
+    frequency: param(), gain: param(), Q: param(),
+  });
+  return {
+    currentTime: 0,
+    sampleRate: 44100,
+    destination: {},
+    createOscillator: node,
+    createGain: node,
+    createBiquadFilter: node,
+    createBufferSource: node,
+    createBuffer: (channels, length) => ({ getChannelData: () => new Float32Array(length) }),
+  };
 }
 
 function runTests() {
@@ -549,6 +576,251 @@ function runTests() {
       new Minimap().draw(g.renderer.ctx, g.units, g.turrets, [g.playerBase, g.enemyBase], 0, g.buildings);
     } catch (e) { ok = false; console.log('  fx error:', e.message); }
     assert('Particles and minimap render without throwing', ok);
+  }
+
+  console.log('\n--- Restart Restores Bases ---');
+  {
+    const g = makeGame();
+    g.difficulty = 2;
+    g.playerBase.hp = 0;
+    g.update(1 / 60);
+    assert('Defeat triggers when player base falls', g.gameOver === true && g.winner === 'enemy');
+    g.restart();
+    assert('Restart restores player base HP', g.playerBase.hp === CONFIG.BASE_HP, `hp=${g.playerBase.hp}`);
+    assert('Restart restores enemy base HP', g.enemyBase.hp === CONFIG.BASE_HP);
+    assert('Restart restores displayHp', g.playerBase.displayHp === CONFIG.BASE_HP);
+    assert('Restart clears gameOver', g.gameOver === false && g.winner === null);
+    assert('Restart preserves difficulty', g.difficulty === 2, `difficulty=${g.difficulty}`);
+    g.ai = { update() {} };
+    g.update(1 / 60);
+    assert('Restart does not immediately re-trigger game over', g.gameOver === false);
+  }
+
+  console.log('\n--- Turrets & Buildings Are Damageable ---');
+  {
+    const g = makeGame();
+    g.ai = { update() {} };
+    g.enemyGold = 100000;
+    g.enemySlotsBought = 4;
+    g.spawnEnemyTurret(0);
+    const t = g.turrets[0];
+    g.gold = 100000;
+    g.spawnUnit(0);
+    const u = g.units[0];
+    u.x = t.x - 10;
+    const before = t.hp;
+    runFrames(g, 2);
+    assert('Melee unit damages enemy turret', t.hp < before, `hp=${t.hp} before=${before}`);
+  }
+  {
+    const g = makeGame();
+    g.ai = { update() {} };
+    g.enemyGold = 100000;
+    g.enemySlotsBought = 4;
+    g.spawnEnemyTurret(0);
+    const t = g.turrets[0];
+    const before = t.hp;
+    g.projectilePool.acquire(t.x - 20, t.y, t.x, t.y, 5, 25, 'player', 0);
+    runFrames(g, 1);
+    assert('Projectile damages enemy turret', t.hp < before, `hp=${t.hp} before=${before}`);
+  }
+  {
+    const g = makeGame();
+    g.ai = { update() {} };
+    g.enemyGold = 100000;
+    g.buyEnemyBuilding(0);
+    const b = g.buildings[0];
+    const before = b.hp;
+    g.projectilePool.acquire(b.x - 20, b.y, b.x, b.y, 5, 25, 'player', 0);
+    runFrames(g, 1);
+    assert('Projectile damages enemy building', b.hp < before, `hp=${b.hp} before=${before}`);
+  }
+
+  console.log('\n--- Turret Slot Reuse ---');
+  {
+    const g = makeGame();
+    g.ai = { update() {} };
+    g.gold = 100000;
+    g.playerSlotsBought = 3;
+    for (let i = 0; i < 3; i++) g.spawnTurret(0);
+    assert('Three turrets in three slots', new Set(g.turrets.map(t => t.y)).size === 3, g.turrets.map(t => t.y).join(','));
+    g.turrets[1].alive = false;
+    runFrames(g, 0.05);
+    assert('Destroyed turret is pruned', g.turrets.length === 2);
+    g.spawnTurret(0);
+    const live = g.turrets.filter(t => t.side === 'player' && t.alive);
+    assert('Rebuild fills the freed slot', live.length === 3, `count=${live.length}`);
+    const positions = live.map(t => `${t.x},${t.y}`);
+    assert('No two live turrets share a position', new Set(positions).size === 3, positions.join(' '));
+  }
+
+  console.log('\n--- Special Targets Units Only ---');
+  {
+    const g = makeGame();
+    g.ai = { update() {} };
+    g.enemyGold = 100000;
+    g.enemySlotsBought = 4;
+    g.spawnEnemyTurret(0);
+    g.buyEnemyBuilding(0);
+    g.spawnEnemyUnit(0);
+    const t = g.turrets[0];
+    const b = g.buildings[0];
+    const u = g.units.find(x => x.side === 'enemy');
+    const tHp = t.hp;
+    const bHp = b.hp;
+    const uHp = u.hp;
+    g.xp = 10000;
+    g.specialCooldown = 0;
+    g.useSpecial();
+    runFrames(g, 3);
+    assert('Special damages enemy units', u.hp < uHp, `hp=${u.hp}`);
+    assert('Special spares enemy turrets', t.hp === tHp, `hp=${t.hp}`);
+    assert('Special spares enemy buildings', b.hp === bHp, `hp=${b.hp}`);
+  }
+
+  console.log('\n--- Enemy Turret Difficulty Scaling ---');
+  {
+    const g = makeGame();
+    g.difficulty = 2;
+    g.enemyGold = 100000;
+    g.enemySlotsBought = 4;
+    g.spawnEnemyTurret(0);
+    const data = CONFIG.AGES[0].turrets[0];
+    const t = g.turrets[0];
+    const mult = CONFIG.DIFFICULTIES[2].enemyDmgMult;
+    assert('Enemy turret HP is difficulty-scaled', t.hp === Math.round(data.hp * CONFIG.DIFFICULTIES[2].enemyHpMult), `hp=${t.hp}`);
+    assert('Enemy turret damage is difficulty-scaled', t.damage === Math.round(data.damage * mult), `dmg=${t.damage}`);
+  }
+
+  console.log('\n--- Save / Load ---');
+  {
+    const g = makeGame();
+    g.gold = 4321;
+    g.xp = 765;
+    g.playerBase.hp = 400;
+    g.enemyBase.hp = 600;
+    g.saveGame(9);
+    const g2 = makeGame();
+    g2.loadGame(9);
+    assert('Loaded gold', g2.gold === 4321, `gold=${g2.gold}`);
+    assert('Loaded player base HP', g2.playerBase.hp === 400);
+    assert('Load keeps player maxHp at BASE_HP', g2.playerBase.maxHp === CONFIG.BASE_HP, `maxHp=${g2.playerBase.maxHp}`);
+    assert('Load keeps enemy maxHp at BASE_HP', g2.enemyBase.maxHp === CONFIG.BASE_HP, `maxHp=${g2.enemyBase.maxHp}`);
+    assert('Load syncs displayHp to loaded HP', g2.playerBase.displayHp === 400, `displayHp=${g2.playerBase.displayHp}`);
+  }
+
+  console.log('\n--- Unit HP Bar While Attacking ---');
+  {
+    const g = makeGame();
+    g.ai = { update() {} };
+    g.gold = 100000;
+    g.enemyGold = 100000;
+    g.spawnUnit(0);
+    g.spawnEnemyUnit(0);
+    const p = g.units[0];
+    const e = g.units[1];
+    p.x = 1200;
+    e.x = 1215;
+    p.attackSpeed = 0;
+    e.attackSpeed = 999;
+    e.hp = 100000;
+    e.maxHp = 100000;
+    p.hp = 30;
+    p.displayHp = 55;
+    runFrames(g, 0.5);
+    assert('displayHp converges while attacking', p.displayHp < 50, `displayHp=${p.displayHp}`);
+  }
+
+  console.log('\n--- Pause Preserves Audio Settings ---');
+  {
+    const g = makeGame();
+    g.audio.musicEnabled = true;
+    g.audio.sfxEnabled = true;
+    g.togglePause();
+    assert('Audio is suspended while paused', g.audio.suspended === true);
+    assert('Music preference survives pause', g.audio.musicEnabled === true);
+    assert('SFX preference survives pause', g.audio.sfxEnabled === true);
+
+    const cx = CONFIG.VIEWPORT.WIDTH / 2;
+    const panelY = CONFIG.VIEWPORT.HEIGHT / 2 - 180;
+    g.input.mouseX = cx;
+    g.input.mouseY = panelY + 110 + 10;
+    g.handlePauseClick();
+    assert('Pause menu toggles SFX off', g.audio.sfxEnabled === false);
+
+    g.togglePause();
+    assert('Audio resumes on unpause', g.audio.suspended === false);
+    assert('Pause-menu SFX toggle survives resume', g.audio.sfxEnabled === false);
+    assert('Music preference survives resume', g.audio.musicEnabled === true);
+  }
+
+  console.log('\n--- Sprite Fallback Upgrade ---');
+  {
+    const sm = new SpriteManager();
+    const ctx2 = document.createElement('canvas').getContext('2d');
+    const img = { _loaded: false, width: 96, height: 96 };
+    sm.images.set('melee_0', img);
+    sm.draw(ctx2, 'melee', 0, 100, 300, 1, 'player');
+    const key = sm.getKey('melee', 0, 'player');
+    const fallbackCanvas = sm.cache.get(key).canvas;
+    assert('Pre-load draw is flagged as fallback', sm.cache.get(key).fallback === true);
+    img._loaded = true;
+    sm.draw(ctx2, 'melee', 0, 100, 300, 1, 'player');
+    assert('Cache re-renders once the PNG loads', sm.cache.get(key).canvas !== fallbackCanvas);
+    assert('Upgraded entry is no longer a fallback', !sm.cache.get(key).fallback);
+    const pngCanvas = sm.cache.get(key).canvas;
+    sm.draw(ctx2, 'melee', 0, 100, 300, 1, 'player');
+    assert('Loaded sprite is cached, not re-rendered', sm.cache.get(key).canvas === pngCanvas);
+  }
+
+  console.log('\n--- Injected Collaborators ---');
+  {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const audio = new AudioManager();
+    const achievements = new Achievements();
+    const g = new Game(canvas, ctx, audio, achievements);
+    assert('Game uses injected AudioManager', g.audio === audio);
+    assert('Game uses injected Achievements', g.achievements === achievements);
+    const g2 = new Game(canvas, ctx);
+    assert('Game builds its own collaborators when none passed',
+      g2.audio instanceof AudioManager && g2.achievements instanceof Achievements);
+  }
+
+  console.log('\n--- SFX Throttling ---');
+  {
+    const a = new AudioManager();
+    a.initialized = true;
+    a.ctx = makeAudioContext();
+    assert('First hit plays', a.play('hit') === true);
+    assert('Repeat hit within interval is throttled', a.play('hit') === false);
+    a.ctx.currentTime = 1;
+    assert('Hit plays again after the interval', a.play('hit') === true);
+    assert('Untracked types are never throttled', a.play('evolve') === true && a.play('evolve') === true);
+    a.suspended = true;
+    assert('Suspended audio plays nothing', a.play('spawn') === false);
+  }
+
+  console.log('\n--- Building Cap & Placement ---');
+  {
+    const g = makeGame();
+    g.gold = 1000000;
+    for (let i = 0; i < 10; i++) g.buyBuilding(i % CONFIG.BUILDINGS.length);
+    assert('Player buildings capped at MAX_BUILDINGS', g.getBuildingCount('player') === CONFIG.MAX_BUILDINGS,
+      `count=${g.getBuildingCount('player')}`);
+    const goldBefore = g.gold;
+    g.buyBuilding(0);
+    assert('Capped purchase is free of charge', g.gold === goldBefore);
+
+    g.enemyGold = 1000000;
+    for (let i = 0; i < 10; i++) g.buyEnemyBuilding(i % CONFIG.BUILDINGS.length);
+    assert('Enemy buildings capped at MAX_BUILDINGS', g.getBuildingCount('enemy') === CONFIG.MAX_BUILDINGS,
+      `count=${g.getBuildingCount('enemy')}`);
+
+    const xs = g.buildings.filter(b => b.side === 'player').map(b => b.x);
+    assert('Buildings do not stack', new Set(xs).size === xs.length, xs.join(','));
+    const turretX = g.turretSlotPositions[0].x;
+    assert('Buildings sit clear of the turret column', xs.every(x => Math.abs(x - turretX) >= 40), xs.join(','));
   }
 
   const passed = allResults.filter(r => r.pass).length;
