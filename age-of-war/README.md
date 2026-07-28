@@ -4,21 +4,29 @@ A strategy game inspired by the classic Flash "Age of War" by Max Games/Louissi.
 
 ## How to Run
 
+From the repo root:
+
 ```bash
-cd age-of-war
-python3 -m http.server 8081
+npm run serve
 ```
 
-Open http://localhost:8081 in your browser.
+Open http://localhost:8081/age-of-war/ in your browser.
 
 ## Tests
 
 ```bash
-npm test
+npm test          # from this directory, or `npm test -w age-of-war` from the root
 ```
 
-Runs the headless harness (`test-runner.js`), which loads the real game files and drives
-simulated frames — no browser required.
+Runs the headless harness (`test-runner.js`), which loads the real game files listed in
+`index.html` and drives simulated frames — no browser required.
+
+## Docs
+
+- [`docs/balance.md`](docs/balance.md) — every stat in the game, generated from `js/config.js`.
+  Run `npm run docs` after any balance change; a test fails if it is stale.
+- [`docs/game-design.md`](docs/game-design.md) — mechanics and design intent.
+- [`docs/architecture.md`](docs/architecture.md) — module layout and invariants.
 
 ## How to Play
 
@@ -54,27 +62,13 @@ Pick a difficulty on the title screen, then click anywhere to start.
 
 The world is two screens wide and one screen tall, so only horizontal scrolling does anything.
 
-## Difficulty
+## Difficulty and Ages
 
-| Difficulty | Enemy HP | Enemy damage | Enemy income | AI think rate |
-|---|---|---|---|---|
-| Normal | 1.0x | 1.0x | 1.0x | 1.0x |
-| Harder | 1.15x | 1.15x | 1.1x | 1.25x faster |
-| Impossible | 1.3x | 1.3x | 1.2x | 1.67x faster |
+Three difficulties scale the enemy's HP, damage, gold income, and AI reaction speed; the player is
+never scaled. Five ages each bring three units, a hero, three turret tiers, and a special attack.
 
-Scaling applies to enemy units and turrets alike.
-
-## Ages
-
-| Age | Units | Special |
-|---|---|---|
-| Stone | Clubman, Slingshot, Dino Rider | Meteor Shower |
-| Castle | Swordsman, Archer, Knight | Arrow Volley |
-| Renaissance | Dueler, Musketeer, Cannoneer | Artillery Strike |
-| Modern | Melee Infantry, Infantry, Tank | Airstrike |
-| Future | God's Blade, Blaster, War Machine (+ Super Soldier elite) | Orbital Laser |
-
-Each age also has its own hero and three turret tiers.
+Full numbers — every unit, turret, hero, cost, and multiplier — are in
+[`docs/balance.md`](docs/balance.md).
 
 ## Resources
 

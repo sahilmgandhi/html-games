@@ -1,0 +1,12 @@
+{
+  "name": "html-games",
+  "private": true,
+  "workspaces": [
+    "age-of-war"
+  ],
+  "scripts": {
+    "test": "npm test --workspaces --if-present",
+    "serve": "python3 -m http.server 8081",
+    "new-game": "node tools/new-game.js"
+  }
+}
