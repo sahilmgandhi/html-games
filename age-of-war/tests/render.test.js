@@ -1,6 +1,65 @@
-const { makeGame } = require('./harness');
+const { makeGame, runFrames } = require('./harness');
+
+// Renderer is one class assembled from js/renderer/*.js by prototype augmentation, so a
+// method dropped or misplaced during a split shows up as a missing function, not a syntax
+// error. Drive the real render path through every module to catch that.
+function tryDraw(t, label, fn) {
+  try {
+    fn();
+    t.assert(label, true);
+  } catch (e) {
+    t.assert(label, false, e.message);
+  }
+}
 
 module.exports = [
+  {
+    name: 'Full Render Path',
+    run(t) {
+      const g = makeGame();
+      g.ai = { update() {} };
+      g.gold = 1000000;
+      g.xp = 1000000;
+      g.playerSlotsBought = CONFIG.TURRET_SLOTS;
+      g.enemySlotsBought = CONFIG.TURRET_SLOTS;
+      g.spawnUnit(0);
+      g.spawnEnemyUnit(1);
+      g.spawnHero('player');
+      g.spawnTurret(0);
+      g.spawnEnemyTurret(1);
+      g.buyBuilding(0);
+      g.buyEnemyBuilding(1);
+      g.specialCooldown = 0;
+      g.useSpecial();
+      runFrames(g, 0.2);
+
+      tryDraw(t, 'Renders a fully populated board', () => g.render());
+      tryDraw(t, 'Renders every age', () => {
+        for (let a = 0; a < CONFIG.AGES.length; a++) {
+          g.currentAge = a;
+          g.enemyAge = a;
+          g.render();
+        }
+      });
+      tryDraw(t, 'Renders the age crossfade', () => {
+        g.renderer.startAgeTransition(0, 1);
+        g.renderer.updateCrossfade(0.1);
+        g.render();
+      });
+
+      g.currentAge = 0;
+      g.enemyAge = 0;
+      for (const [label, mutate] of [
+        ['pause screen', (x) => { x.paused = true; }],
+        ['password prompt', (x) => { x.paused = false; x.debugPasswordOpen = true; }],
+        ['debug panel', (x) => { x.debugPasswordOpen = false; x.debugOpen = true; }],
+        ['game over overlay', (x) => { x.debugOpen = false; x.gameOver = true; x.winner = 'player'; }],
+      ]) {
+        mutate(g);
+        tryDraw(t, `Renders the ${label}`, () => g.render());
+      }
+    },
+  },
   {
     name: 'Renderer Draw All Ages',
     run(t) {

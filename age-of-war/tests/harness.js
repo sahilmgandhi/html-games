@@ -11,38 +11,46 @@ const SCRIPT_TAG = /<script\b([^>]*)>/g;
 const SRC_ATTR = /\bsrc\s*=\s*"([^"]+)"/;
 const ENTRY_ATTR = /\bdata-entry\b/;
 
+// A canvas whose 2d context records nothing. getContext() memoizes and back-references its
+// canvas, because real contexts do and the renderer sizes offscreen caches via ctx.canvas.
+function makeCanvas() {
+  const canvas = {
+    width: 1200, height: 600, style: {},
+    addEventListener() {},
+    getContext() {
+      if (!this._ctx) {
+        this._ctx = {
+          canvas: this,
+          fillStyle: '', strokeStyle: '', lineWidth: 1,
+          lineCap: 'butt', lineJoin: 'miter', miterLimit: 10,
+          shadowBlur: 0, shadowColor: '', shadowOffsetX: 0, shadowOffsetY: 0,
+          globalAlpha: 1, font: '', textAlign: 'left', textBaseline: 'alphabetic',
+          save() {}, restore() {}, beginPath() {}, closePath() {}, clip() {},
+          moveTo() {}, lineTo() {}, arcTo() {}, quadraticCurveTo() {}, rect() {}, fill() {}, stroke() {},
+          arc() {}, ellipse() {}, fillRect() {}, strokeRect() {}, clearRect() {},
+          fillText() {}, strokeText() {},
+          measureText(text) { return { width: text.length * 6 }; },
+          createLinearGradient() { return { addColorStop() {} }; },
+          createRadialGradient() { return { addColorStop() {} }; },
+          setLineDash() {}, translate() {}, rotate() {}, scale() {}, drawImage() {},
+        };
+      }
+      return this._ctx;
+    },
+  };
+  return canvas;
+}
+
 global.document = {
-  getElementById() { return this.createElement('canvas'); },
-  createElement(tag) {
-    if (tag === 'canvas') {
-      return {
-        width: 1200, height: 600, style: {},
-        addEventListener() {},
-        getContext() {
-          return {
-            fillStyle: '', strokeStyle: '', lineWidth: 1,
-            lineCap: 'butt', lineJoin: 'miter', miterLimit: 10,
-            shadowBlur: 0, shadowColor: '', shadowOffsetX: 0, shadowOffsetY: 0,
-            globalAlpha: 1, font: '', textAlign: 'left', textBaseline: 'alphabetic',
-            save() {}, restore() {}, beginPath() {}, closePath() {}, clip() {},
-            moveTo() {}, lineTo() {}, arcTo() {}, quadraticCurveTo() {}, rect() {}, fill() {}, stroke() {},
-            arc() {}, ellipse() {}, fillRect() {}, strokeRect() {}, clearRect() {},
-            fillText() {}, strokeText() {},
-            measureText(t) { return { width: t.length * 6 }; },
-            createLinearGradient() { return { addColorStop() {} }; },
-            createRadialGradient() { return { addColorStop() {} }; },
-            setLineDash() {}, translate() {}, rotate() {}, scale() {}, drawImage() {},
-          };
-        },
-      };
-    }
-    return {};
-  },
+  getElementById() { return makeCanvas(); },
+  createElement(tag) { return tag === 'canvas' ? makeCanvas() : {}; },
   addEventListener() {},
 };
 
 global.window = { addEventListener() {}, AudioContext: null, webkitAudioContext: null };
 global.performance = { now: () => Date.now() };
+// isLocalhost() gates the debug panel; tests run as if served from localhost.
+global.location = { hostname: 'localhost' };
 
 global.localStorage = {
   _data: new Map(),
