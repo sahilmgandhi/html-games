@@ -9,3 +9,16 @@ Commit your work often please!
 
 4. Please use concise git commit messages
 
+## Repo layout
+
+Each game is a self-contained directory at the repo root (`age-of-war/`), registered as an npm
+workspace in the root `package.json`. `npm test` at the root runs every game's suite; `npm run
+serve` serves the root, so games live at `localhost:8081/<slug>/`.
+
+`template/` is the skeleton for a new game; `npm run new-game <slug> "<Name>"` copies it and wires
+up the workspace. Shared conventions (no build step, no runtime deps, one `CONFIG`, headless
+harness) are in the root `README.md`.
+
+Each game has its own `AGENTS.md` with the invariants specific to that game — read it before
+touching that game's code.
+

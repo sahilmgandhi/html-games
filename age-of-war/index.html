@@ -14,7 +14,12 @@
   <script src="js/utils.js"></script>
   <script src="js/sprites.js"></script>
   <script src="js/entities.js"></script>
-  <script src="js/renderer.js"></script>
+  <!-- core.js declares class Renderer; the rest augment its prototype, so it must load first. -->
+  <script src="js/renderer/core.js"></script>
+  <script src="js/renderer/terrain.js"></script>
+  <script src="js/renderer/entities.js"></script>
+  <script src="js/renderer/hud.js"></script>
+  <script src="js/renderer/overlays.js"></script>
   <script src="js/input.js"></script>
   <script src="js/ai.js"></script>
   <script src="js/particles.js"></script>
@@ -23,6 +28,7 @@
   <script src="js/achievements.js"></script>
   <script src="js/balance.js"></script>
   <script src="js/game.js"></script>
-  <script src="js/main.js"></script>
+  <!-- data-entry marks the browser-only entry point; the test harness skips it. -->
+  <script src="js/main.js" data-entry></script>
 </body>
 </html>

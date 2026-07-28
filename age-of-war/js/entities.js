@@ -87,11 +87,15 @@ class Base {
     this.x = x;
     this.y = y;
     this.side = side;
+    this.width = CONFIG.BASE_WIDTH;
+    this.height = CONFIG.BASE_HEIGHT;
+    this.reset();
+  }
+
+  reset() {
     this.hp = CONFIG.BASE_HP;
     this.maxHp = CONFIG.BASE_HP;
     this.displayHp = this.maxHp;
-    this.width = CONFIG.BASE_WIDTH;
-    this.height = CONFIG.BASE_HEIGHT;
   }
 
   takeDamage(amount) {
@@ -147,41 +151,20 @@ class Unit {
     this.displayHp = this.maxHp;
   }
 
-  getTarget(enemyUnits, enemyTurrets, enemyBase, spatialHash) {
+  // Closest living enemy (unit/turret/building) within maxRange, or the enemy base if
+  // nothing is closer. spatialHash always covers all three entity kinds (see Game.update).
+  getTarget(enemyBase, spatialHash) {
     let closest = null;
     let closestDist = Infinity;
 
-    if (spatialHash) {
-      const maxRange = Math.max(this.range, 300);
-      const nearby = spatialHash.query(this.x, this.y, maxRange, this.side);
-      for (let i = 0; i < nearby.length; i++) {
-        const e = nearby[i];
-        const d = dist(this.x, this.y, e.x, e.y);
-        if (d < closestDist) {
-          closestDist = d;
-          closest = e;
-        }
-      }
-    } else {
-      for (let i = 0; i < enemyTurrets.length; i++) {
-        const t = enemyTurrets[i];
-        if (t.side !== this.side && t.alive) {
-          const d = dist(this.x, this.y, t.x, t.y);
-          if (d < closestDist) {
-            closestDist = d;
-            closest = t;
-          }
-        }
-      }
-      for (let i = 0; i < enemyUnits.length; i++) {
-        const u = enemyUnits[i];
-        if (u.side !== this.side && u.alive) {
-          const d = dist(this.x, this.y, u.x, u.y);
-          if (d < closestDist) {
-            closestDist = d;
-            closest = u;
-          }
-        }
+    const maxRange = Math.max(this.range, 300);
+    const nearby = spatialHash.query(this.x, this.y, maxRange, this.side);
+    for (let i = 0; i < nearby.length; i++) {
+      const e = nearby[i];
+      const d = dist(this.x, this.y, e.x, e.y);
+      if (d < closestDist) {
+        closestDist = d;
+        closest = e;
       }
     }
 
@@ -191,13 +174,14 @@ class Unit {
     }
 
     if (closest) {
-      return { target: closest, dist: closestDist, type: closest instanceof Unit ? 'unit' : 'turret' };
+      const type = closest instanceof Unit ? 'unit' : (closest instanceof Turret ? 'turret' : 'building');
+      return { target: closest, dist: closestDist, type };
     }
 
     return { target: enemyBase, dist: baseDist, type: 'base' };
   }
 
-  update(dt, allUnits, allTurrets, enemyBase, projectilePool, spatialHash) {
+  update(dt, allUnits, enemyBase, projectilePool, spatialHash) {
     if (!this.alive) return null;
 
     if (this.dying) {
@@ -227,8 +211,9 @@ class Unit {
       }
     }
 
-    const info = this.getTarget(allUnits, allTurrets, enemyBase, spatialHash);
+    const info = this.getTarget(enemyBase, spatialHash);
     const target = info.target;
+    this.displayHp += (this.hp - this.displayHp) * Math.min(1, dt * 8);
 
     if (info.dist <= this.range) {
       if (this.attackCooldown <= 0) {
@@ -241,7 +226,6 @@ class Unit {
       this.x += this.speed * dir * dt * 60;
       this.walkPhase += dt * this.speed * 4;
     }
-    this.displayHp += (this.hp - this.displayHp) * Math.min(1, dt * 8);
     return null;
   }
 
@@ -271,12 +255,13 @@ class Unit {
 }
 
 class Turret {
-  constructor(x, y, side, ageIndex, turretIndex) {
+  constructor(x, y, side, ageIndex, turretIndex, slotIndex) {
     this.x = x;
     this.y = y;
     this.side = side;
     this.ageIndex = ageIndex;
     this.turretIndex = turretIndex;
+    this.slotIndex = slotIndex || 0;
 
     const data = CONFIG.AGES[ageIndex].turrets[turretIndex];
     this.name = data.name;
@@ -302,7 +287,7 @@ class Turret {
     }
   }
 
-  update(dt, allUnits, projectilePool, spatialHash) {
+  update(dt, projectilePool, spatialHash) {
     if (!this.alive) return;
     if (this.attackCooldown > 0) this.attackCooldown -= dt;
     if (this.hitFlash > 0) this.hitFlash -= dt;
@@ -310,26 +295,14 @@ class Turret {
     let closest = null;
     let closestDist = Infinity;
 
-    if (spatialHash) {
-      const nearby = spatialHash.query(this.x, this.y, this.range, this.side);
-      for (let i = 0; i < nearby.length; i++) {
-        const u = nearby[i];
-        if (u instanceof Unit) {
-          const d = dist(this.x, this.y, u.x, u.y);
-          if (d < closestDist && d <= this.range) {
-            closestDist = d;
-            closest = u;
-          }
-        }
-      }
-    } else {
-      for (const u of allUnits) {
-        if (u.side !== this.side && u.alive) {
-          const d = dist(this.x, this.y, u.x, u.y);
-          if (d < closestDist && d <= this.range) {
-            closestDist = d;
-            closest = u;
-          }
+    const nearby = spatialHash.query(this.x, this.y, this.range, this.side);
+    for (let i = 0; i < nearby.length; i++) {
+      const u = nearby[i];
+      if (u instanceof Unit) {
+        const d = dist(this.x, this.y, u.x, u.y);
+        if (d < closestDist && d <= this.range) {
+          closestDist = d;
+          closest = u;
         }
       }
     }
@@ -349,12 +322,13 @@ class Turret {
 }
 
 class Building {
-  constructor(x, y, side, buildingIndex) {
+  constructor(x, y, side, buildingIndex, slotIndex) {
     const data = CONFIG.BUILDINGS[buildingIndex];
     this.x = x;
     this.y = y;
     this.side = side;
     this.buildingIndex = buildingIndex;
+    this.slotIndex = slotIndex || 0;
     this.name = data.name;
     this.produceAmount = data.produceAmount || 0;
     this.produceInterval = data.produceInterval || 0;
@@ -437,63 +411,23 @@ class Projectile {
     }
   }
 
-  checkHit(units, turrets, bases, spatialHash) {
+  // Splash-aware hit test against every unit/turret/building in spatialHash, falling
+  // back to the bases only when nothing else was hit.
+  checkHit(bases, spatialHash) {
     const hits = [];
     const hitRadius = this.splashRadius > 0 ? this.splashRadius : 15;
 
-    if (spatialHash) {
-      const nearby = spatialHash.queryRadius(this.x, this.y, hitRadius);
-      for (let i = 0; i < nearby.length; i++) {
-        const e = nearby[i];
-        if (e.side !== this.side && dist(this.x, this.y, e.x, e.y) < hitRadius) {
-          e.takeDamage(this.damage);
-          hits.push({ entity: e, damage: this.damage });
-        }
+    const nearby = spatialHash.queryRadius(this.x, this.y, hitRadius);
+    for (let i = 0; i < nearby.length; i++) {
+      const e = nearby[i];
+      if (e.side !== this.side && dist(this.x, this.y, e.x, e.y) < hitRadius) {
+        e.takeDamage(this.damage);
+        hits.push({ entity: e, damage: this.damage });
       }
-      if (hits.length > 0) {
-        this.alive = false;
-        return hits;
-      }
-    } else {
-      for (const u of units) {
-        if (u.side !== this.side && u.alive) {
-          if (dist(this.x, this.y, u.x, u.y) < 15) {
-            if (this.splashRadius > 0) {
-              for (const u2 of units) {
-                if (u2.side !== this.side && u2.alive) {
-                  if (dist(this.x, this.y, u2.x, u2.y) <= this.splashRadius) {
-                    u2.takeDamage(this.damage);
-                    hits.push({ entity: u2, damage: this.damage });
-                  }
-                }
-              }
-              for (const t of turrets) {
-                if (t.side !== this.side && t.alive) {
-                  if (dist(this.x, this.y, t.x, t.y) <= this.splashRadius) {
-                    t.takeDamage(this.damage);
-                    hits.push({ entity: t, damage: this.damage });
-                  }
-                }
-              }
-            } else {
-              u.takeDamage(this.damage);
-              hits.push({ entity: u, damage: this.damage });
-            }
-            this.alive = false;
-            return hits;
-          }
-        }
-      }
-      for (const t of turrets) {
-        if (t.side !== this.side && t.alive) {
-          if (dist(this.x, this.y, t.x, t.y) < 15) {
-            t.takeDamage(this.damage);
-            hits.push({ entity: t, damage: this.damage });
-            this.alive = false;
-            return hits;
-          }
-        }
-      }
+    }
+    if (hits.length > 0) {
+      this.alive = false;
+      return hits;
     }
 
     if (bases) {

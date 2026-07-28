@@ -1,0 +1,10 @@
+{
+  "name": "__GAME_SLUG__",
+  "version": "1.0.0",
+  "description": "__GAME_NAME__",
+  "private": true,
+  "type": "commonjs",
+  "scripts": {
+    "test": "node test-runner.js"
+  }
+}

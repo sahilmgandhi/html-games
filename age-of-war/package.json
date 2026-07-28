@@ -4,7 +4,8 @@
   "description": "A strategy game inspired by the classic Flash \"Age of War\" by Max Games/Louissi. Built entirely in HTML5 Canvas with no external dependencies.",
   "main": "test-runner.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node test-runner.js",
+    "docs": "node tools/gen-docs.js"
   },
   "keywords": [],
   "author": "",

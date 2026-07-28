@@ -187,7 +187,7 @@ class AI {
 
   tryBuildings(g) {
     const count = g.getBuildingCount('enemy');
-    if (count >= 4) return false;
+    if (count >= CONFIG.MAX_BUILDINGS) return false;
     for (let i = 0; i < CONFIG.BUILDINGS.length; i++) {
       const bData = CONFIG.BUILDINGS[i];
       if (g.enemyGold < bData.cost) continue;

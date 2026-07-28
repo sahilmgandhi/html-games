@@ -19,7 +19,7 @@ const t = {
   },
 };
 
-console.log('=== Age of War Headless Tests ===');
+console.log('=== __GAME_NAME__ Headless Tests ===');
 
 for (const file of fs.readdirSync(TESTS_DIR).filter((f) => f.endsWith('.test.js')).sort()) {
   console.log(`\n=== ${file} ===`);
