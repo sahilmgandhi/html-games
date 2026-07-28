@@ -51,7 +51,7 @@ Each unit type upgrades up to tier 2. Cost is a multiple of the unit's spawn cos
 
 ## Ages
 
-| Age | XP to unlock | Special | Special damage | Special XP cost | Hero |
+| Age | XP to evolve into | Special | Special damage | Special XP cost | Hero |
 |---|---|---|---|---|---|
 | Stone Age | — (start) | Meteor Shower | 250 | 100 | Shaman |
 | Castle Age | 1,500 | Arrow Volley | 400 | 250 | Paladin |
