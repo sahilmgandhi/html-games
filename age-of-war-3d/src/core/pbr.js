@@ -81,6 +81,79 @@ export function canvasTexture(w, h, draw) {
   return t;
 }
 
+// Painted heraldic emblem: side-color field with a pale device, plus weave
+// noise and a dark hem so it reads as dyed cloth, not a decal. kinds:
+// 'disc' | 'cross' | 'chevron' | 'bolt' | 'crescent'. Returns a fresh
+// CanvasTexture each call (caller owns disposal via disposeDeep).
+export function emblemTexture(bg, fg, kind = 'disc') {
+  const t = canvasTexture(128, 128, (ctx, w, h) => {
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, w, h);
+    // weave: horizontal thread shading
+    ctx.globalAlpha = 0.08;
+    ctx.fillStyle = '#000000';
+    for (let y = 0; y < h; y += 3) ctx.fillRect(0, y, w, 1);
+    ctx.globalAlpha = 0.06;
+    ctx.fillStyle = '#ffffff';
+    for (let y = 1; y < h; y += 4) ctx.fillRect(0, y, w, 1);
+    ctx.globalAlpha = 1;
+    // device, centered with margin for the hem
+    ctx.fillStyle = fg;
+    const cx = w / 2, cy = h / 2, s = w * 0.30;
+    if (kind === 'disc') {
+      ctx.beginPath(); ctx.arc(cx, cy, s * 0.8, 0, Math.PI * 2); ctx.fill();
+    } else if (kind === 'cross') {
+      ctx.fillRect(cx - s * 0.22, cy - s, s * 0.44, s * 2);
+      ctx.fillRect(cx - s, cy - s * 0.22, s * 2, s * 0.44);
+    } else if (kind === 'chevron') {
+      ctx.beginPath();
+      ctx.moveTo(cx - s, cy + s * 0.7);
+      ctx.lineTo(cx, cy - s * 0.5);
+      ctx.lineTo(cx + s, cy + s * 0.7);
+      ctx.lineTo(cx + s, cy + s * 0.1);
+      ctx.lineTo(cx, cy - s * 1.1);
+      ctx.lineTo(cx - s, cy + s * 0.1);
+      ctx.closePath(); ctx.fill();
+    } else if (kind === 'bolt') {
+      ctx.beginPath();
+      ctx.moveTo(cx + s * 0.3, cy - s);
+      ctx.lineTo(cx - s * 0.5, cy + s * 0.2);
+      ctx.lineTo(cx - s * 0.05, cy + s * 0.2);
+      ctx.lineTo(cx - s * 0.3, cy + s);
+      ctx.lineTo(cx + s * 0.5, cy - s * 0.2);
+      ctx.lineTo(cx + s * 0.05, cy - s * 0.2);
+      ctx.closePath(); ctx.fill();
+    } else { // crescent
+      ctx.beginPath(); ctx.arc(cx, cy, s * 0.85, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = bg;
+      ctx.beginPath(); ctx.arc(cx + s * 0.4, cy - s * 0.15, s * 0.7, 0, Math.PI * 2); ctx.fill();
+    }
+    // grit speckle over everything
+    for (let i = 0; i < 500; i++) {
+      ctx.globalAlpha = 0.05 + Math.random() * 0.06;
+      ctx.fillStyle = Math.random() > 0.5 ? '#000000' : '#ffffff';
+      ctx.fillRect(Math.random() * w, Math.random() * h, 2, 2);
+    }
+    ctx.globalAlpha = 1;
+    // dark hem border
+    ctx.strokeStyle = 'rgba(0,0,0,0.45)';
+    ctx.lineWidth = 7;
+    ctx.strokeRect(0, 0, w, h);
+  });
+  t.anisotropy = 4;
+  return t;
+}
+
+// Fresh (uncached) banner material: emblem map on a standard material so it
+// takes light like the rest of the base. Safe to pass to makeCloth (clones).
+export function bannerMat(accent, kind) {
+  return new THREE.MeshStandardMaterial({
+    map: emblemTexture(accent, '#e8e2d4', kind),
+    roughness: 0.8,
+    metalness: 0.0,
+  });
+}
+
 export function solidify(root, cast = true, receive = true) {
   root.traverse((o) => {
     if (o.isMesh) {

@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import {
-  pbr, basic, glowMat, glowSprite, solidify, cloneMats, makeHpBar, makeCloth, teamRing, disposeDeep, SIDE_ACCENT,
+  pbr, basic, glowMat, glowSprite, solidify, cloneMats, makeHpBar, makeCloth, bannerMat, teamRing, disposeDeep, SIDE_ACCENT,
 } from '../core/pbr.js';
 
 // Strongholds, one per age: Stone is a great-menhir core ringed by a timber
@@ -117,7 +117,7 @@ function buildStoneHold(accent, mirror, side) {
   const bannerPole = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.1, 3.4, 8), palMatDk);
   bannerPole.position.set(-0.6 * mirror, 8.6, 0);
   mesh.add(bannerPole);
-  const cloth = makeCloth(1.7, 1.0, 6, pbr(accent, 0.75));
+  const cloth = makeCloth(1.7, 1.0, 6, bannerMat(accent, 'disc'));
   const flag = cloth.mesh;
   flag.position.set(-0.6 * mirror, 9.6, 0);
   if (mirror < 0) flag.rotation.y = Math.PI;
@@ -320,7 +320,7 @@ function buildCastleKeep(accent, mirror) {
   const bannerPole = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.09, 2.6, 8), pbr(WOOD_DK, 0.9));
   bannerPole.position.set(1.0 * mirror, 6.9, 1.0);
   mesh.add(bannerPole);
-  const cloth = makeCloth(1.6, 0.95, 6, pbr(accent, 0.75));
+  const cloth = makeCloth(1.6, 0.95, 6, bannerMat(accent, 'cross'));
   const flag = cloth.mesh;
   flag.position.set(1.0 * mirror, 7.85, 1.0);
   if (mirror < 0) flag.rotation.y = Math.PI;
@@ -425,7 +425,7 @@ function buildRenaissancePalazzo(accent, mirror) {
   const bannerPole = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.09, 2.4, 8), pbr(WOOD_DK, 0.9));
   bannerPole.position.set(-1.0 * mirror, 5.6, 1.2);
   mesh.add(bannerPole);
-  const cloth = makeCloth(1.6, 0.95, 6, pbr(accent, 0.75));
+  const cloth = makeCloth(1.6, 0.95, 6, bannerMat(accent, 'chevron'));
   const flag = cloth.mesh;
   flag.position.set(-1.0 * mirror, 6.45, 1.2);
   if (mirror < 0) flag.rotation.y = Math.PI;
@@ -507,7 +507,7 @@ function buildModernBunker(accent, mirror) {
   dish.rotation.z = mirror > 0 ? -1.1 : 1.1;
   mesh.add(dish);
   // signal pennant on the mast, hoist pinned to the pole
-  const cloth = makeCloth(1.4, 0.5, 6, pbr(accent, 0.75));
+  const cloth = makeCloth(1.4, 0.5, 6, bannerMat(accent, 'bolt'));
   const flag = cloth.mesh;
   flag.position.set(-1.2 * mirror, 5.9, -0.8);
   if (mirror < 0) flag.rotation.y = Math.PI;
@@ -585,7 +585,7 @@ function buildFutureCitadel(accent, mirror) {
   const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.06, 2.6, 6), dark);
   pole.position.set(-2.2 * mirror, 2.2, -1.4);
   mesh.add(pole);
-  const cloth = makeCloth(1.5, 0.9, 6, pbr(accent, 0.75));
+  const cloth = makeCloth(1.5, 0.9, 6, bannerMat(accent, 'crescent'));
   const flag = cloth.mesh;
   flag.position.set(-2.2 * mirror, 3.1, -1.4);
   if (mirror < 0) flag.rotation.y = Math.PI;

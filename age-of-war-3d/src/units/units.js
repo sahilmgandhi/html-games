@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { toMeters } from '../simulation/config.js';
 import {
-  pbr, basic, glowMat, solidify, cloneMats, makeHpBar, teamRing, disposeDeep, SIDE_ACCENT,
+  pbr, basic, glowMat, solidify, cloneMats, makeHpBar, teamRing, emblemTexture, disposeDeep, SIDE_ACCENT,
 } from '../core/pbr.js';
 
 // Procedural units, Clash-Royale chunky style, one builder set per age
@@ -292,6 +292,9 @@ function buildSwordsman(accent) {
   const shield = new THREE.Group();
   const plate = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.34, 0.08, 14), pbr(accent, 0.6));
   plate.rotation.x = Math.PI / 2; shield.add(plate);
+  const sigil = new THREE.Mesh(new THREE.CircleGeometry(0.26, 14),
+    new THREE.MeshStandardMaterial({ map: emblemTexture(accent, '#e8e2d4', 'cross'), roughness: 0.6 }));
+  sigil.position.z = 0.045; shield.add(sigil);
   const boss = new THREE.Mesh(new THREE.SphereGeometry(0.1, 10, 8), pbr(STEEL_DK, 0.5, 0.65));
   boss.position.z = 0.08; shield.add(boss);
   const armL = arm(0.09, 0.6, steel, shield); armL.position.set(0, 1.52, 0.36);
