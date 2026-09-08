@@ -131,6 +131,22 @@ function cloud(rng, color = '#ecdcc8') {
   return g;
 }
 
+function crow(color) {
+  // Small generic bird for non-Stone skies: slim body, narrow flapping wings.
+  const g = new THREE.Group();
+  const mat = new THREE.MeshLambertMaterial({ color, side: THREE.DoubleSide });
+  const bodyM = new THREE.Mesh(new THREE.SphereGeometry(0.09, 6, 5), mat);
+  bodyM.scale.set(2.2, 0.8, 0.8);
+  g.add(bodyM);
+  const wings = [];
+  for (const s of [-1, 1]) {
+    const w = new THREE.Mesh(new THREE.PlaneGeometry(0.28, 1.1), mat);
+    w.geometry.translate(0, s * 0.55, 0);
+    g.add(w);
+    wings.push(w);
+  }
+  return { group: g, wings };
+}
 function pterodactyl() {
   const g = new THREE.Group();
   const mat = new THREE.MeshLambertMaterial({ color: '#4a3a30', side: THREE.DoubleSide });
@@ -546,15 +562,16 @@ export function createEnvironment(scene, ageIndex) {
   const animated = { clouds: [], birds: [], smokes: [], fires: [] };
   let t = 0;
 
-  function addSky(cloudColor) {
+  function addSky(cloudColor, birdColor) {
     for (let i = 0; i < 5; i++) {
       const c = cloud(rng, cloudColor);
       c.position.set(-10 + i * 10 + rng() * 5, 16 + rng() * 6, -24 - rng() * 8);
       group.add(c);
       animated.clouds.push(c);
     }
+    // Stone Age skies keep pterodactyls; later ages get small crows instead.
     for (let i = 0; i < 3; i++) {
-      const p = pterodactyl();
+      const p = birdColor ? crow(birdColor) : pterodactyl();
       p.group.userData = { r: 6 + i * 3, h: 11 + i * 1.5, ph: i * 2.1, cx: 12 + (i - 1) * 6 };
       group.add(p.group);
       animated.birds.push(p);
@@ -611,7 +628,7 @@ export function createEnvironment(scene, ageIndex) {
       group.add(b.group);
       animated.fires.push(b.flame);
     }
-    addSky('#3a4666');
+    addSky('#3a4666', '#14141c');
   }
 
   function build(age) {
@@ -635,7 +652,7 @@ export function createEnvironment(scene, ageIndex) {
         animated.fires.push(p.flame);
       }
       addRocks();
-      addSky('#23234a');
+      addSky('#23234a', '#0a0a14');
       return;
     }
     if (age === 3) {
@@ -664,7 +681,7 @@ export function createEnvironment(scene, ageIndex) {
         group.add(s);
       }
       addRocks();
-      addSky('#4a5248');
+      addSky('#4a5248', '#1c1c20');
       return;
     }
     if (age === 2) {
@@ -689,7 +706,7 @@ export function createEnvironment(scene, ageIndex) {
       }
       addRocks();
       addUndergrowth();
-      addSky('#e8c8a0');
+      addSky('#e8c8a0', '#2a2018');
       return;
     }
     if (age === 1) {

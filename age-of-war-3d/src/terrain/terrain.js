@@ -4,6 +4,7 @@
 import * as THREE from 'three';
 import { CONFIG } from '../simulation/config.js';
 import { mulberry32 } from '../simulation/rng.js';
+import { glowSprite } from '../core/pbr.js';
 
 function makeGroundTexture(baseColor, seed) {
   const rng = mulberry32(seed);
@@ -255,6 +256,46 @@ export function createTerrain(scene, ageIndex = 0) {
     sky.position.set(12, 0, 0);
     group.add(sky);
     owned.push(sky);
+
+    // Night-age celestial bodies (Castle, Future): moon disc + halo + stars.
+    if (age === 1 || age === 4) {
+      const center = new THREE.Vector3(12, 0, 0);
+      const moonPos = new THREE.Vector3(-0.45, 0.62, -0.64).normalize()
+        .multiplyScalar(170).add(center);
+      const moon = new THREE.Mesh(new THREE.CircleGeometry(7, 24),
+        new THREE.MeshBasicMaterial({
+          color: age === 1 ? '#e8ecf5' : '#d5e4ff', fog: false,
+        }));
+      moon.position.copy(moonPos);
+      moon.lookAt(center);
+      group.add(moon);
+      owned.push(moon);
+      const halo = glowSprite(age === 1 ? '#aebedd' : '#9fc4ff', 0.5, 26);
+      halo.position.copy(moonPos);
+      group.add(halo);
+      owned.push(halo);
+      // Starfield: seeded points on the upper dome, brighter overhead.
+      const srng = mulberry32(9000 + age);
+      const N = 350;
+      const sp = new Float32Array(N * 3);
+      for (let i = 0; i < N; i++) {
+        const a = srng() * Math.PI * 2;
+        const e = Math.asin(srng()); // elevation 0..90deg, denser overhead
+        const r = 178;
+        sp[i * 3] = 12 + r * Math.cos(e) * Math.cos(a);
+        sp[i * 3 + 1] = r * Math.sin(e) + 4;
+        sp[i * 3 + 2] = r * Math.cos(e) * Math.sin(a);
+      }
+      const starGeo = new THREE.BufferGeometry();
+      starGeo.setAttribute('position', new THREE.BufferAttribute(sp, 3));
+      const stars = new THREE.Points(starGeo, new THREE.PointsMaterial({
+        color: '#cfe0ff', size: 1.6, sizeAttenuation: false,
+        transparent: true, opacity: 0.9, fog: false, depthWrite: false,
+      }));
+      stars.frustumCulled = false;
+      group.add(stars);
+      owned.push(stars);
+    }
 
     scene.fog = new THREE.Fog(new THREE.Color(cfg.skyGradient[1]), 45, 170);
   };
