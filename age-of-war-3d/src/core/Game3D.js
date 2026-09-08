@@ -14,6 +14,19 @@ export class Game3D {
   onUpdate(fn) { this._updateFns.push(fn); }
   onRender(fn) { this._renderFns.push(fn); }
 
+  setCameraPreset(name) {
+    const presets = {
+      side: [[12, 6, 22], [12, 2, 0]],
+      wide: [[12, 10, 30], [12, 1, 0]],
+      close: [[6, 3, 10], [6, 1.5, 0]],
+    };
+    const p = presets[name];
+    if (!p) return false;
+    this.renderer.camera.position.set(...p[0]);
+    this.renderer.camera.lookAt(...p[1]);
+    return true;
+  }
+
   start() {
     this.running = true;
     this._loop();
@@ -27,7 +40,14 @@ export class Game3D {
 
     const dt = Math.min(this.renderer.clock.getDelta(), 0.05);
 
-    for (const fn of this._updateFns) fn(dt);
+    for (let i = this._updateFns.length - 1; i >= 0; i--) {
+      try {
+        this._updateFns[i](dt);
+      } catch (err) {
+        this._updateFns.splice(i, 1);
+        window.__errors?.push(`update: ${err.message}`);
+      }
+    }
     this.renderer.render();
     for (const fn of this._renderFns) fn(dt);
 

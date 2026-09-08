@@ -1,0 +1,24 @@
+{
+  "project": "age-of-war-3d",
+  "updated": "2026-09-08",
+  "scale": "0-10 per module; 8+ to continue, 9+ original-game regression",
+  "originalRegression": {
+    "score": 10,
+    "detail": "npm test -w age-of-war: 156 passed, 0 failed; age-of-war/ untouched (read-only)"
+  },
+  "waves": {
+    "wave1": {
+      "status": "complete",
+      "verified": "sim-smoke 15/15 PASS; shot --strict clean (0 console errors, 0 app errors)",
+      "modules": {
+        "simulation": 8,
+        "terrain": 6,
+        "lighting": 6,
+        "hud": 7,
+        "audio": 7,
+        "particles": 6
+      },
+      "note": "Foundation only: empty battlefield, no units/scenery yet. Visual scores expected to rise in Wave 2 (units, bases, turrets, buildings, projectiles, environment)."
+    }
+  }
+}

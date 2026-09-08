@@ -1,8 +1,68 @@
 import { Game3D } from './core/Game3D.js';
+import { createTerrain } from './terrain/terrain.js';
+import { createLighting } from './lighting/lighting.js';
+import { ParticleSystem3D } from './particles/particles.js';
+import { HUD } from './hud/hud.js';
+import { AudioManager } from './audio/audio.js';
+import { CONFIG } from './simulation/config.js';
+
+window.__errors = [];
+window.addEventListener('error', (e) => window.__errors.push(`error: ${e.message}`));
+window.addEventListener('unhandledrejection', (e) => {
+  window.__errors.push(`rejection: ${e.reason?.message || e.reason}`);
+});
+const _consoleError = console.error.bind(console);
+console.error = (...args) => {
+  window.__errors.push(`console: ${args.map(String).join(' ')}`);
+  _consoleError(...args);
+};
 
 const canvas = document.getElementById('gameCanvas');
 const game = new Game3D(canvas);
 
+const terrain = createTerrain(game.scene, 0);
+const lighting = createLighting(game.scene);
+const particles = new ParticleSystem3D(game.scene);
+particles.setCamera(game.camera);
+const hud = new HUD(document.body, game);
+const audio = new AudioManager();
+window.addEventListener('pointerdown', () => {
+  audio.init();
+  audio.startMusic(0);
+}, { once: true });
+
+game.onUpdate((dt) => {
+  terrain.update(dt);
+  lighting.update(dt);
+  particles.update(dt);
+  hud.update(stubState());
+});
+
+// Placeholder state until the battle simulation lands (Wave 3).
+function stubState() {
+  const age = CONFIG.AGES[0];
+  return {
+    gold: CONFIG.STARTING_GOLD,
+    xp: CONFIG.STARTING_XP,
+    ageIndex: 0,
+    ageName: age.name,
+    units: age.units.map((u, i) => ({ name: u.name, cost: u.cost, hotkey: String(i + 1), affordable: CONFIG.STARTING_GOLD >= u.cost })),
+    hero: { name: age.hero.name, cost: age.hero.cost, hotkey: 'H', affordable: false },
+    evolve: { label: `Evolve: ${CONFIG.AGES[1].name}`, cost: CONFIG.EVOLVE_XP[1], affordable: false },
+    special: { name: age.specialName, ready: false, frac: 1 },
+    hint: '1-3 spawn · H hero · E evolve · Q special',
+  };
+}
+
+const params = new URLSearchParams(location.search);
+if (params.get('camera')) game.setCameraPreset(params.get('camera'));
 game.start();
+
+const showcase = params.get('showcase');
+if (showcase) {
+  import(`./${showcase}/showcase.js`)
+    .then((m) => m.runShowcase?.(game))
+    .catch((err) => window.__errors.push(`showcase: ${err.message}`));
+}
 
 export default game;

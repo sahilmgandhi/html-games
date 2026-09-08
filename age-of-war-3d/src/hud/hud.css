@@ -1,0 +1,123 @@
+.aow-hud {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  color: #f5ead2;
+  z-index: 10;
+  user-select: none;
+}
+
+.aow-topbar {
+  position: absolute;
+  top: 10px;
+  left: 12px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.aow-res {
+  background: rgba(12, 10, 8, 0.72);
+  border: 1px solid rgba(255, 210, 120, 0.35);
+  border-radius: 8px;
+  padding: 5px 12px;
+  font-size: 15px;
+  text-shadow: 0 1px 2px #000;
+}
+
+.aow-res b { color: #ffd97a; }
+
+.aow-age {
+  color: #ffe9bd;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.aow-bottombar {
+  position: absolute;
+  left: 50%;
+  bottom: 12px;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+  pointer-events: auto;
+}
+
+.aow-cards { display: flex; gap: 8px; }
+
+.aow-card, .aow-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 92px;
+  padding: 8px 10px;
+  background: rgba(16, 13, 10, 0.82);
+  border: 1px solid rgba(255, 210, 120, 0.4);
+  border-radius: 10px;
+  color: #f5ead2;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.aow-card:hover:not(:disabled), .aow-btn:hover:not(:disabled) {
+  background: rgba(58, 44, 22, 0.9);
+  border-color: #ffd97a;
+}
+
+.aow-card:disabled, .aow-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.aow-card-key {
+  font-size: 10px;
+  color: #c9b183;
+  border: 1px solid rgba(255, 210, 120, 0.35);
+  border-radius: 4px;
+  padding: 0 5px;
+}
+
+.aow-card-name { font-weight: 600; }
+.aow-card-cost { color: #ffd97a; font-size: 12px; }
+
+.aow-hero { border-color: rgba(178, 132, 255, 0.55); }
+.aow-evolve { border-color: rgba(140, 255, 178, 0.5); }
+.aow-special { border-color: rgba(255, 120, 90, 0.55); }
+
+.aow-special.aow-ready {
+  background: rgba(96, 30, 16, 0.9);
+  border-color: #ff9a6a;
+  animation: aow-pulse 1.1s ease-in-out infinite;
+}
+
+@keyframes aow-pulse {
+  50% { box-shadow: 0 0 14px rgba(255, 140, 80, 0.75); }
+}
+
+.aow-hint {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  font-size: 12px;
+  color: rgba(245, 234, 210, 0.6);
+}
+
+.p3d-numbers {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9;
+  overflow: hidden;
+}
+
+.p3d-number {
+  position: absolute;
+  top: 0;
+  left: 0;
+  font: 700 15px system-ui, sans-serif;
+  text-shadow: 0 2px 3px #000, 0 0 6px rgba(0, 0, 0, 0.8);
+  will-change: transform;
+}
