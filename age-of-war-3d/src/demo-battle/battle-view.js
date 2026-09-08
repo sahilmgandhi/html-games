@@ -112,6 +112,7 @@ export function attachBattleView(game, sim, fx) {
     // Special-attack FX per age: { volleys, count, colors, staggerMs }.
     // Future ages add one table row. Rendering-only; Math.random() allowed.
     const SPECIAL_FX = {
+      4: { n: 20, count: 44, colors: ['#66ffff', '#ffffff'], stagger: 80 }, // Orbital Laser
       3: { n: 18, count: 40, colors: ['#ffffff', '#ffb347'], stagger: 90 }, // Airstrike
       2: { n: 16, count: 34, colors: ['#ff5500', '#ffaa33'], stagger: 110 }, // Artillery
       1: { n: 14, count: 16, colors: ['#fff2c0', '#ffd34d'], stagger: 120 }, // Arrow Volley
