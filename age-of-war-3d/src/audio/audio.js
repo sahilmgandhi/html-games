@@ -322,6 +322,44 @@ export class AudioManager {
       noise.start(now);
       noise.stop(now + dur);
       this.ambientNodes.push(noise);
+    } else if (ageIndex === 1) {
+      // Castle night: cold wind through a narrower band than the Stone bed.
+      const filter = this.ctx.createBiquadFilter();
+      filter.type = 'bandpass';
+      filter.frequency.setValueAtTime(520, now);
+      filter.Q.setValueAtTime(0.7, now);
+
+      const noise = this.createNoise(dur);
+      const gain = this.ctx.createGain();
+      gain.gain.setValueAtTime(0, now);
+      gain.gain.linearRampToValueAtTime(0.016, now + 0.6);
+      gain.gain.setValueAtTime(0.016, now + dur - 0.6);
+      gain.gain.linearRampToValueAtTime(0, now + dur);
+      noise.connect(filter);
+      filter.connect(gain);
+      gain.connect(this.ctx.destination);
+      noise.start(now);
+      noise.stop(now + dur);
+      this.ambientNodes.push(noise);
+    } else if (ageIndex === 2) {
+      // Renaissance day: light airy breeze, brighter band than Castle.
+      const filter = this.ctx.createBiquadFilter();
+      filter.type = 'bandpass';
+      filter.frequency.setValueAtTime(1100, now);
+      filter.Q.setValueAtTime(0.6, now);
+
+      const noise = this.createNoise(dur);
+      const gain = this.ctx.createGain();
+      gain.gain.setValueAtTime(0, now);
+      gain.gain.linearRampToValueAtTime(0.012, now + 0.4);
+      gain.gain.setValueAtTime(0.012, now + dur - 0.4);
+      gain.gain.linearRampToValueAtTime(0, now + dur);
+      noise.connect(filter);
+      filter.connect(gain);
+      gain.connect(this.ctx.destination);
+      noise.start(now);
+      noise.stop(now + dur);
+      this.ambientNodes.push(noise);
     } else if (ageIndex === 3) {
       const filter = this.ctx.createBiquadFilter();
       filter.type = 'highpass';

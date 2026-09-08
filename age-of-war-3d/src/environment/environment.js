@@ -1,15 +1,15 @@
 import * as THREE from 'three';
 import { mulberry32 } from '../simulation/rng.js';
-import { pbr, glowSprite, solidify, disposeDeep, jitterGeo } from '../core/pbr.js';
+import { pbr, glowMat, glowSprite, solidify, disposeDeep, jitterGeo } from '../core/pbr.js';
 
-// Stone Age backdrop: red-rock mesas, a smoking volcano with a glowing crater,
-// araucaria pines, boulders, fern tufts, drifting clouds and circling
-// pterodactyls. Everything lives behind/ahead of the lane (z outside [-2,2])
-// so gameplay silhouettes stay readable.
+// Castle Age backdrop: a moonlit fortress on the horizon, rolling dark
+// hills, broadleaf trees, braziers along the lane, grey boulders, grass
+// tufts, drifting clouds and circling crows. Same keep-clear rules as Stone:
+// nothing gameplay-tall inside z [-2,2] sightlines.
 //
 // Contract: createEnvironment(scene, ageIndex) -> { group, setAge(i), dispose() }
-// Extra: update(dt) drifts clouds and flaps pterodactyls. setAge(i) rebuilds
-// for the age (MVP: only age 0 exists; other ages reuse it).
+// Extra: update(dt) drifts clouds, flaps birds and flickers braziers.
+// setAge(i) rebuilds for the age (ages without a bespoke backdrop reuse Stone).
 
 const TRUNK = '#5a4030';
 const PINE = '#3f6b34';
@@ -17,6 +17,10 @@ const PINE_DK = '#2c4f26';
 const MESA = '#8a5a44';
 const MESA_DK = '#6e4434';
 const LAVA = '#ff6a2a';
+const KEEP_STONE = '#6a6a78';
+const KEEP_STONE_DK = '#46464f';
+const KEEP_ROOF = '#33415e';
+const LEAF = ['#2e5b2e', '#3a6b34', '#274d28'];
 
 function araucaria(rng) {
   const g = new THREE.Group();
@@ -113,10 +117,10 @@ function volcano() {
   return { group: g, smokes };
 }
 
-function cloud(rng) {
+function cloud(rng, color = '#ecdcc8') {
   const g = new THREE.Group();
   // unlit: Lambert bottoms render mud-dark from the ground
-  const m = new THREE.MeshBasicMaterial({ color: '#ecdcc8', transparent: true, opacity: 0.9, fog: false });
+  const m = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.9, fog: false });
   const n = 3 + Math.floor(rng() * 3);
   for (let i = 0; i < n; i++) {
     const s = new THREE.Mesh(new THREE.SphereGeometry(1.6 + rng() * 1.4, 10, 8), m);
@@ -143,6 +147,110 @@ function pterodactyl() {
   return { group: g, wings };
 }
 
+// --- Castle Age builders ---
+
+function crenellate(w, mat) {
+  const g = new THREE.Group();
+  const n = Math.max(3, Math.floor(w / 1.2));
+  for (let i = 0; i < n; i++) {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.6, 0.5), mat);
+    m.position.set(-w / 2 + ((i + 0.5) * w) / n, 0.3, 0);
+    g.add(m);
+  }
+  return g;
+}
+
+function castleTower(r, h, stone, stoneDk, roofM) {
+  const g = new THREE.Group();
+  const body = new THREE.Mesh(new THREE.CylinderGeometry(r, r * 1.1, h, 12), stone);
+  body.position.y = h / 2;
+  g.add(body);
+  const rim = new THREE.Mesh(new THREE.CylinderGeometry(r + 0.35, r + 0.35, 0.8, 12), stoneDk);
+  rim.position.y = h + 0.4;
+  g.add(rim);
+  const roof = new THREE.Mesh(new THREE.ConeGeometry(r + 0.7, r * 1.7, 12), roofM);
+  roof.position.y = h + 0.8 + (r * 1.7) / 2;
+  g.add(roof);
+  // lit slit window faces the battlefield (+z)
+  const win = new THREE.Mesh(new THREE.PlaneGeometry(0.5, 0.9),
+    new THREE.MeshBasicMaterial({ color: '#ffca6a' }));
+  win.position.set(0, h * 0.65, r + 0.06);
+  g.add(win);
+  return g;
+}
+
+function castleBackdrop() {
+  const g = new THREE.Group();
+  const stone = pbr(KEEP_STONE, 0.95);
+  const stoneDk = pbr(KEEP_STONE_DK, 0.95);
+  const roofM = pbr(KEEP_ROOF, 0.8);
+  const wall = new THREE.Mesh(new THREE.BoxGeometry(16, 4.5, 1.6), stone);
+  wall.position.y = 2.25;
+  g.add(wall);
+  const merlons = crenellate(16, stoneDk);
+  merlons.position.y = 4.5;
+  g.add(merlons);
+  const gate = new THREE.Mesh(new THREE.BoxGeometry(3, 3.6, 0.4),
+    new THREE.MeshBasicMaterial({ color: '#0a0a12' }));
+  gate.position.set(0, 1.8, 0.85);
+  g.add(gate);
+  for (const sx of [-1, 1]) {
+    const t = castleTower(2.2, 8, stone, stoneDk, roofM);
+    t.position.set(sx * 9.5, 0, 0);
+    g.add(t);
+  }
+  const keep = new THREE.Mesh(new THREE.BoxGeometry(7, 9, 6), stoneDk);
+  keep.position.set(0, 4.5, -4);
+  g.add(keep);
+  const keepRoof = new THREE.Mesh(new THREE.ConeGeometry(5.4, 3.2, 4), roofM);
+  keepRoof.position.set(0, 10.6, -4);
+  keepRoof.rotation.y = Math.PI / 4;
+  g.add(keepRoof);
+  for (let i = 0; i < 3; i++) {
+    const win = new THREE.Mesh(new THREE.PlaneGeometry(0.5, 0.9),
+      new THREE.MeshBasicMaterial({ color: '#ffca6a' }));
+    win.position.set(-2 + i * 2, 6.5, -0.94);
+    g.add(win);
+  }
+  return g;
+}
+
+function broadleaf(rng) {
+  const g = new THREE.Group();
+  const h = 2.2 + rng() * 1.4;
+  const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.24, h, 7), pbr(TRUNK, 0.95));
+  trunk.position.y = h / 2;
+  g.add(trunk);
+  const blobs = 2 + Math.floor(rng() * 2);
+  for (let i = 0; i < blobs; i++) {
+    const r = 1.1 + rng() * 0.9;
+    const geo = new THREE.IcosahedronGeometry(r, 1);
+    jitterGeo(geo, 0.18, 3.1, r * 7 + i);
+    const c = new THREE.Mesh(geo, pbr(LEAF[i % LEAF.length], 0.95));
+    c.position.set((rng() - 0.5) * 1.6, h + (rng() - 0.2) * 0.9, (rng() - 0.5) * 1.6);
+    g.add(c);
+  }
+  return g;
+}
+
+function brazier(seed) {
+  const g = new THREE.Group();
+  const post = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.12, 1.6, 7), pbr('#3a2a1a', 0.95));
+  post.position.y = 0.8;
+  g.add(post);
+  const cup = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.18, 0.3, 8), pbr('#2a2a30', 0.8));
+  cup.position.y = 1.7;
+  g.add(cup);
+  const flame = new THREE.Mesh(new THREE.ConeGeometry(0.22, 0.7, 7), glowMat('#ff9a3a', 0.95));
+  flame.position.y = 2.2;
+  flame.userData.seed = seed;
+  g.add(flame);
+  const glow = glowSprite('#ff8a2a', 0.5, 3);
+  glow.position.y = 2.2;
+  g.add(glow);
+  return { group: g, flame };
+}
+
 function scatter(rng, count, x0, x1, zBands, avoidLane) {
   const out = [];
   for (let i = 0; i < count; i++) {
@@ -159,11 +267,82 @@ export function createEnvironment(scene, ageIndex) {
   const group = new THREE.Group();
   scene.add(group);
   const rng = mulberry32(1379);
-  const animated = { clouds: [], birds: [], smokes: [] };
+  const animated = { clouds: [], birds: [], smokes: [], fires: [] };
   let t = 0;
 
+  function addSky(cloudColor) {
+    for (let i = 0; i < 5; i++) {
+      const c = cloud(rng, cloudColor);
+      c.position.set(-10 + i * 10 + rng() * 5, 16 + rng() * 6, -24 - rng() * 8);
+      group.add(c);
+      animated.clouds.push(c);
+    }
+    for (let i = 0; i < 3; i++) {
+      const p = pterodactyl();
+      p.group.userData = { r: 6 + i * 3, h: 11 + i * 1.5, ph: i * 2.1, cx: 12 + (i - 1) * 6 };
+      group.add(p.group);
+      animated.birds.push(p);
+    }
+  }
+
+  function addRocks() {
+    // boulders: low enough to sit in front of the lane without blocking it
+    for (const [x, z] of scatter(rng, 16, -8, 32, [[-6, -3], [3, 6]], true)) {
+      const b = boulder(rng);
+      b.position.set(x, 0.15, z);
+      group.add(b);
+    }
+  }
+
+  function addUndergrowth() {
+    // fern tufts hug the lane; foreground tufts stay short of the sightline
+    for (const [x, z] of scatter(rng, 46, -6, 30, [[-4.5, -2.4], [2.4, 6]], true)) {
+      const f = fernTuft(rng);
+      f.position.set(x, 0, z);
+      const s = 0.8 + rng() * 0.9;
+      f.scale.setScalar(s);
+      group.add(f);
+    }
+  }
+
+  function buildCastle() {
+    const castle = castleBackdrop();
+    castle.position.set(11, 0, -32);
+    group.add(castle);
+    // rolling dark hills flank the fortress
+    for (const [x, z, w, h] of [[-14, -30, 12, 4], [34, -31, 14, 5], [-2, -37, 18, 6]]) {
+      const m = new THREE.Mesh(new THREE.SphereGeometry(1, 12, 8), pbr('#24351f', 1.0));
+      m.scale.set(w, h, w * 0.5);
+      m.position.set(x, 0, z);
+      group.add(m);
+    }
+    // broadleaf treeline strictly behind the lane
+    for (const [x, z] of scatter(rng, 26, -14, 38, [[-16, -4]], true)) {
+      const tr = broadleaf(rng);
+      const s = 0.9 + rng() * 0.8;
+      tr.scale.setScalar(s);
+      tr.position.set(x, 0, z);
+      tr.rotation.y = rng() * Math.PI * 2;
+      group.add(tr);
+    }
+    addRocks();
+    addUndergrowth();
+    // braziers light both lane edges
+    let seed = 0;
+    for (const [x, z] of [[-6, -3.2], [6, 3.2], [18, -3.2], [30, 3.2]]) {
+      const b = brazier(seed += 1.3);
+      b.group.position.set(x, 0, z);
+      group.add(b.group);
+      animated.fires.push(b.flame);
+    }
+    addSky('#3a4666');
+  }
+
   function build(age) {
-    void age;
+    if (age === 1) {
+      buildCastle();
+      return;
+    }
     // mesas on the horizon
     const mesaMat = pbr(MESA, 0.95);
     const mesaDefs = [[-14, -30, 10, 12], [6, -34, 14, 16], [26, -30, 9, 11], [40, -33, 12, 14]];
@@ -202,20 +381,7 @@ export function createEnvironment(scene, ageIndex) {
       f.scale.setScalar(s);
       group.add(f);
     }
-    // clouds
-    for (let i = 0; i < 5; i++) {
-      const c = cloud(rng);
-      c.position.set(-10 + i * 10 + rng() * 5, 16 + rng() * 6, -24 - rng() * 8);
-      group.add(c);
-      animated.clouds.push(c);
-    }
-    // pterodactyls
-    for (let i = 0; i < 3; i++) {
-      const p = pterodactyl();
-      p.group.userData = { r: 6 + i * 3, h: 11 + i * 1.5, ph: i * 2.1, cx: 12 + (i - 1) * 6 };
-      group.add(p.group);
-      animated.birds.push(p);
-    }
+    addSky();
   }
 
   build(ageIndex || 0);
@@ -233,6 +399,7 @@ export function createEnvironment(scene, ageIndex) {
       animated.clouds.length = 0;
       animated.birds.length = 0;
       animated.smokes.length = 0;
+      animated.fires.length = 0;
       build(i);
       solidify(group);
       group.traverse((o) => { if (o.isMesh) o.castShadow = false; });
@@ -256,6 +423,10 @@ export function createEnvironment(scene, ageIndex) {
         s.position.x += Math.sin(t * 0.8 + s.userData.seed) * dt * 0.5;
         s.position.y += dt * 0.4;
         if (s.position.y > 20) s.position.y = 10;
+      }
+      for (const f of animated.fires) {
+        const s = 1 + Math.sin(t * 13 + f.userData.seed) * 0.18 + Math.sin(t * 29 + f.userData.seed) * 0.07;
+        f.scale.set(1 / Math.sqrt(s), s, 1 / Math.sqrt(s));
       }
     },
     dispose() {
