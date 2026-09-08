@@ -73,6 +73,26 @@
         "contract deviation: demo-battle exposes runShowcase (matches all module showcases + main.js loader), not runDemoBattle as ARCHITECTURE.md sketches"
       ],
       "note": "Stone Age MVP is a complete playable 3D battle. No module at 8.5 pass mark yet; gauntlet rounds continue as art polish."
+    },
+    "parity": {
+      "status": "complete",
+      "verified": "14-step live playthrough driven in host Chrome via tools/probe.mjs (click every control, assert sim state): spawn, upgrade, buy-slot, place turret, sell turret, mine+barracks, 2x speed, formation, pause overlay, resume, VICTORY overlay, restart reset. battle-smoke 23/23. 10 showcases --strict clean. npm test -w age-of-war 156/156.",
+      "shipped": [
+        "unit upgrade tiers + costs + pips + stat tooltips",
+        "turret slot purchase, 3 turret cards, per-turret sell/refund",
+        "gold mine + barracks cards (B/N hotkeys)",
+        "1x/2x/3x speed (T), Scatter/Line/Wedge formation",
+        "hero cooldown readout, special XP-cost/READY/countdown status",
+        "pause (P/Esc/button) with overlay, game-over overlay with stats + restart",
+        "BattleSim: buySlot, sellTurret, upgradeUnit, formation spread, paused, gameSpeed, restart"
+      ],
+      "score": 8,
+      "acceptedDeviations": [
+        "no manual camera pan (auto-follow by design); no minimap",
+        "no save/load, achievements, difficulty select (out of MVP scope)",
+        "evolve sim-correct into Castle Age with Stone Age visuals until age assets land"
+      ],
+      "note": "Feature parity for the Stone Age loop is done; next ages add per-age visuals."
     }
   }
 }

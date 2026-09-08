@@ -20,7 +20,7 @@ export class HUD {
         <span class="aow-res aow-gold">🪙 <b data-f="gold">0</b></span>
         <span class="aow-res aow-xp">✨ <b data-f="xp">0</b></span>
         <span class="aow-res aow-age" data-f="age">Stone Age</span>
-        <button class="aow-res aow-mini" data-act="pause" title="Pause (P)">⏸</button>
+        <button class="aow-res aow-mini" data-act="pause" title="Pause (P)">PAUSE</button>
       </div>
       <div class="aow-bottombar">
         <div class="aow-row" data-f="row1">
@@ -257,7 +257,7 @@ export class HUD {
       }
     }
     const pauseBtn = this.el.querySelector('[data-act="pause"]');
-    if (pauseBtn) pauseBtn.textContent = state.paused ? '▶' : '⏸';
+    if (pauseBtn) pauseBtn.textContent = state.paused ? 'RESUME' : 'PAUSE';
   }
 
   dispose() {
