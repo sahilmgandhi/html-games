@@ -661,6 +661,14 @@ const BUILDERS = {
   4: [buildTitaniumShooter, buildLazerCannon, buildIonRay],
 };
 
+// Render-side park spread: sim stacks every turret of a side on one x, so
+// offset each slot sideways in meters (sim math untouched). Roughly one
+// redoubt-width apart so neighboring rigs read as separate emplacements.
+const SLOT_OFF = [-1.9, -0.65, 0.65, 1.9];
+function slotOff(turret) {
+  return SLOT_OFF[turret.slotIndex] ?? 0;
+}
+
 export function TurretMesh(turret, ageIndex) {
   const accent = SIDE_ACCENT[turret.side] || SIDE_ACCENT.player;
   const row = BUILDERS[ageIndex] || BUILDERS[0];
@@ -678,7 +686,7 @@ export function TurretMesh(turret, ageIndex) {
     if ('emissive' in m) { m.emissive = new THREE.Color('#000000'); m.transparent = true; }
   }
 
-  mesh.position.set(toMeters(turret.x), 0, turret.z || 0);
+  mesh.position.set(toMeters(turret.x) + slotOff(turret), 0, turret.z || 0);
   mesh.rotation.y = turret.side === 'player' ? 0 : Math.PI;
 
   let recoil = 0;
@@ -712,7 +720,7 @@ export function TurretMesh(turret, ageIndex) {
       rig.flash.visible = true;
     },
     update(dt) {
-      mesh.position.set(toMeters(turret.x), 0, turret.z || 0);
+      mesh.position.set(toMeters(turret.x) + slotOff(turret), 0, turret.z || 0);
       t += dt;
       if (rig.flame) {
         const f = 1 + Math.sin(t * 13) * 0.15 + Math.sin(t * 29) * 0.08;
