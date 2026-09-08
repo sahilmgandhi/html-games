@@ -6,7 +6,9 @@ import { pbr, glowMat, glowSprite, solidify, disposeDeep } from '../core/pbr.js'
 // 'arrow' (archer shaft, pale streak), 'fireball' (burning shot, long flame
 // trail), 'oil' (dark glossy glob, sickly trail, splash). Renaissance kinds:
 // 'musketball' (fast bright tracer), 'cannonball' (iron ball, grey smoke
-// trail), 'shell' (explosive shot, spark trail, splash).
+// trail), 'shell' (explosive shot, spark trail, splash). Modern kinds:
+// 'bullet' (tracer round, hot core, thin streak), 'rocket' (finned body,
+// exhaust glow, grey smoke trail).
 //
 // Contract: ProjectileMesh(kind) -> { mesh, update(dt), dispose() }
 // The battle sync sets mesh.position each frame; update() derives velocity
@@ -33,11 +35,14 @@ const KIND_STYLE = {
   musketball: { build: null, trailColor: '#fff2b8', trailLen: 1.8, glowScale: 0.6, spin: 0 },
   cannonball: { build: null, trailColor: '#9a9aa2', trailLen: 1.6, glowScale: 0.7, spin: 8 },
   shell: { build: null, trailColor: '#ff9a3a', trailLen: 2.0, glowScale: 1.4, spin: 6 },
+  bullet: { build: null, trailColor: '#ff6a4a', trailLen: 1.1, glowScale: 0.8, spin: 0 },
+  rocket: { build: null, trailColor: '#b8b8b0', trailLen: 2.2, glowScale: 1.5, spin: 0 },
 };
 
 const GLOW_COLOR = {
   boulder: '#ff9a3a', fireball: '#ff6a2a', oil: '#8a9a3a',
   musketball: '#fff2b8', cannonball: '#c8c8d0', shell: '#ff8a3a',
+  bullet: '#ffd28a', rocket: '#ff9a3a',
 };
 
 function buildCore(kind) {
@@ -111,6 +116,35 @@ function buildCore(kind) {
     const g = new THREE.Group();
     g.add(new THREE.Mesh(new THREE.SphereGeometry(0.28, 12, 10), pbr('#3a3028', 0.5)));
     g.add(new THREE.Mesh(new THREE.SphereGeometry(0.12, 8, 6), glowMat('#ff8a3a', 0.95)));
+    return g;
+  }
+  if (kind === 'bullet') {
+    // hot tracer core; spin 0, the thin streak carries the motion
+    const g = new THREE.Group();
+    const core = new THREE.Mesh(new THREE.SphereGeometry(0.06, 8, 6), glowMat('#ffd28a', 0.95));
+    core.scale.set(2.4, 1, 1);
+    g.add(core);
+    return g;
+  }
+  if (kind === 'rocket') {
+    // finned body along +X (the aim axis); spin 0 so it never tumbles
+    const g = new THREE.Group();
+    const body = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 0.7, 8), pbr('#5a6068', 0.4));
+    body.rotation.z = -Math.PI / 2;
+    g.add(body);
+    const nose = new THREE.Mesh(new THREE.ConeGeometry(0.09, 0.25, 8), pbr('#8a2a2a', 0.5));
+    nose.rotation.z = -Math.PI / 2;
+    nose.position.x = 0.47;
+    g.add(nose);
+    for (const s of [-1, 1]) {
+      const fin = new THREE.Mesh(new THREE.PlaneGeometry(0.25, 0.18), pbr('#3a3f46', 0.5));
+      fin.position.x = -0.3;
+      fin.rotation.x = s * Math.PI / 2;
+      g.add(fin);
+    }
+    const exhaust = new THREE.Mesh(new THREE.SphereGeometry(0.11, 8, 6), glowMat('#ff9a3a', 0.95));
+    exhaust.position.x = -0.4;
+    g.add(exhaust);
     return g;
   }
   return new THREE.Mesh(rockGeo(0.16, 1), pbr('#8d8d94', 0.85));

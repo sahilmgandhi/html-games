@@ -459,13 +459,92 @@ function buildRenaissancePalazzo(accent, mirror) {
   };
 }
 
+const MOD_CONCRETE = '#7a7a72';
+const MOD_DK = '#54544e';
+const MOD_SAND = '#8a7a5a';
+
+function buildModernBunker(accent, mirror) {
+  const mesh = new THREE.Group();
+  const concrete = pbr(MOD_CONCRETE, 0.95);
+  const dark = pbr(MOD_DK, 0.95);
+
+  // sandbag ring + concrete pillbox with a barrel-vault roof
+  for (let i = 0; i < 10; i++) {
+    const a = (i / 10) * Math.PI * 2;
+    const bag = new THREE.Mesh(new THREE.SphereGeometry(0.45, 8, 6), pbr(MOD_SAND, 1.0));
+    bag.scale.set(1.25, 0.55, 0.8);
+    bag.position.set(Math.cos(a) * 3.1 * mirror, 0.24, Math.sin(a) * 3.1);
+    bag.rotation.y = -a;
+    mesh.add(bag);
+  }
+  const body = new THREE.Mesh(new THREE.BoxGeometry(4.4, 1.8, 3.2), dark);
+  body.position.y = 0.9;
+  mesh.add(body);
+  const vault = new THREE.Mesh(new THREE.CylinderGeometry(1.6, 1.6, 4.4, 12, 1, false, 0, Math.PI),
+    concrete);
+  vault.rotation.z = Math.PI / 2;
+  vault.position.y = 1.8;
+  mesh.add(vault);
+  // firing slit facing the field (+x), dark when ruined
+  const slit = new THREE.Mesh(new THREE.PlaneGeometry(2.8, 0.35),
+    new THREE.MeshBasicMaterial({ color: '#ffca6a' }));
+  slit.position.set(2.22 * mirror, 1.1, 0);
+  slit.rotation.y = mirror > 0 ? Math.PI / 2 : -Math.PI / 2;
+  mesh.add(slit);
+  // antenna mast + dish on the roof
+  const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.07, 3.2, 6), pbr(IRON, 0.6));
+  mast.position.set(-1.2 * mirror, 4.6, -0.8);
+  mesh.add(mast);
+  const dish = new THREE.Mesh(new THREE.SphereGeometry(0.5, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2),
+    pbr(IRON, 0.5));
+  dish.position.set(-1.2 * mirror, 3.6, -0.8);
+  dish.rotation.z = mirror > 0 ? -1.1 : 1.1;
+  mesh.add(dish);
+  // signal pennant on the mast, hoist pinned to the pole
+  const cloth = makeCloth(1.4, 0.5, 6, pbr(accent, 0.75));
+  const flag = cloth.mesh;
+  flag.position.set(-1.2 * mirror, 5.9, -0.8);
+  if (mirror < 0) flag.rotation.y = Math.PI;
+  mesh.add(flag);
+
+  const dmg2 = rubble(dark);
+  const dmg1 = new THREE.Group(); // < 33%: slit dark, mast snapped, pennant torn
+  const snapped = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.08, 1.6, 6), pbr(IRON, 0.6));
+  snapped.position.set(1.8 * mirror, 0.9, 1.8);
+  snapped.rotation.set(0.4, 0, Math.PI / 2.3);
+  dmg1.add(snapped);
+  mesh.add(dmg2, dmg1);
+  dmg2.visible = false;
+  dmg1.visible = false;
+
+  let t = Math.random() * 10;
+  return {
+    group: mesh,
+    setHp(f) {
+      dmg2.visible = f < 0.66;
+      dmg1.visible = f < 0.33;
+      slit.material.color.set(f > 0.33 ? '#ffca6a' : '#0c0e0c');
+      mast.visible = f > 0.33;
+      dish.visible = f > 0.33;
+      const s = 0.55 + f * 0.45;
+      flag.scale.set(s, f < 0.33 ? 0.7 : 1, 1);
+    },
+    update(dt) {
+      t += dt;
+      cloth.update(t);
+    },
+  };
+}
+
 export function BaseMesh(side, ageIndex) {
   // Unknown ages reuse the Stone hold so evolve never renders a missing mesh.
   const accent = SIDE_ACCENT[side] || SIDE_ACCENT.player;
   const mirror = side === 'player' ? 1 : -1;
 
   const mesh = new THREE.Group();
-  const inner = ageIndex === 2
+  const inner = ageIndex === 3
+    ? buildModernBunker(accent, mirror)
+    : ageIndex === 2
     ? buildRenaissancePalazzo(accent, mirror)
     : ageIndex === 1
       ? buildCastleKeep(accent, mirror)

@@ -11,17 +11,26 @@ import {
 // Castle Age turrets (by turretIndex):
 //   0 Catapult       — iron-banded torsion frame, stone-ball bucket (boulder)
 //   1 Fire Catapult  — same frame + fire pot, flaming shot bucket (fireball)
-//   2 Oil Tower      — stone tower with a tipping oil cauldron (oil)
+// 2 Oil Tower      — stone tower with a tipping oil cauldron (oil)
+// Renaissance turrets (by turretIndex):
+//   0 Small Cannon   — stone redoubt, thin wheeled barrel (cannonball)
+//   1 Large Cannon   — same redoubt + banded long barrel (cannonball)
+//   2 Explos. Cannon — squat mortar, powder kegs (shell)
+// Modern turrets (by turretIndex):
+//   0 Single Turret  — concrete pit, shielded direct-fire gun (bullet)
+//   1 Rocket Turret  — angled multi-tube launcher rack (rocket)
+//   2 Double Turret  — twin barrels on a steel dome (bullet)
 //
 // Contract: TurretMesh(turret, ageIndex) -> { mesh, aimAt(x,y,z), dispose() }
 // Extras: update(dt) (recoil/flash decay), fire() (recoil + muzzle flash),
 // kind (projectile kind), muzzle (Object3D at the barrel tip).
-// Builders branch on ageIndex (0 Stone, 1 Castle, 2 Renaissance); unknown ages fall back to Stone.
+// Builders branch on ageIndex (0 Stone, 1 Castle, 2 Renaissance, 3 Modern); unknown ages fall back to Stone.
 
 export const TURRET_PROJECTILE = [
   ['rock', 'egg', 'boulder'],
   ['boulder', 'fireball', 'oil'],
   ['cannonball', 'cannonball', 'shell'],
+  ['bullet', 'rocket', 'bullet'],
 ];
 
 const WOOD = '#6e4a2c';
@@ -440,10 +449,112 @@ function buildExplosiveCannon(accent) {
   return { root, head, arm, muzzle, flash, height: 4.8, restArmZ: 0, armAxis: 'throw' };
 }
 
+// Modern gun pit shared by all three turrets: concrete pad, sandbag arc,
+// steel pivot. The gun group is the recoil arm (armAxis 'throw', rest 0).
+function gunPit(accent) {
+  const root = new THREE.Group();
+  const pad = new THREE.Mesh(new THREE.CylinderGeometry(1.9, 2.1, 0.5, 14), pbr('#6a6a62', 0.95));
+  pad.position.y = 0.25;
+  root.add(pad);
+  for (let i = 0; i < 7; i++) {
+    const a = Math.PI * (0.15 + 0.7 * (i / 6));
+    const bag = new THREE.Mesh(new THREE.SphereGeometry(0.34, 8, 6), pbr('#8a7a5a', 1.0));
+    bag.scale.set(1.25, 0.55, 0.8);
+    bag.position.set(Math.cos(a) * 1.9, 0.68, Math.sin(a) * 1.9);
+    bag.rotation.y = -a;
+    root.add(bag);
+  }
+  const head = new THREE.Group();
+  head.position.y = 0.5;
+  const pivot = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.5, 0.7, 10), pbr('#3a3f46', 0.6));
+  pivot.position.y = 0.7;
+  head.add(pivot);
+  const trim = new THREE.Mesh(new THREE.TorusGeometry(1.9, 0.07, 8, 18), pbr(accent, 0.6));
+  trim.rotation.x = Math.PI / 2;
+  trim.position.y = 0.15;
+  head.add(trim);
+  root.add(head);
+  const arm = new THREE.Group();
+  arm.position.set(0, 1.1, 0);
+  head.add(arm);
+  return { root, head, arm };
+}
+
+// 0 — Single Turret (Modern): shielded direct-fire gun, near-level barrel
+function buildSingleTurret(accent) {
+  const { root, head, arm } = gunPit(accent);
+  const shield = new THREE.Mesh(new THREE.BoxGeometry(0.18, 1.0, 1.4), pbr('#4a4f56', 0.55));
+  shield.position.set(0.35, 0.35, 0);
+  arm.add(shield);
+  const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.11, 2.2, 12), pbr('#2c3036', 0.4));
+  barrel.rotation.z = -Math.PI / 2 + 0.08;
+  barrel.position.set(1.2, 0.4, 0);
+  arm.add(barrel);
+  const muzzle = new THREE.Object3D();
+  muzzle.position.set(2.35, 0.5, 0);
+  arm.add(muzzle);
+  const flash = flashSprite(1.4);
+  flash.position.copy(muzzle.position);
+  arm.add(flash);
+  return { root, head, arm, muzzle, flash, height: 3.4, restArmZ: 0, armAxis: 'throw' };
+}
+
+// 1 — Rocket Turret (Modern): angled rack of six launch tubes
+function buildRocketTurret(accent) {
+  const { root, head, arm } = gunPit(accent);
+  const rack = new THREE.Group();
+  rack.position.set(0, 0.35, 0);
+  rack.rotation.z = 0.5; // fixed skyward tilt; the head still yaws to track
+  for (const dy of [-0.16, 0.16]) {
+    for (const dz of [-0.28, 0, 0.28]) {
+      const tube = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.11, 1.5, 8), pbr('#3d4436', 0.6));
+      tube.rotation.z = -Math.PI / 2;
+      tube.position.set(0.3, dy, dz);
+      rack.add(tube);
+      const mouth = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.11, 0.06, 8),
+        new THREE.MeshBasicMaterial({ color: '#0c0e0c' }));
+      mouth.rotation.z = -Math.PI / 2;
+      mouth.position.set(1.06, dy, dz);
+      rack.add(mouth);
+    }
+  }
+  arm.add(rack);
+  const muzzle = new THREE.Object3D();
+  muzzle.position.set(1.3, 1.15, 0);
+  arm.add(muzzle);
+  const flash = flashSprite(1.6);
+  flash.position.copy(muzzle.position);
+  arm.add(flash);
+  return { root, head, arm, muzzle, flash, height: 4.2, restArmZ: 0, armAxis: 'throw' };
+}
+
+// 2 — Double Turret (Modern): twin barrels on a low steel dome
+function buildDoubleTurret(accent) {
+  const { root, head, arm } = gunPit(accent);
+  const dome = new THREE.Mesh(new THREE.SphereGeometry(0.85, 14, 10, 0, Math.PI * 2, 0, Math.PI / 2),
+    pbr('#4a4f56', 0.55));
+  dome.position.y = -0.1;
+  arm.add(dome);
+  for (const s of [-1, 1]) {
+    const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.11, 2.4, 12), pbr('#2c3036', 0.4));
+    barrel.rotation.z = -Math.PI / 2 + 0.1;
+    barrel.position.set(1.3, 0.6, s * 0.3);
+    arm.add(barrel);
+  }
+  const muzzle = new THREE.Object3D();
+  muzzle.position.set(1.3, 0.75, 0);
+  arm.add(muzzle);
+  const flash = flashSprite(1.5);
+  flash.position.copy(muzzle.position);
+  arm.add(flash);
+  return { root, head, arm, muzzle, flash, height: 3.6, restArmZ: 0, armAxis: 'throw' };
+}
+
 const BUILDERS = {
   0: [buildSlingshot, buildEgg, buildCatapult],
   1: [buildMilCatapult, buildFireCatapult, buildOilTower],
   2: [buildSmallCannon, buildLargeCannon, buildExplosiveCannon],
+  3: [buildSingleTurret, buildRocketTurret, buildDoubleTurret],
 };
 
 export function TurretMesh(turret, ageIndex) {

@@ -18,6 +18,12 @@ export default [
       t.assert('cannoneer fires cannonball', unitProjectileKind(2, 'siege') === 'cannonball');
       t.assert('small cannon fires cannonball', turretProjectileKind(2, 0) === 'cannonball');
       t.assert('explosive cannon fires shell', turretProjectileKind(2, 2) === 'shell');
+      // Modern routing.
+      t.assert('infantry fires bullet', unitProjectileKind(3, 'ranged') === 'bullet');
+      t.assert('tank fires shell', unitProjectileKind(3, 'armored') === 'shell');
+      t.assert('single turret fires bullet', turretProjectileKind(3, 0) === 'bullet');
+      t.assert('rocket turret fires rocket', turretProjectileKind(3, 1) === 'rocket');
+      t.assert('double turret fires bullet', turretProjectileKind(3, 2) === 'bullet');
       // Unknown ages fall back to the Stone row, never undefined.
       t.assert('future unit falls back to rock', unitProjectileKind(4, 'ranged') === 'rock');
       t.assert('future turret falls back to stone row', turretProjectileKind(4, 2) === 'boulder');

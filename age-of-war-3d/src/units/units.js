@@ -580,12 +580,160 @@ function buildWarEngineer(accent) {
   return { body: b, legL, legR, armL, armR, head, height: 2.6, aura };
 }
 
+// Modern: olive-drab great-war infantry, riflemen, a tracked tank and an
+// officer hero. The tank omits legs/arms; the shared anim guards every rig
+// field, so it bobs, sways its turret and topples on death like the rest.
+const OLIVE = '#5a5a3a';
+const OLIVE_DK = '#3f3f2c';
+const TANK_GREEN = '#4a5238';
+
+function helmet(accent) {
+  const g = new THREE.Group();
+  const dome = new THREE.Mesh(new THREE.SphereGeometry(0.23, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2),
+    pbr(OLIVE_DK, 0.85));
+  g.add(dome);
+  const brim = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.32, 0.05, 12), pbr(OLIVE_DK, 0.85));
+  brim.position.y = 0.0; g.add(brim);
+  const band = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.24, 0.07, 12), pbr(accent, 0.7));
+  band.position.y = 0.06; g.add(band);
+  return g;
+}
+
+function rifle() {
+  const g = new THREE.Group();
+  const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 1.2, 8), pbr(STEEL_DK, 0.45));
+  barrel.rotation.z = Math.PI / 2 - 0.1; barrel.position.set(0.35, -0.5, 0); g.add(barrel);
+  const stock = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.1, 0.09), pbr(WOOD_DK, 0.9));
+  stock.position.set(-0.3, -0.6, 0); stock.rotation.z = -0.1; g.add(stock);
+  const bayonet = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 0.35, 6), pbr(STEEL, 0.35));
+  bayonet.rotation.z = Math.PI / 2 - 0.1; bayonet.position.set(1.1, -0.43, 0); g.add(bayonet);
+  return g;
+}
+
+function buildMeleeInfantry(accent) {
+  const b = new THREE.Group();
+  const uniform = pbr(OLIVE, 0.9);
+  const legL = leg(0.11, 0.85, pbr(OLIVE_DK, 0.9)); legL.position.set(0, 0.95, 0.16);
+  const legR = leg(0.11, 0.85, pbr(OLIVE_DK, 0.9)); legR.position.set(0, 0.95, -0.16);
+  b.add(legL, legR);
+  const torso = new THREE.Group(); torso.position.y = 1.0;
+  const chest = new THREE.Mesh(new THREE.CylinderGeometry(0.27, 0.31, 0.62, 10), uniform);
+  chest.position.y = 0.33; torso.add(chest);
+  const pack = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.4, 0.35), pbr('#4a3d2a', 0.95));
+  pack.position.set(-0.32, 0.35, 0); torso.add(pack);
+  b.add(torso);
+  const armL = arm(0.095, 0.6, uniform); armL.position.set(0, 1.52, 0.36);
+  const armR = arm(0.095, 0.6, uniform, rifle()); armR.position.set(0, 1.52, -0.36);
+  b.add(armL, armR);
+  const head = new THREE.Group(); head.position.y = 1.88;
+  head.add(new THREE.Mesh(new THREE.SphereGeometry(0.21, 14, 12), pbr(SKIN, 0.75)));
+  eyes(head, 0.0, 0.17, 0.1);
+  const helm = helmet(accent); helm.position.y = 0.1; head.add(helm);
+  b.add(head);
+  return { body: b, legL, legR, armL, armR, head, height: 2.15 };
+}
+
+function buildInfantry(accent) {
+  const b = new THREE.Group();
+  const uniform = pbr(OLIVE, 0.9);
+  const legL = leg(0.11, 0.85, pbr(OLIVE_DK, 0.9)); legL.position.set(0, 0.95, 0.16);
+  const legR = leg(0.11, 0.85, pbr(OLIVE_DK, 0.9)); legR.position.set(0, 0.95, -0.16);
+  b.add(legL, legR);
+  const torso = new THREE.Group(); torso.position.y = 1.0;
+  const chest = new THREE.Mesh(new THREE.CylinderGeometry(0.27, 0.31, 0.62, 10), uniform);
+  chest.position.y = 0.33; torso.add(chest);
+  const ammo = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.14, 0.35), pbr('#4a3d2a', 0.95));
+  ammo.position.set(0, 0.05, 0); torso.add(ammo);
+  b.add(torso);
+  const armL = arm(0.095, 0.6, uniform); armL.position.set(0, 1.52, 0.36);
+  // rifleman aims: rifle held level, arm pose baked into the held group
+  const aim = new THREE.Group();
+  const gun = rifle(); gun.rotation.z = 0.1; gun.position.set(0.35, -0.55, 0); aim.add(gun);
+  const armR = arm(0.095, 0.6, uniform, aim); armR.position.set(0, 1.52, -0.36);
+  b.add(armL, armR);
+  const head = new THREE.Group(); head.position.y = 1.88;
+  head.add(new THREE.Mesh(new THREE.SphereGeometry(0.21, 14, 12), pbr(SKIN, 0.75)));
+  eyes(head, 0.0, 0.17, 0.1);
+  const helm = helmet(accent); helm.position.y = 0.1; head.add(helm);
+  b.add(head);
+  return { body: b, legL, legR, armL, armR, head, height: 2.15 };
+}
+
+function buildTank(accent) {
+  const b = new THREE.Group();
+  const hullM = pbr(TANK_GREEN, 0.8);
+  for (const s of [-1, 1]) {
+    const track = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.55, 0.45), pbr('#2a2a28', 0.9));
+    track.position.set(0, 0.35, s * 0.62);
+    b.add(track);
+    for (const wx of [-0.7, 0, 0.7]) {
+      const wheel = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.1, 10), pbr(STEEL_DK, 0.6));
+      wheel.rotation.x = Math.PI / 2;
+      wheel.position.set(wx, 0.32, s * 0.86);
+      b.add(wheel);
+    }
+  }
+  const hull = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.5, 1.0), hullM);
+  hull.position.y = 0.85; b.add(hull);
+  const glacis = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.45, 1.0), hullM);
+  glacis.position.set(1.2, 0.72, 0); glacis.rotation.z = -0.5; b.add(glacis);
+  const stripe = new THREE.Mesh(new THREE.BoxGeometry(2.02, 0.12, 1.02), pbr(accent, 0.7));
+  stripe.position.y = 0.85; b.add(stripe);
+  // turret doubles as the rig head so it sways on the march
+  const turret = new THREE.Group(); turret.position.set(-0.2, 1.25, 0);
+  const dome = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.5, 0.4, 12), hullM);
+  turret.add(dome);
+  const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.09, 1.5, 10), pbr(STEEL_DK, 0.45));
+  barrel.rotation.z = -Math.PI / 2 + 0.06;
+  barrel.position.set(0.95, 0.12, 0);
+  turret.add(barrel);
+  const hatch = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 0.1, 10), pbr(OLIVE_DK, 0.85));
+  hatch.position.y = 0.24; turret.add(hatch);
+  b.add(turret);
+  return { body: b, head: turret, height: 2.4 };
+}
+
+function buildCommander(accent) {
+  const b = new THREE.Group();
+  const coat = pbr('#3d4436', 0.85);
+  const legL = leg(0.11, 0.88, pbr('#2c2c24', 0.9)); legL.position.set(0, 0.98, 0.16);
+  const legR = leg(0.11, 0.88, pbr('#2c2c24', 0.9)); legR.position.set(0, 0.98, -0.16);
+  b.add(legL, legR);
+  const torso = new THREE.Group(); torso.position.y = 1.03;
+  const chest = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.33, 0.66, 12), coat);
+  chest.position.y = 0.35; torso.add(chest);
+  const trim = new THREE.Mesh(new THREE.TorusGeometry(0.3, 0.035, 8, 18), pbr(GOLD, 0.5));
+  trim.rotation.x = Math.PI / 2; trim.position.y = 0.6; torso.add(trim);
+  b.add(torso);
+  const baton = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.55, 8), pbr(GOLD, 0.5));
+  baton.position.y = -0.5;
+  const armL = arm(0.1, 0.62, coat); armL.position.set(0, 1.58, 0.37);
+  const armR = arm(0.1, 0.62, coat, baton); armR.position.set(0, 1.58, -0.37);
+  b.add(armL, armR);
+  const head = new THREE.Group(); head.position.y = 1.94;
+  head.add(new THREE.Mesh(new THREE.SphereGeometry(0.22, 14, 12), pbr(SKIN, 0.75)));
+  eyes(head, 0.0, 0.17, 0.1);
+  const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.2, 0.14, 12), pbr('#2c2c24', 0.85));
+  cap.position.y = 0.26; head.add(cap);
+  const capBand = new THREE.Mesh(new THREE.CylinderGeometry(0.245, 0.245, 0.05, 12), pbr(GOLD, 0.5));
+  capBand.position.y = 0.2; head.add(capBand);
+  b.add(head);
+  const aura = new THREE.Mesh(
+    new THREE.TorusGeometry(1.0, 0.05, 8, 32),
+    glowMat('#ffd23a', 0.55)
+  );
+  aura.rotation.x = Math.PI / 2; aura.position.y = 0.08;
+  b.add(aura);
+  return { body: b, legL, legR, armL, armR, head, height: 2.3, aura };
+}
+
 const BUILDERS = {
   0: { melee: buildClubman, ranged: buildSlinger, fast: buildDinoRider },
   1: { melee: buildSwordsman, ranged: buildArcher, fast: buildKnight },
   2: { melee: buildDueler, ranged: buildMusketeer, siege: buildCannoneer },
+  3: { melee: buildMeleeInfantry, ranged: buildInfantry, armored: buildTank },
 };
-const HEROES = { 0: buildShaman, 1: buildPaladin, 2: buildWarEngineer };
+const HEROES = { 0: buildShaman, 1: buildPaladin, 2: buildWarEngineer, 3: buildCommander };
 
 export function UnitMesh(entity, ageIndex) {
   // Unknown ages reuse the Stone rigs so evolve never renders a missing mesh.

@@ -16,6 +16,7 @@ const allocId = () => _nextId++;
 export function unitProjectileKind(ageIndex, type) {
   if (ageIndex === 1) return 'arrow'; // Castle archers; melee/fast never call this
   if (ageIndex === 2) return type === 'ranged' ? 'musketball' : 'cannonball'; // Musketeer / Cannoneer, War Engineer
+  if (ageIndex === 3) return type === 'ranged' ? 'bullet' : 'shell'; // Infantry, Commander / Tank
   if (type === 'siege' || type === 'armored' || type === 'elite') return 'boulder';
   return 'rock';
 }
@@ -24,6 +25,7 @@ const TURRET_KINDS = [
   ['rock', 'egg', 'boulder'], // 0 Stone: slingshot, egg thrower, catapult
   ['boulder', 'fireball', 'oil'], // 1 Castle: catapult, fire catapult, oil pourer
   ['cannonball', 'cannonball', 'shell'], // 2 Renaissance: small/large/explosive cannon
+  ['bullet', 'rocket', 'bullet'], // 3 Modern: single turret, rocket turret, double turret
 ];
 
 export function turretProjectileKind(ageIndex, turretIndex) {
