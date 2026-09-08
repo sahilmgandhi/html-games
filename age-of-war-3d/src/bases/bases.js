@@ -147,16 +147,7 @@ function buildStoneHold(accent, mirror, side) {
   dmg2.visible = false;
   dmg1.visible = false;
 
-  // HP bar rides over the menhir, Clash-style
-  const bar = makeHpBar(4.2);
-  bar.sprite.position.y = 8.4;
-  bar.set(1);
-  mesh.add(bar.sprite);
-
-  solidify(mesh);
-  cloneMats(mesh);
-  mesh.rotation.y = mirror > 0 ? 0 : Math.PI;
-
+  // HP bar, shadows and facing are owned by the BaseMesh dispatcher below.
   let t = Math.random() * 10;
   return {
     group: mesh,

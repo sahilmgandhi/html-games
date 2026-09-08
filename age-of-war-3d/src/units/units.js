@@ -262,14 +262,14 @@ function sword(len = 0.85) {
   return g;
 }
 
-function helm(head, accent, crest) {
+function helm(head, accent, plumeColor) {
   const dome = new THREE.Mesh(new THREE.SphereGeometry(0.26, 14, 10, 0, Math.PI * 2, 0, Math.PI * 0.62), pbr(STEEL, 0.45));
   dome.position.y = 0.04; head.add(dome);
   const brim = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.06, 14), pbr(STEEL_DK, 0.6));
   brim.position.y = 0.06; head.add(brim);
   const nasal = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.22, 0.05), pbr(STEEL_DK, 0.6));
   nasal.position.set(0.25, -0.06, 0); head.add(nasal);
-  const plume = new THREE.Mesh(new THREE.ConeGeometry(0.07, crest || 0.34, 6), pbr(crest ? GOLD : PLUME, 0.7));
+  const plume = new THREE.Mesh(new THREE.ConeGeometry(0.07, 0.34, 6), pbr(plumeColor || PLUME, 0.7));
   plume.position.set(-0.05, 0.36, 0); plume.rotation.z = 0.3; head.add(plume);
   const band = new THREE.Mesh(new THREE.CylinderGeometry(0.265, 0.265, 0.07, 14), pbr(accent, 0.6));
   band.position.y = 0.1; head.add(band);
@@ -412,7 +412,7 @@ function buildPaladin(accent) {
   const head = new THREE.Group(); head.position.y = 1.98;
   head.add(new THREE.Mesh(new THREE.SphereGeometry(0.24, 14, 12), pbr(SKIN, 0.75)));
   eyes(head, 0.02, 0.19, 0.11);
-  helm(head, accent, true);
+  helm(head, accent, GOLD);
   b.add(head);
   const aura = new THREE.Mesh(
     new THREE.TorusGeometry(0.95, 0.05, 8, 32),
