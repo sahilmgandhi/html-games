@@ -251,6 +251,92 @@ function brazier(seed) {
   return { group: g, flame };
 }
 
+// Renaissance: golden-dusk Italianate skyline — domed villa, campanile,
+// terracotta roof rows — with cypress avenues and amber hills.
+const VILLA = '#c8a878';
+const VILLA_DK = '#8a6a44';
+const DOME = '#3f7a5e';
+const TERRA = '#a85a3a';
+const CYPRESS = '#2c4426';
+
+function cypress(rng) {
+  const g = new THREE.Group();
+  const h = 4.5 + rng() * 2;
+  const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.18, 1.2, 6), pbr(TRUNK, 0.95));
+  trunk.position.y = 0.6;
+  g.add(trunk);
+  for (const [r, y] of [[0.75, 0.62], [0.55, 0.82], [0.3, 0.97]]) {
+    const c = new THREE.Mesh(new THREE.ConeGeometry(r * (0.9 + rng() * 0.2), h * 0.42, 7),
+      pbr(rng() > 0.5 ? CYPRESS : '#35522e', 0.95));
+    c.position.y = h * y;
+    g.add(c);
+  }
+  return g;
+}
+
+function villa() {
+  const g = new THREE.Group();
+  const wallM = pbr(VILLA, 0.95);
+  const body = new THREE.Mesh(new THREE.BoxGeometry(6, 3, 5), wallM);
+  body.position.y = 1.5;
+  g.add(body);
+  const drum = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 1.5, 1.2, 12), pbr(VILLA_DK, 0.95));
+  drum.position.y = 3.6;
+  g.add(drum);
+  const dome = new THREE.Mesh(new THREE.SphereGeometry(1.5, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2),
+    pbr(DOME, 0.7));
+  dome.position.y = 4.2;
+  g.add(dome);
+  const winM = new THREE.MeshBasicMaterial({ color: '#ffca6a' });
+  for (const wx of [-1.8, 0, 1.8]) {
+    const win = new THREE.Mesh(new THREE.PlaneGeometry(0.5, 0.8), winM);
+    win.position.set(wx, 1.6, 2.56);
+    g.add(win);
+  }
+  return g;
+}
+
+function campanile() {
+  const g = new THREE.Group();
+  const shaft = new THREE.Mesh(new THREE.BoxGeometry(1.6, 9, 1.6), pbr(VILLA, 0.95));
+  shaft.position.y = 4.5;
+  g.add(shaft);
+  const belfry = new THREE.Mesh(new THREE.BoxGeometry(2, 1.6, 2), pbr(VILLA_DK, 0.95));
+  belfry.position.y = 9.8;
+  g.add(belfry);
+  const arch = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 1.1),
+    new THREE.MeshBasicMaterial({ color: '#0a0a12' }));
+  arch.position.set(0, 9.8, 1.02);
+  g.add(arch);
+  const cap = new THREE.Mesh(new THREE.ConeGeometry(1.7, 1.6, 4), pbr(TERRA, 0.85));
+  cap.position.y = 11.4;
+  cap.rotation.y = Math.PI / 4;
+  g.add(cap);
+  return g;
+}
+
+function renaissanceBackdrop() {
+  const g = new THREE.Group();
+  for (const [w, x, z] of [[5, -8.5, 0.5], [4, 8.5, 0.5], [6, 13.5, -1]]) {
+    const house = new THREE.Mesh(new THREE.BoxGeometry(w, 2.6, 4), pbr(VILLA, 0.95));
+    house.position.set(x, 1.3, z);
+    g.add(house);
+    const roof = new THREE.Mesh(new THREE.CylinderGeometry(0.01, w * 0.42, 1.6, 4, 1),
+      pbr(TERRA, 0.9));
+    roof.position.set(x, 3.4, z);
+    roof.rotation.y = Math.PI / 4;
+    roof.scale.z = 4 / (w * 0.84);
+    g.add(roof);
+  }
+  const v = villa();
+  v.position.set(0, 0, -2);
+  g.add(v);
+  const t = campanile();
+  t.position.set(-5.5, 0, -3);
+  g.add(t);
+  return g;
+}
+
 function scatter(rng, count, x0, x1, zBands, avoidLane) {
   const out = [];
   for (let i = 0; i < count; i++) {
@@ -339,6 +425,31 @@ export function createEnvironment(scene, ageIndex) {
   }
 
   function build(age) {
+    if (age === 2) {
+      const town = renaissanceBackdrop();
+      town.position.set(11, 0, -32);
+      group.add(town);
+      // amber hills flank the town
+      for (const [x, z, w, h] of [[-14, -30, 12, 4], [34, -31, 14, 5], [-2, -37, 18, 6]]) {
+        const m = new THREE.Mesh(new THREE.SphereGeometry(1, 12, 8), pbr('#5a4a26', 1.0));
+        m.scale.set(w, h, w * 0.5);
+        m.position.set(x, 0, z);
+        group.add(m);
+      }
+      // cypress avenue strictly behind the lane
+      for (const [x, z] of scatter(rng, 22, -14, 38, [[-16, -4]], true)) {
+        const tr = cypress(rng);
+        const s = 0.85 + rng() * 0.6;
+        tr.scale.setScalar(s);
+        tr.position.set(x, 0, z);
+        tr.rotation.y = rng() * Math.PI * 2;
+        group.add(tr);
+      }
+      addRocks();
+      addUndergrowth();
+      addSky('#e8c8a0');
+      return;
+    }
     if (age === 1) {
       buildCastle();
       return;
