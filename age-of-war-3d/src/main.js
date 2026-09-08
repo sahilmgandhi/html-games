@@ -1,6 +1,7 @@
 import { Game3D } from './core/Game3D.js';
 import { createTerrain } from './terrain/terrain.js';
 import { createLighting } from './lighting/lighting.js';
+import { createEnvironment } from './environment/environment.js';
 import { ParticleSystem3D } from './particles/particles.js';
 import { HUD } from './hud/hud.js';
 import { AudioManager } from './audio/audio.js';
@@ -22,7 +23,10 @@ const game = new Game3D(canvas);
 
 const terrain = createTerrain(game.scene, 0);
 const lighting = createLighting(game.scene);
+const environment = createEnvironment(game.scene, 0);
 const particles = new ParticleSystem3D(game.scene);
+// Showcases and Wave 3 reuse the ambient world instead of duplicating it.
+window.__world = { terrain, lighting, environment };
 particles.setCamera(game.camera);
 const hud = new HUD(document.body, game);
 const audio = new AudioManager();
@@ -34,6 +38,7 @@ window.addEventListener('pointerdown', () => {
 game.onUpdate((dt) => {
   terrain.update(dt);
   lighting.update(dt);
+  environment.update(dt);
   particles.update(dt);
   hud.update(stubState());
 });

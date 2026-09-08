@@ -19,6 +19,35 @@
         "particles": 6
       },
       "note": "Foundation only: empty battlefield, no units/scenery yet. Visual scores expected to rise in Wave 2 (units, bases, turrets, buildings, projectiles, environment)."
+    },
+    "wave2": {
+      "status": "complete",
+      "verified": "6 showcases shot --strict clean (0 console errors, 0 app errors); 60fps; 297-774 draw calls (budget 1500); 17-51k tris",
+      "modules": {
+        "units": 7,
+        "bases": 7,
+        "turrets": 7,
+        "buildings": 7,
+        "projectiles": 7,
+        "environment": 7
+      },
+      "issuesFixed": [
+        "foreground trees occluded the lane (moved behind only)",
+        "Sprite+MeshBasicMaterial rendered glow as hard quads (new glowSprite w/ radial SpriteMaterial)",
+        "mesas read as cooling towers (vertex jitter + strata bands + inset caps)",
+        "dark Lambert clouds (unlit cream), square smoke sprites (soft radial puffs)",
+        "bases near-black (lightened palette), floating HP bar (rides menhir)",
+        "mine mouth buried in mound (reworked layout), stray pickaxe (embedded in crown)",
+        "slingshot frame read as rack (true A-frame legs)"
+      ],
+      "openIssues": [
+        "units: limbs are simple cylinders; death fade can camouflage on dirt",
+        "bases: menhir slab-like up close; flags are flat quads",
+        "turrets: egg-thrower post is plain; sling arm simple",
+        "environment: mesas still geometric; pines cone-stacked",
+        "no module at 8.5 pass mark yet — gauntlet rounds continue after Wave 3 integration"
+      ],
+      "note": "All Wave 2 contracts per ARCHITECTURE.md verified live (walk/attack/death/HP bars, aim/recoil/flash, banner/fire, trails/impacts, clouds/birds). Core gained shared pbr helpers + window.__world ambient reuse."
     }
   }
 }
