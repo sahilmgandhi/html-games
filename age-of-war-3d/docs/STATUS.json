@@ -48,6 +48,31 @@
         "no module at 8.5 pass mark yet — gauntlet rounds continue after Wave 3 integration"
       ],
       "note": "All Wave 2 contracts per ARCHITECTURE.md verified live (walk/attack/death/HP bars, aim/recoil/flash, banner/fire, trails/impacts, clouds/birds). Core gained shared pbr helpers + window.__world ambient reuse."
+    },
+    "wave3": {
+      "status": "complete",
+      "verified": "10 showcases shot --strict clean (0 console errors, 0 app errors); 60-61fps; 300-1119 draw calls (budget 1500); battle-smoke 15/15; sim-smoke OK; npm test -w age-of-war 156/156",
+      "modules": {
+        "battle-sim": 8,
+        "demo-battle": 7,
+        "integration": 7
+      },
+      "proven": [
+        "full match loop: HUD spawn/hero/evolve/special vs seeded enemy AI, kill gold+XP economy, base-HP damage states, win/lose hint",
+        "mesh sync keyed by sim id (walk/attack/death, turret aim+recoil+flash, banner/fire, projectile trails, HP bars)",
+        "combat FX: hit bursts, damage numbers, kill gold numbers, Meteor Shower volley, death bursts",
+        "camera follows action midpoint with spread-based distance",
+        "demo match resolves (10-min smoke: enemy base destroyed); determinism per seed verified",
+        "projectile kinds flow sim->render (rock/egg/boulder)"
+      ],
+      "openIssues": [
+        "no game-over overlay (HUD hint only); no screen shake on impacts/special",
+        "demo special gated to 30s+; interactive pacing faithful to original (22s to first contact at base spawns)",
+        "Wave 2 visuals carry over: menhirs read pillar-like, flags flat quads, mesas silo-like",
+        "particles showcase framing looks into the tree line",
+        "contract deviation: demo-battle exposes runShowcase (matches all module showcases + main.js loader), not runDemoBattle as ARCHITECTURE.md sketches"
+      ],
+      "note": "Stone Age MVP is a complete playable 3D battle. No module at 8.5 pass mark yet; gauntlet rounds continue as art polish."
     }
   }
 }

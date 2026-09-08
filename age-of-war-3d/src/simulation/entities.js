@@ -247,13 +247,16 @@ export class Unit {
 
   attack(target, projectilePool) {
     if (this.type === 'ranged' || this.type === 'siege' || this.type === 'armored' || this.type === 'elite') {
+      // Heavy shot types loft burning boulders; light ranged units sling rocks.
+      const kind = (this.type === 'siege' || this.type === 'armored' || this.type === 'elite') ? 'boulder' : 'rock';
       projectilePool.acquire(
         this.x, this.y - 10,
         target.x, target.y,
         this.projectileSpeed,
         this.damage,
         this.side,
-        this.splashRadius
+        this.splashRadius,
+        kind
       );
     } else {
       target.takeDamage(this.damage);
@@ -326,13 +329,16 @@ export class Turret {
     }
 
     if (closest && this.attackCooldown <= 0) {
+      // Mirrors TURRET_PROJECTILE in turrets/turrets.js (render layer).
+      const kind = ['rock', 'egg', 'boulder'][this.turretIndex] || 'rock';
       projectilePool.acquire(
         this.x, this.y - 15,
         closest.x, closest.y,
         this.projectileSpeed,
         this.damage,
         this.side,
-        this.splashRadius
+        this.splashRadius,
+        kind
       );
       this.attackCooldown = this.attackSpeed;
     }
@@ -406,13 +412,14 @@ export class Projectile {
     this.vy = 0;
   }
 
-  init(x, y, tx, ty, speed, damage, side, splashRadius) {
+  init(x, y, tx, ty, speed, damage, side, splashRadius, kind = 'rock') {
     this.id = allocId();
     this.x = x;
     this.y = y;
     this.damage = damage;
     this.side = side;
     this.splashRadius = splashRadius || 0;
+    this.kind = kind;
     this.alive = true;
     this.ttl = 3;
 
@@ -477,14 +484,14 @@ export class ProjectilePool {
     }
   }
 
-  acquire(x, y, tx, ty, speed, damage, side, splashRadius) {
+  acquire(x, y, tx, ty, speed, damage, side, splashRadius, kind = 'rock') {
     let p;
     if (this.pool.length > 0) {
       p = this.pool.pop();
     } else {
       p = new Projectile();
     }
-    p.init(x, y, tx, ty, speed, damage, side, splashRadius);
+    p.init(x, y, tx, ty, speed, damage, side, splashRadius, kind);
     this.active.push(p);
     return p;
   }

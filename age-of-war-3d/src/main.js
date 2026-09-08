@@ -5,7 +5,9 @@ import { createEnvironment } from './environment/environment.js';
 import { ParticleSystem3D } from './particles/particles.js';
 import { HUD } from './hud/hud.js';
 import { AudioManager } from './audio/audio.js';
+import { BattleSim } from './simulation/battle.js';
 import { CONFIG } from './simulation/config.js';
+import { attachBattleView } from './demo-battle/battle-view.js';
 
 window.__errors = [];
 window.addEventListener('error', (e) => window.__errors.push(`error: ${e.message}`));
@@ -35,15 +37,39 @@ window.addEventListener('pointerdown', () => {
   audio.startMusic(0);
 }, { once: true });
 
+const params = new URLSearchParams(location.search);
+const showcase = params.get('showcase');
+
+window.__hud = hud;
+if (!showcase) {
+  // Full playable battle: player via HUD, enemy via AI.
+  // Named showcases (including demo-battle) stage their own scene instead.
+  const sim = new BattleSim({
+    seed: (Math.random() * 1e9) | 0,
+    events: game.events,
+    audio,
+    autoAI: true,
+    autoPlayer: false,
+  });
+  attachBattleView(game, sim, particles);
+  hud.on((action) => {
+    if (action.type === 'spawn-unit') sim.spawnUnit(action.index);
+    else if (action.type === 'spawn-hero') sim.spawnHero('player');
+    else if (action.type === 'evolve') sim.evolve();
+    else if (action.type === 'special') sim.useSpecial();
+  });
+  window.__battle = sim;
+}
+
 game.onUpdate((dt) => {
   terrain.update(dt);
   lighting.update(dt);
   environment.update(dt);
   particles.update(dt);
-  hud.update(stubState());
+  hud.update(window.__battle ? window.__battle.hudState() : stubState());
 });
 
-// Placeholder state until the battle simulation lands (Wave 3).
+// Placeholder state for module showcases (no battle running).
 function stubState() {
   const age = CONFIG.AGES[0];
   return {
@@ -59,11 +85,9 @@ function stubState() {
   };
 }
 
-const params = new URLSearchParams(location.search);
 if (params.get('camera')) game.setCameraPreset(params.get('camera'));
 game.start();
 
-const showcase = params.get('showcase');
 if (showcase) {
   import(`./${showcase}/showcase.js`)
     .then((m) => m.runShowcase?.(game))
