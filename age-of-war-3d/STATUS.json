@@ -128,7 +128,17 @@
     "grit_ground": "9f49969: 1024 ground texture + 14000 grain speckle + 260 cracks + aniso 8",
     "grit_metals": "2ffdc79: selective metalness on weapons/armor/vehicles (steel 0.85, gold trim 0.7)",
     "grit_rim": "a409d59: shadowless counter-directional rim light per age mood (Castle 0x5a76c8/0.65)",
-    "grit_emblems": "painted canvas emblems: bannerMat device per age on all 5 cloth banners + swordsman shield sigil; verified blue disc banner + white shield device, 60.1fps, 156+36 tests green"
+    "grit_emblems": "6425788: painted canvas emblems: bannerMat device per age on all 5 cloth banners + swordsman shield sigil; verified blue disc banner + white shield device, 60.1fps, 156+36 tests green",
+    "fill_light": "3bd9b6d: raised hemi/rim per age (Stone hemi 0.55->0.7, rim 0.45->0.85) so backlit faces keep modeled detail; player menhir shadow side now reads basalt+bands instead of black cutout",
+    "phase1_env": "84332b1: craggier mesas (jitter 0.1/0.08->0.16/0.14, 3 strata bands), jittered araucaria/cypress tiers + darker under-tier",
+    "phase2_units": "d728ac8: bigger signature weapons (sword 0.85->1.0, musket/rifle/blaster +15%), eye catchlight glints, dark shield rim ring; verified swordsman sigil+blade, archer quiver+bow, 60.3fps"
+  },
+  "playthroughs": {
+    "castle": "PASS: evolve->1, Swordsman/Archer/Knight/Paladin, Catapult/Fire/Oil (slots), mine+barracks, Arrow Volley fired; 0 errors",
+    "renaissance": "PASS: evolve x2->2, Dueler/Musketeer/Cannoneer/War Engineer, Small/Large/Explosive (slots), mine+barracks, Artillery fired; 0 errors",
+    "modern": "PASS: evolve x3->3, Melee/Infantry('2 Infantry' disambiguation)/Tank/Commander, Single/Rocket/Double (slots), mine+barracks, Airstrike fired; 0 errors",
+    "future": "PASS: evolve x4->4, God's Blade/Blaster/War Machine/Super Soldier/Titan, Titanium/Lazer/Ion (slots), mine+barracks, Orbital Laser fired; 0 errors",
+    "note": "all purchases/actions via real button clicks (whitespace-normalized matchers, 900ms re-render waits after XP/gold grants to avoid stale-disabled buttons); XP/gold grants are harness setup only; Stone victory/defeat/restart proven in earlier audits; sim win/lose path is age-agnostic"
   },
   "parity_score": 9,
   "pending": []
