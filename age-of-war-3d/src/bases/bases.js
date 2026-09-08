@@ -13,8 +13,8 @@ import {
 
 const WOOD = '#8a5f36';
 const WOOD_DK = '#654522';
-const ROCK = '#9b9184';
-const ROCK_DK = '#6e655a';
+const BASALT = '#4f4a44';
+const BASALT_DK = '#37332e';
 const BONE = '#e8dcc0';
 const FUR = '#5a3d26';
 
@@ -60,11 +60,17 @@ function buildStoneHold(accent, mirror, side) {
   mound.position.y = 0.3;
   mesh.add(mound);
 
-  // great menhir core with glowing rune band
-  const core = menhir(7.5, 1.5, pbr(ROCK, 0.9));
+  // great menhir core with glowing rune band: dark basalt with strata rings
+  const core = menhir(7.5, 1.5, pbr(BASALT, 0.95));
   core.position.y = 3.9;
   mesh.add(core);
-  const cap = menhir(1.6, 1.1, pbr(ROCK_DK, 0.95));
+  for (const [by, br, spin] of [[2.4, 1.43, 0.2], [4.6, 1.32, 0.5], [6.6, 1.22, 0.9]]) {
+    const band = new THREE.Mesh(new THREE.CylinderGeometry(br, br, 0.22, 7), pbr(BASALT_DK, 1));
+    band.position.y = by;
+    band.rotation.y = spin;
+    mesh.add(band);
+  }
+  const cap = menhir(1.6, 1.1, pbr(BASALT_DK, 1));
   cap.position.y = 8.0;
   mesh.add(cap);
   const rune = new THREE.Mesh(
@@ -136,7 +142,7 @@ function buildStoneHold(accent, mirror, side) {
   mesh.add(fire);
 
   // damage states: cracked slabs + fallen timber, revealed as HP drops
-  const dmg2 = rubble(pbr(ROCK_DK, 0.95)); // < 66%: cracks + lean
+  const dmg2 = rubble(pbr(BASALT_DK, 1)); // < 66%: cracks + lean
   const dmg1 = new THREE.Group(); // < 33%: banner torn, core tilted, fire out
   const fallen = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.24, 3.4, 7), palMatDk);
   fallen.position.set(2.2 * mirror, 0.9, -2.4);
