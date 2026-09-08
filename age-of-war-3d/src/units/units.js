@@ -6,7 +6,7 @@ import {
 
 // Procedural units, Clash-Royale chunky style, one builder set per age
 // (Stone: clubman/slinger/dino-rider/shaman; Castle: swordsman/archer/
-// knight/paladin). Every model faces +X; the outer group yaws PI for enemy
+// knight/paladin; Renaissance: dueler/musketeer/cannoneer/engineer).
 // units. Inner `body` group carries walk,
 // attack and death poses so facing never fights animation.
 //
@@ -423,15 +423,173 @@ function buildPaladin(accent) {
   return { body: b, legL, legR, armL, armR, head, height: 2.5, aura };
 }
 
+function musket() {
+  const g = new THREE.Group();
+  const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 1.1, 8), pbr(STEEL_DK, 0.5));
+  barrel.rotation.z = Math.PI / 2 - 0.12; barrel.position.set(0.3, -0.5, 0); g.add(barrel);
+  const stock = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.09, 0.09), pbr(WOOD_DK, 0.9));
+  stock.position.set(-0.25, -0.62, 0); stock.rotation.z = -0.12; g.add(stock);
+  return g;
+}
+
+function tricorn(accent) {
+  const g = new THREE.Group();
+  const crown = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.22, 0.18, 12), pbr('#2a2018', 0.9));
+  g.add(crown);
+  const brim = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.34, 0.05, 12), pbr('#2a2018', 0.9));
+  brim.position.y = -0.1; g.add(brim);
+  const cockade = new THREE.Mesh(new THREE.SphereGeometry(0.06, 8, 6), pbr(accent, 0.7));
+  cockade.position.set(0.2, -0.02, 0); g.add(cockade);
+  return g;
+}
+
+function fieldGun(barrelLen, barrelR) {
+  const g = new THREE.Group();
+  const wheelM = pbr(WOOD_DK, 0.9);
+  for (const s of [-1, 1]) {
+    const wheel = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.34, 0.09, 12), wheelM);
+    wheel.rotation.x = Math.PI / 2;
+    wheel.position.set(0, 0.34, s * 0.32);
+    g.add(wheel);
+    const hub = new THREE.Mesh(new THREE.SphereGeometry(0.08, 8, 6), pbr(STEEL_DK, 0.5));
+    hub.position.set(0, 0.34, s * 0.38);
+    g.add(hub);
+  }
+  const barrel = new THREE.Mesh(new THREE.CylinderGeometry(barrelR * 0.85, barrelR, barrelLen, 12),
+    pbr('#2a2a30', 0.45));
+  barrel.rotation.z = -Math.PI / 2 + 0.18;
+  barrel.position.set(0.35, 0.62, 0);
+  g.add(barrel);
+  for (const s of [-1, 1]) {
+    const trailBeam = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.09, 0.09), wheelM);
+    trailBeam.position.set(-0.45, 0.3, s * 0.2);
+    trailBeam.rotation.z = -0.25;
+    g.add(trailBeam);
+  }
+  return g;
+}
+
+function buildDueler(accent) {
+  const b = new THREE.Group();
+  const cream = pbr('#d8c8a8', 0.9);
+  const legL = leg(0.1, 0.85, cream); legL.position.set(0, 0.95, 0.15);
+  const legR = leg(0.1, 0.85, cream); legR.position.set(0, 0.95, -0.15);
+  b.add(legL, legR);
+  const torso = new THREE.Group(); torso.position.y = 1.0;
+  const chest = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.29, 0.58, 10), pbr(accent, 0.75));
+  chest.position.y = 0.32; torso.add(chest);
+  const sash = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.09, 10), pbr(GOLD, 0.6));
+  sash.position.y = -0.1; sash.rotation.x = 0.35; torso.add(sash);
+  b.add(torso);
+  const buckler = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.06, 12), pbr(STEEL, 0.4));
+  buckler.rotation.x = Math.PI / 2;
+  const armL = arm(0.085, 0.58, cream, buckler); armL.position.set(0, 1.5, 0.34);
+  const armR = arm(0.085, 0.58, cream, sword(0.7)); armR.position.set(0, 1.5, -0.34);
+  b.add(armL, armR);
+  const head = new THREE.Group(); head.position.y = 1.84;
+  head.add(new THREE.Mesh(new THREE.SphereGeometry(0.21, 14, 12), pbr(SKIN, 0.75)));
+  eyes(head, 0.0, 0.17, 0.1);
+  const cap = new THREE.Mesh(new THREE.SphereGeometry(0.22, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2),
+    pbr(accent, 0.8));
+  cap.position.y = 0.08; head.add(cap);
+  const feather = new THREE.Mesh(new THREE.ConeGeometry(0.05, 0.4, 6), pbr('#e8e0d0', 0.8));
+  feather.position.set(-0.12, 0.32, 0); feather.rotation.z = 0.5; head.add(feather);
+  b.add(head);
+  return { body: b, legL, legR, armL, armR, head, height: 2.1 };
+}
+
+function buildMusketeer(accent) {
+  const b = new THREE.Group();
+  const coat = pbr(accent, 0.85);
+  const legL = leg(0.1, 0.85, pbr('#3a3028', 0.9)); legL.position.set(0, 0.95, 0.15);
+  const legR = leg(0.1, 0.85, pbr('#3a3028', 0.9)); legR.position.set(0, 0.95, -0.15);
+  b.add(legL, legR);
+  const torso = new THREE.Group(); torso.position.y = 1.0;
+  const chest = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.3, 0.6, 10), coat);
+  chest.position.y = 0.32; torso.add(chest);
+  const bandolier = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.7, 0.12), pbr('#d8c8a8', 0.85));
+  bandolier.position.set(0.27, 0.32, 0); bandolier.rotation.z = 0.5; torso.add(bandolier);
+  b.add(torso);
+  const armL = arm(0.09, 0.6, coat); armL.position.set(0, 1.52, 0.35);
+  const armR = arm(0.09, 0.6, coat, musket()); armR.position.set(0, 1.52, -0.35);
+  b.add(armL, armR);
+  const head = new THREE.Group(); head.position.y = 1.86;
+  head.add(new THREE.Mesh(new THREE.SphereGeometry(0.22, 14, 12), pbr(SKIN, 0.75)));
+  eyes(head, 0.0, 0.17, 0.1);
+  const hat = tricorn(accent); hat.position.y = 0.24; head.add(hat);
+  b.add(head);
+  return { body: b, legL, legR, armL, armR, head, height: 2.15 };
+}
+
+function buildCannoneer(accent) {
+  const b = new THREE.Group();
+  const apron = pbr('#4a3826', 0.95);
+  const legL = leg(0.11, 0.85, pbr('#3a3028', 0.9)); legL.position.set(-0.35, 0.95, 0.16);
+  const legR = leg(0.11, 0.85, pbr('#3a3028', 0.9)); legR.position.set(-0.35, 0.95, -0.16);
+  b.add(legL, legR);
+  const torso = new THREE.Group(); torso.position.set(-0.35, 1.0, 0);
+  const chest = new THREE.Mesh(new THREE.CylinderGeometry(0.27, 0.31, 0.62, 10), apron);
+  chest.position.y = 0.33; torso.add(chest);
+  b.add(torso);
+  const rod = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.9, 6), pbr(WOOD, 0.9));
+  rod.position.y = -0.5;
+  const armL = arm(0.095, 0.6, apron); armL.position.set(-0.35, 1.52, 0.36);
+  const armR = arm(0.095, 0.6, apron, rod); armR.position.set(-0.35, 1.52, -0.36);
+  b.add(armL, armR);
+  const head = new THREE.Group(); head.position.set(-0.35, 1.88, 0);
+  head.add(new THREE.Mesh(new THREE.SphereGeometry(0.22, 14, 12), pbr(SKIN, 0.75)));
+  eyes(head, 0.0, 0.17, 0.1);
+  const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.2, 0.16, 10), pbr(accent, 0.8));
+  cap.position.y = 0.24; head.add(cap);
+  b.add(head);
+  const gun = fieldGun(1.1, 0.14);
+  gun.position.set(0.75, 0, 0);
+  b.add(gun);
+  return { body: b, legL, legR, armL, armR, head, height: 2.2 };
+}
+
+function buildWarEngineer(accent) {
+  const b = new THREE.Group();
+  const coat = pbr('#3a2a4a', 0.85);
+  const legL = leg(0.12, 0.9, pbr('#2a2018', 0.9)); legL.position.set(-0.5, 1.0, 0.17);
+  const legR = leg(0.12, 0.9, pbr('#2a2018', 0.9)); legR.position.set(-0.5, 1.0, -0.17);
+  b.add(legL, legR);
+  const torso = new THREE.Group(); torso.position.set(-0.5, 1.05, 0);
+  const chest = new THREE.Mesh(new THREE.CylinderGeometry(0.29, 0.34, 0.68, 12), coat);
+  chest.position.y = 0.36; torso.add(chest);
+  const trim = new THREE.Mesh(new THREE.TorusGeometry(0.31, 0.04, 8, 18), pbr(GOLD, 0.5));
+  trim.rotation.x = Math.PI / 2; trim.position.y = 0.62; torso.add(trim);
+  b.add(torso);
+  const armL = arm(0.1, 0.65, coat); armL.position.set(-0.5, 1.64, 0.38);
+  const armR = arm(0.1, 0.65, coat, musket()); armR.position.set(-0.5, 1.64, -0.38);
+  b.add(armL, armR);
+  const head = new THREE.Group(); head.position.set(-0.5, 2.0, 0);
+  head.add(new THREE.Mesh(new THREE.SphereGeometry(0.24, 14, 12), pbr(SKIN, 0.75)));
+  eyes(head, 0.02, 0.19, 0.11);
+  const hat = tricorn(GOLD); hat.position.y = 0.26; head.add(hat);
+  b.add(head);
+  const mortar = fieldGun(0.8, 0.24);
+  mortar.position.set(0.7, 0, 0);
+  b.add(mortar);
+  const aura = new THREE.Mesh(
+    new THREE.TorusGeometry(1.0, 0.05, 8, 32),
+    glowMat('#ffd23a', 0.55)
+  );
+  aura.rotation.x = Math.PI / 2; aura.position.y = 0.08;
+  b.add(aura);
+  return { body: b, legL, legR, armL, armR, head, height: 2.6, aura };
+}
+
 const BUILDERS = {
   0: { melee: buildClubman, ranged: buildSlinger, fast: buildDinoRider },
   1: { melee: buildSwordsman, ranged: buildArcher, fast: buildKnight },
+  2: { melee: buildDueler, ranged: buildMusketeer, siege: buildCannoneer },
 };
-const HEROES = { 0: buildShaman, 1: buildPaladin };
+const HEROES = { 0: buildShaman, 1: buildPaladin, 2: buildWarEngineer };
 
 export function UnitMesh(entity, ageIndex) {
   // Unknown ages reuse the Stone rigs so evolve never renders a missing mesh.
-  const age = ageIndex === 1 ? 1 : 0;
+  const age = BUILDERS[ageIndex] ? ageIndex : 0;
   const accent = SIDE_ACCENT[entity.side] || SIDE_ACCENT.player;
   const rig = entity.isHero ? (HEROES[age] || buildShaman)(accent)
     : ((BUILDERS[age] || BUILDERS[0])[entity.type] || buildClubman)(accent);

@@ -16,11 +16,12 @@ import {
 // Contract: TurretMesh(turret, ageIndex) -> { mesh, aimAt(x,y,z), dispose() }
 // Extras: update(dt) (recoil/flash decay), fire() (recoil + muzzle flash),
 // kind (projectile kind), muzzle (Object3D at the barrel tip).
-// Builders branch on ageIndex (1 = Castle); unknown ages fall back to Stone.
+// Builders branch on ageIndex (0 Stone, 1 Castle, 2 Renaissance); unknown ages fall back to Stone.
 
 export const TURRET_PROJECTILE = [
   ['rock', 'egg', 'boulder'],
   ['boulder', 'fireball', 'oil'],
+  ['cannonball', 'cannonball', 'shell'],
 ];
 
 const WOOD = '#6e4a2c';
@@ -351,14 +352,103 @@ function buildOilTower(accent) {
   return { root, head, arm, muzzle, flash, height: 5.2 };
 }
 
+// Renaissance gun redoubt shared by all three cannon turrets: stone
+// platform, low parapet ring, wheeled barrel aimed skyward. The barrel group
+// is the recoil arm (armAxis 'throw', rest 0) so fire() kicks it upward.
+function gunRedoubt(accent, barrelLen, barrelR, elevation) {
+  const root = new THREE.Group();
+  root.add(stonePlatform(1.8));
+  const head = new THREE.Group();
+  head.position.y = 1.0;
+  const parapet = new THREE.Mesh(new THREE.CylinderGeometry(1.9, 1.9, 0.7, 14, 1, true),
+    pbr(STONE_T, 0.9));
+  parapet.material = parapet.material.clone();
+  parapet.material.side = THREE.DoubleSide;
+  parapet.position.y = 1.15;
+  head.add(parapet);
+  crenelRing(head, 1.9, 1.65, pbr(STONE_DK, 0.95), 12);
+  const trim = new THREE.Mesh(new THREE.TorusGeometry(1.9, 0.07, 8, 18), pbr(accent, 0.6));
+  trim.rotation.x = Math.PI / 2;
+  trim.position.y = 0.85;
+  head.add(trim);
+  const arm = new THREE.Group();
+  arm.position.set(-0.3, 1.3, 0);
+  const wheelM = pbr(WOOD_DK, 0.9);
+  for (const s of [-1, 1]) {
+    const wheel = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 0.12, 12), wheelM);
+    wheel.rotation.x = Math.PI / 2;
+    wheel.position.set(0, -0.45, s * 0.42);
+    arm.add(wheel);
+  }
+  const barrel = new THREE.Mesh(new THREE.CylinderGeometry(barrelR * 0.8, barrelR, barrelLen, 12),
+    pbr(IRON, 0.45, 0.75));
+  barrel.rotation.z = -Math.PI / 2 + elevation;
+  barrel.position.set(Math.cos(elevation) * barrelLen / 2, Math.sin(elevation) * barrelLen / 2 - 0.1, 0);
+  arm.add(barrel);
+  head.add(arm);
+  root.add(head);
+  return { root, head, arm };
+}
+
+// 0 — Small Cannon (Renaissance)
+function buildSmallCannon(accent) {
+  const { root, head, arm } = gunRedoubt(accent, 1.6, 0.16, 0.22);
+  shotPile(head, -1.2, 0.9, pbr(IRON, 0.45, 0.75), 0.22, 3);
+  const muzzle = new THREE.Object3D();
+  muzzle.position.set(1.35, 1.75, 0);
+  arm.add(muzzle);
+  const flash = flashSprite(1.2);
+  flash.position.copy(muzzle.position);
+  arm.add(flash);
+  return { root, head, arm, muzzle, flash, height: 4.6, restArmZ: 0, armAxis: 'throw' };
+}
+
+// 1 — Large Cannon (Renaissance): longer banded barrel, heavier shot
+function buildLargeCannon(accent) {
+  const { root, head, arm } = gunRedoubt(accent, 2.4, 0.22, 0.2);
+  for (const bx of [-0.5, 0.3]) {
+    const band = new THREE.Mesh(new THREE.TorusGeometry(0.24, 0.045, 8, 14), pbr('#1a1a20', 0.5, 0.7));
+    band.rotation.y = Math.PI / 2;
+    band.position.set(bx, 0.35, 0);
+    arm.add(band);
+  }
+  shotPile(head, -1.2, 0.9, pbr(IRON, 0.45, 0.75), 0.28, 3);
+  const muzzle = new THREE.Object3D();
+  muzzle.position.set(1.85, 1.85, 0);
+  arm.add(muzzle);
+  const flash = flashSprite(1.5);
+  flash.position.copy(muzzle.position);
+  arm.add(flash);
+  return { root, head, arm, muzzle, flash, height: 4.8, restArmZ: 0, armAxis: 'throw' };
+}
+
+// 2 — Explosive Cannon (Renaissance): squat mortar, powder kegs, shell pile
+function buildExplosiveCannon(accent) {
+  const { root, head, arm } = gunRedoubt(accent, 1.0, 0.32, 0.55);
+  for (const [kx, kz] of [[-1.2, -0.8], [-1.2, 0.9]]) {
+    const keg = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 0.5, 10), pbr(WOOD, 0.9));
+    keg.position.set(kx, 1.15, kz);
+    head.add(keg);
+  }
+  shotPile(head, -0.4, 1.1, pbr('#3a3028', 0.5), 0.26, 3);
+  const muzzle = new THREE.Object3D();
+  muzzle.position.set(0.75, 2.1, 0);
+  arm.add(muzzle);
+  const flash = flashSprite(1.7);
+  flash.position.copy(muzzle.position);
+  arm.add(flash);
+  return { root, head, arm, muzzle, flash, height: 4.8, restArmZ: 0, armAxis: 'throw' };
+}
+
 const BUILDERS = {
   0: [buildSlingshot, buildEgg, buildCatapult],
   1: [buildMilCatapult, buildFireCatapult, buildOilTower],
+  2: [buildSmallCannon, buildLargeCannon, buildExplosiveCannon],
 };
 
 export function TurretMesh(turret, ageIndex) {
   const accent = SIDE_ACCENT[turret.side] || SIDE_ACCENT.player;
-  const row = BUILDERS[ageIndex === 1 ? 1 : 0] || BUILDERS[0];
+  const row = BUILDERS[ageIndex] || BUILDERS[0];
   const rig = (row[turret.turretIndex] || BUILDERS[0][0])(accent);
 
   const mesh = new THREE.Group();
@@ -390,7 +480,7 @@ export function TurretMesh(turret, ageIndex) {
 
   return {
     mesh,
-    kind: ((TURRET_PROJECTILE[ageIndex === 1 ? 1 : 0] || TURRET_PROJECTILE[0])[turret.turretIndex]) || 'rock',
+    kind: ((TURRET_PROJECTILE[ageIndex] || TURRET_PROJECTILE[0])[turret.turretIndex]) || 'rock',
     muzzle: rig.muzzle,
     aimAt(x, y, z) {
       rig.muzzle.getWorldPosition(_v);

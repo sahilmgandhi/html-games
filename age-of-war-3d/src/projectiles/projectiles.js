@@ -4,7 +4,9 @@ import { pbr, glowMat, glowSprite, solidify, disposeDeep } from '../core/pbr.js'
 // Pooled 3D projectiles. Stone kinds: 'rock' (sling stone), 'egg' (white,
 // wobbles), 'boulder' (catapult shot, burning trail, splash). Castle kinds:
 // 'arrow' (archer shaft, pale streak), 'fireball' (burning shot, long flame
-// trail), 'oil' (dark glossy glob, sickly trail, splash).
+// trail), 'oil' (dark glossy glob, sickly trail, splash). Renaissance kinds:
+// 'musketball' (fast bright tracer), 'cannonball' (iron ball, grey smoke
+// trail), 'shell' (explosive shot, spark trail, splash).
 //
 // Contract: ProjectileMesh(kind) -> { mesh, update(dt), dispose() }
 // The battle sync sets mesh.position each frame; update() derives velocity
@@ -28,10 +30,14 @@ const KIND_STYLE = {
   arrow: { build: null, trailColor: '#ffe9b8', trailLen: 1.4, glowScale: 0.5, spin: 0 },
   fireball: { build: null, trailColor: '#ff7a2a', trailLen: 2.4, glowScale: 1.8, spin: 7 },
   oil: { build: null, trailColor: '#6a7a2a', trailLen: 1.2, glowScale: 0.9, spin: 5 },
+  musketball: { build: null, trailColor: '#fff2b8', trailLen: 1.8, glowScale: 0.6, spin: 0 },
+  cannonball: { build: null, trailColor: '#9a9aa2', trailLen: 1.6, glowScale: 0.7, spin: 8 },
+  shell: { build: null, trailColor: '#ff9a3a', trailLen: 2.0, glowScale: 1.4, spin: 6 },
 };
 
 const GLOW_COLOR = {
   boulder: '#ff9a3a', fireball: '#ff6a2a', oil: '#8a9a3a',
+  musketball: '#fff2b8', cannonball: '#c8c8d0', shell: '#ff8a3a',
 };
 
 function buildCore(kind) {
@@ -83,6 +89,28 @@ function buildCore(kind) {
     const sheen = new THREE.Mesh(new THREE.SphereGeometry(0.09, 8, 6), pbr('#6a7a3a', 0.4));
     sheen.position.set(0.12, 0.12, 0.1);
     g.add(sheen);
+    return g;
+  }
+  if (kind === 'musketball') {
+    // tiny bright slug; spin 0, the streak carries the motion
+    const g = new THREE.Group();
+    const slug = new THREE.Mesh(new THREE.SphereGeometry(0.07, 8, 6), pbr('#d8d0b8', 0.4));
+    slug.scale.set(2.2, 1, 1);
+    g.add(slug);
+    return g;
+  }
+  if (kind === 'cannonball') {
+    const g = new THREE.Group();
+    g.add(new THREE.Mesh(new THREE.SphereGeometry(0.3, 12, 10), pbr('#2a2a30', 0.45)));
+    const band = new THREE.Mesh(new THREE.TorusGeometry(0.3, 0.03, 6, 14), pbr('#4a4a52', 0.5));
+    band.rotation.set(0.7, 0.4, 0);
+    g.add(band);
+    return g;
+  }
+  if (kind === 'shell') {
+    const g = new THREE.Group();
+    g.add(new THREE.Mesh(new THREE.SphereGeometry(0.28, 12, 10), pbr('#3a3028', 0.5)));
+    g.add(new THREE.Mesh(new THREE.SphereGeometry(0.12, 8, 6), glowMat('#ff8a3a', 0.95)));
     return g;
   }
   return new THREE.Mesh(rockGeo(0.16, 1), pbr('#8d8d94', 0.85));

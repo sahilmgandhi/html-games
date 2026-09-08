@@ -15,6 +15,7 @@ const allocId = () => _nextId++;
 // never produces an unrenderable kind.
 export function unitProjectileKind(ageIndex, type) {
   if (ageIndex === 1) return 'arrow'; // Castle archers; melee/fast never call this
+  if (ageIndex === 2) return type === 'ranged' ? 'musketball' : 'cannonball'; // Musketeer / Cannoneer, War Engineer
   if (type === 'siege' || type === 'armored' || type === 'elite') return 'boulder';
   return 'rock';
 }
@@ -22,6 +23,7 @@ export function unitProjectileKind(ageIndex, type) {
 const TURRET_KINDS = [
   ['rock', 'egg', 'boulder'], // 0 Stone: slingshot, egg thrower, catapult
   ['boulder', 'fireball', 'oil'], // 1 Castle: catapult, fire catapult, oil pourer
+  ['cannonball', 'cannonball', 'shell'], // 2 Renaissance: small/large/explosive cannon
 ];
 
 export function turretProjectileKind(ageIndex, turretIndex) {

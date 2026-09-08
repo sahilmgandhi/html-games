@@ -175,6 +175,9 @@ function buildStoneHold(accent, mirror, side) {
 
 const CASTLE_STONE = '#8d8d94';
 const CASTLE_DK = '#6e6e76';
+const REN_PLASTER = '#c8a878';
+const REN_TRIM = '#a85a3a';
+const REN_DOME = '#3f7a5e';
 const IRON = '#5a6068';
 
 function crenellate(g, w, d, y, mat) {
@@ -351,15 +354,122 @@ function buildCastleKeep(accent, mirror) {
   };
 }
 
+function buildRenaissancePalazzo(accent, mirror) {
+  const mesh = new THREE.Group();
+  const plaster = pbr(REN_PLASTER, 0.95);
+  const trim = pbr(REN_TRIM, 0.9);
+  const stoneDk = pbr(CASTLE_DK, 0.95);
+
+  // rusticated stone base + plaster piano nobile
+  const base = new THREE.Mesh(new THREE.BoxGeometry(4.2, 1.6, 4.2), stoneDk);
+  base.position.y = 0.8;
+  mesh.add(base);
+  const piano = new THREE.Mesh(new THREE.BoxGeometry(3.8, 2.6, 3.8), plaster);
+  piano.position.y = 2.9;
+  mesh.add(piano);
+  const cornice = new THREE.Mesh(new THREE.BoxGeometry(4.2, 0.3, 4.2), trim);
+  cornice.position.y = 4.35;
+  mesh.add(cornice);
+  // corner bastions with little domes
+  for (const sx of [-1, 1]) {
+    for (const sz of [-1, 1]) {
+      const bast = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.65, 2.2, 10), stoneDk);
+      bast.position.set(sx * 1.9 * mirror, 1.1, sz * 1.9);
+      mesh.add(bast);
+      const cap = new THREE.Mesh(new THREE.SphereGeometry(0.55, 10, 8, 0, Math.PI * 2, 0, Math.PI / 2),
+        pbr(REN_DOME, 0.7));
+      cap.position.set(sx * 1.9 * mirror, 2.2, sz * 1.9);
+      mesh.add(cap);
+    }
+  }
+  // central drum + verdigris dome
+  const drum = new THREE.Mesh(new THREE.CylinderGeometry(1.1, 1.1, 1.0, 12), plaster);
+  drum.position.y = 5.0;
+  mesh.add(drum);
+  const dome = new THREE.Mesh(new THREE.SphereGeometry(1.1, 14, 10, 0, Math.PI * 2, 0, Math.PI / 2),
+    pbr(REN_DOME, 0.65));
+  dome.position.y = 5.5;
+  mesh.add(dome);
+  // lit arcade windows facing the field (+x), out below 33%
+  const windows = [];
+  const winM = new THREE.MeshBasicMaterial({ color: '#ffca6a' });
+  for (const wy of [2.4, 3.4]) {
+    for (const off of [-1.1, 0, 1.1]) {
+      const w = new THREE.Mesh(new THREE.PlaneGeometry(0.45, 0.7), winM);
+      w.position.set(1.92 * mirror, wy, off);
+      w.rotation.y = mirror > 0 ? Math.PI / 2 : -Math.PI / 2;
+      mesh.add(w);
+      windows.push(w);
+    }
+  }
+  // arched gate with torches
+  const opening = new THREE.Mesh(new THREE.PlaneGeometry(1.4, 1.5),
+    new THREE.MeshBasicMaterial({ color: '#0a0a12' }));
+  opening.position.set(2.12 * mirror, 0.85, 0);
+  opening.rotation.y = mirror > 0 ? Math.PI / 2 : -Math.PI / 2;
+  mesh.add(opening);
+  const torches = [];
+  for (const s of [-1, 1]) {
+    const br = brazier(stoneDk);
+    br.group.position.set(2.2 * mirror, 0.4, s * 1.8);
+    mesh.add(br.group);
+    torches.push(br);
+  }
+  // war banner on the cornice, hoist pinned to the pole
+  const bannerPole = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.09, 2.4, 8), pbr(WOOD_DK, 0.9));
+  bannerPole.position.set(-1.0 * mirror, 5.6, 1.2);
+  mesh.add(bannerPole);
+  const cloth = makeCloth(1.6, 0.95, 6, pbr(accent, 0.75));
+  const flag = cloth.mesh;
+  flag.position.set(-1.0 * mirror, 6.45, 1.2);
+  if (mirror < 0) flag.rotation.y = Math.PI;
+  mesh.add(flag);
+
+  const dmg2 = rubble(stoneDk);
+  const dmg1 = new THREE.Group(); // < 33%: windows out, one torch out, banner torn
+  const fallen = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.5, 0.6), trim);
+  fallen.position.set(2.4 * mirror, 0.7, -2.4);
+  fallen.rotation.set(0.3, 0.6, 0.2);
+  dmg1.add(fallen);
+  mesh.add(dmg2, dmg1);
+  dmg2.visible = false;
+  dmg1.visible = false;
+
+  let t = Math.random() * 10;
+  return {
+    group: mesh,
+    setHp(f) {
+      dmg2.visible = f < 0.66;
+      dmg1.visible = f < 0.33;
+      for (const w of windows) w.visible = f > 0.33;
+      torches[1].flame.visible = f > 0.33;
+      torches[1].ember.visible = f > 0.33;
+      const s = 0.55 + f * 0.45;
+      flag.scale.set(s, f < 0.33 ? 0.7 : 1, 1);
+    },
+    update(dt) {
+      t += dt;
+      cloth.update(t);
+      for (const br of torches) {
+        if (!br.flame.visible) continue;
+        const k = 1 + Math.sin(t * 13 + br.group.position.z) * 0.15;
+        br.flame.scale.set(1 / Math.sqrt(k), k, 1 / Math.sqrt(k));
+      }
+    },
+  };
+}
+
 export function BaseMesh(side, ageIndex) {
   // Unknown ages reuse the Stone hold so evolve never renders a missing mesh.
   const accent = SIDE_ACCENT[side] || SIDE_ACCENT.player;
   const mirror = side === 'player' ? 1 : -1;
 
   const mesh = new THREE.Group();
-  const inner = ageIndex === 1
-    ? buildCastleKeep(accent, mirror)
-    : buildStoneHold(accent, mirror, side);
+  const inner = ageIndex === 2
+    ? buildRenaissancePalazzo(accent, mirror)
+    : ageIndex === 1
+      ? buildCastleKeep(accent, mirror)
+      : buildStoneHold(accent, mirror, side);
   mesh.add(inner.group);
 
   // HP bar rides over the stronghold, Clash-style
