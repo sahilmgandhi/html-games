@@ -31,8 +31,10 @@ function araucaria(rng) {
   const tiers = 3 + Math.floor(rng() * 2);
   for (let i = 0; i < tiers; i++) {
     const r = (1.7 - i * 0.32) * (0.9 + rng() * 0.2);
-    const cone = new THREE.Mesh(new THREE.ConeGeometry(r, 1.1, 9),
-      pbr(i % 2 ? PINE : PINE_DK, 0.9));
+    const tierGeo = new THREE.ConeGeometry(r, 1.1, 9);
+    jitterGeo(tierGeo, 0.06, 3, h * 10 + i);
+    const cone = new THREE.Mesh(tierGeo,
+      pbr(i === 0 ? PINE_DK : (i % 2 ? PINE : PINE_DK), 0.9));
     cone.position.y = h * 0.55 + i * 0.85;
     g.add(cone);
   }
@@ -68,17 +70,17 @@ function fernTuft(rng) {
 function mesa(w, h, d, mat) {
   const g = new THREE.Group();
   const baseGeo = new THREE.CylinderGeometry(w * 0.42, w * 0.62, h, 9);
-  jitterGeo(baseGeo, 0.1, 1.8, w);
+  jitterGeo(baseGeo, 0.16, 1.8, w);
   const base = new THREE.Mesh(baseGeo, mat);
   base.position.y = h / 2 - 0.5;
   g.add(base);
   const capGeo = new THREE.CylinderGeometry(w * 0.4, w * 0.37, h * 0.22, 9);
-  jitterGeo(capGeo, 0.08, 2.2, w + 3);
+  jitterGeo(capGeo, 0.14, 2.2, w + 3);
   const cap = new THREE.Mesh(capGeo, pbr(MESA_DK, 0.95));
   cap.position.y = h - 0.5;
   g.add(cap);
   // strata bands break the cooling-tower smoothness
-  for (const f of [0.35, 0.62]) {
+  for (const f of [0.3, 0.5, 0.7]) {
     const r = w * (0.62 - 0.2 * f) + 0.12;
     const band = new THREE.Mesh(
       new THREE.CylinderGeometry(r - 0.02, r + 0.02, h * 0.07, 9),
@@ -281,9 +283,11 @@ function cypress(rng) {
   const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.18, 1.2, 6), pbr(TRUNK, 0.95));
   trunk.position.y = 0.6;
   g.add(trunk);
-  for (const [r, y] of [[0.75, 0.62], [0.55, 0.82], [0.3, 0.97]]) {
-    const c = new THREE.Mesh(new THREE.ConeGeometry(r * (0.9 + rng() * 0.2), h * 0.42, 7),
-      pbr(rng() > 0.5 ? CYPRESS : '#35522e', 0.95));
+  for (const [r, y, dk] of [[0.75, 0.62, true], [0.55, 0.82, false], [0.3, 0.97, false]]) {
+    const cypGeo = new THREE.ConeGeometry(r * (0.9 + rng() * 0.2), h * 0.42, 7);
+    jitterGeo(cypGeo, 0.05, 3, h * 7 + y * 100);
+    const c = new THREE.Mesh(cypGeo,
+      pbr(dk ? '#243a20' : (rng() > 0.5 ? CYPRESS : '#35522e'), 0.95));
     c.position.y = h * y;
     g.add(c);
   }
