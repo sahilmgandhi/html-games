@@ -2,7 +2,8 @@
   "name": "html-games",
   "private": true,
   "workspaces": [
-    "age-of-war"
+    "age-of-war",
+    "age-of-war-3d"
   ],
   "scripts": {
     "test": "npm test --workspaces --if-present",
