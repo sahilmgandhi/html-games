@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { toMeters } from '../simulation/config.js';
 import {
-  pbr, basic, glowMat, solidify, cloneMats, makeHpBar, disposeDeep, SIDE_ACCENT,
+  pbr, basic, glowMat, solidify, cloneMats, makeHpBar, teamRing, disposeDeep, SIDE_ACCENT,
 } from '../core/pbr.js';
 
 // Procedural units, Clash-Royale chunky style, one builder set per age
@@ -930,6 +930,7 @@ export function UnitMesh(entity, ageIndex) {
   for (const m of mats) {
     if ('emissive' in m) { m.emissive = new THREE.Color('#000000'); m.transparent = true; }
   }
+  mesh.add(teamRing(THREE.MathUtils.clamp(rig.height * 0.35, 0.5, 1.5), accent));
 
   let facing = entity.side === 'player' ? 0 : Math.PI;
   mesh.rotation.y = facing;

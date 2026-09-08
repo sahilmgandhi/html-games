@@ -166,8 +166,25 @@ export function makeCloth(w, h, segW, mat) {
   };
 }
 
-export function disposeDeep(root) {
-  root.traverse((o) => {
+// Flat team-color ground ring for unit/turret/base readability. Basic
+// material ignores light and shadow, so it never darkens the ground or
+// casts; add AFTER solidify() so it keeps castShadow off.
+export function teamRing(radius, color, opacity = 0.8) {
+  const mesh = new THREE.Mesh(
+    new THREE.RingGeometry(radius * 0.82, radius, 40),
+    new THREE.MeshBasicMaterial({
+      color, transparent: true, opacity, side: THREE.DoubleSide, depthWrite: false,
+    })
+  );
+  mesh.rotation.x = -Math.PI / 2;
+  mesh.position.y = 0.07;
+  mesh.castShadow = false;
+  mesh.receiveShadow = false;
+  mesh.renderOrder = 1;
+  return mesh;
+}
+
+export function disposeDeep(root) {  root.traverse((o) => {
     if (o.isMesh) {
       o.geometry?.dispose?.();
       const m = o.material;

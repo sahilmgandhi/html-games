@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import {
-  pbr, basic, glowMat, glowSprite, solidify, cloneMats, makeHpBar, makeCloth, disposeDeep, SIDE_ACCENT,
+  pbr, basic, glowMat, glowSprite, solidify, cloneMats, makeHpBar, makeCloth, teamRing, disposeDeep, SIDE_ACCENT,
 } from '../core/pbr.js';
 
 // Strongholds, one per age: Stone is a great-menhir core ringed by a timber
@@ -647,6 +647,7 @@ export function BaseMesh(side, ageIndex) {
   solidify(mesh);
   cloneMats(mesh);
   mesh.rotation.y = mirror > 0 ? 0 : Math.PI;
+  mesh.add(teamRing([5.2, 6.2, 6.2, 5.4, 6.0][ageIndex] || 5.2, accent));
 
   return {
     mesh,

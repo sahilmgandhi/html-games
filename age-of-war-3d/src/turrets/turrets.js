@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { toMeters } from '../simulation/config.js';
 import {
-  pbr, basic, glowMat, glowSprite, solidify, cloneMats, makeHpBar, disposeDeep, SIDE_ACCENT,
+  pbr, basic, glowMat, glowSprite, solidify, cloneMats, makeHpBar, teamRing, disposeDeep, SIDE_ACCENT,
 } from '../core/pbr.js';
 
 // Stone Age turrets (by turretIndex):
@@ -685,6 +685,7 @@ export function TurretMesh(turret, ageIndex) {
   for (const m of mats) {
     if ('emissive' in m) { m.emissive = new THREE.Color('#000000'); m.transparent = true; }
   }
+  mesh.add(teamRing(2.3, accent));
 
   mesh.position.set(toMeters(turret.x) + slotOff(turret), 0, turret.z || 0);
   mesh.rotation.y = turret.side === 'player' ? 0 : Math.PI;
