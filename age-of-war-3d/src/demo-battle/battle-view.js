@@ -80,6 +80,10 @@ export function attachBattleView(game, sim, fx) {
   const camGoal = new THREE.Vector3(12, 7, 17);
   const lookGoal = new THREE.Vector3(12, 1.5, 0);
   let camInit = false;
+  // Combat focus: recent hit/death positions pull the camera toward the
+  // action; decays back to the unit-midpoint fallback when combat goes quiet.
+  let focusX = CONFIG.WORLD.WIDTH / 2;
+  let focusTtl = 0;
 
   function burstAt(px, z, color, count, label, labelColor) {
     const mx = toMeters(px);
@@ -98,6 +102,10 @@ export function attachBattleView(game, sim, fx) {
       }
     }));
     unsubs.push(bus.on('projectile:hit', (hit) => {
+      if (hit && hit.entity) {
+        focusX = hit.entity.x;
+        focusTtl = Math.max(focusTtl, 1.2);
+      }
       if (!hit || hit.melee || !hit.entity) return;
       const e = hit.entity;
       const color = e.side === 'player' ? '#5aa0ff' : '#ff6a5a';
@@ -105,6 +113,8 @@ export function attachBattleView(game, sim, fx) {
     }));
     unsubs.push(bus.on('entity:death', (e) => {
       if (!e) return;
+      focusX = e.x;
+      focusTtl = Math.max(focusTtl, 2.5);
       const color = e.side === 'player' ? '#4a8af4' : '#f44a4a';
       burstAt(e.x, e.z || 0, color, 22);
       if (e instanceof Unit) burstAt(e.x, (e.z || 0) + 0.3, '#ffe98a', 6, `+${e.goldReward}`, '#ffe98a');
@@ -225,7 +235,8 @@ export function attachBattleView(game, sim, fx) {
     playerBase.update(dt);
     enemyBase.update(dt);
 
-    // Camera follows the midpoint of the action, clamped to the lane.
+    // Camera tracks combat: recent hits/deaths outweigh the unit midpoint,
+    // which remains the fallback when combat goes quiet. Clamped to the lane.
     let minX = sim.playerBase.x;
     let maxX = sim.enemyBase.x;
     let seen = false;
@@ -239,7 +250,9 @@ export function attachBattleView(game, sim, fx) {
     }
     const midPx = seen ? (minX + maxX) / 2 : CONFIG.WORLD.WIDTH / 2;
     const spreadPx = seen ? (maxX - minX) : CONFIG.WORLD.WIDTH;
-    const midM = toMeters(midPx);
+    focusTtl = Math.max(0, focusTtl - dt);
+    const anchorPx = focusTtl > 0 ? focusX * 0.65 + midPx * 0.35 : midPx;
+    const midM = toMeters(anchorPx);
     const dist = THREE.MathUtils.clamp(11 + toMeters(spreadPx) * 0.9, 13, 26);
     camGoal.set(
       THREE.MathUtils.clamp(midM, 5, 19),
@@ -252,8 +265,12 @@ export function attachBattleView(game, sim, fx) {
       cam.position.copy(camGoal);
       cam.lookAt(lookGoal);
       camInit = true;
+    } else if (Math.abs(camGoal.x - cam.position.x) > 9) {
+      // Far jump (e.g. action flared on the other half): snap, don't pan.
+      cam.position.copy(camGoal);
+      cam.lookAt(lookGoal);
     } else {
-      const k = Math.min(1, dt * 1.6);
+      const k = Math.min(1, dt * (focusTtl > 0 ? 3.0 : 2.0));
       cam.position.lerp(camGoal, k);
       const cur = new THREE.Vector3();
       cam.getWorldDirection(cur);
