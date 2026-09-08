@@ -140,6 +140,13 @@
     "future": "PASS: evolve x4->4, God's Blade/Blaster/War Machine/Super Soldier/Titan, Titanium/Lazer/Ion (slots), mine+barracks, Orbital Laser fired; 0 errors",
     "note": "all purchases/actions via real button clicks (whitespace-normalized matchers, 900ms re-render waits after XP/gold grants to avoid stale-disabled buttons); XP/gold grants are harness setup only; Stone victory/defeat/restart proven in earlier audits; sim win/lose path is age-agnostic"
   },
+  "dependencies": {
+    "note": "audited 2026-09-08 after user asked if libraries are latest; game source fixes never touched deps",
+    "three": "0.185.1 installed = latest, no change",
+    "playwright": "1.63.0 installed = latest, no change",
+    "canvas_2d": "3.2.3 installed = latest, no change",
+    "vite": "upgraded 6.4.3 -> 8.2.2; trivial config (no plugins) so zero code changes; verified via vite build (1.47s) + dev on :3002 (click-spawn 2 units, 61fps, 0 errors) + suites 156+36 green"
+  },
   "parity_score": 9,
   "pending": []
 }
