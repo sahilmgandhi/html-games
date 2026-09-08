@@ -10,6 +10,25 @@ import { dist } from './utils.js';
 let _nextId = 1;
 const allocId = () => _nextId++;
 
+// Projectile kind routing, sim-side: render only builds the mesh for the kind
+// string it receives. Unknown ages fall back to the Stone Age row so evolve
+// never produces an unrenderable kind.
+export function unitProjectileKind(ageIndex, type) {
+  if (ageIndex === 1) return 'arrow'; // Castle archers; melee/fast never call this
+  if (type === 'siege' || type === 'armored' || type === 'elite') return 'boulder';
+  return 'rock';
+}
+
+const TURRET_KINDS = [
+  ['rock', 'egg', 'boulder'], // 0 Stone: slingshot, egg thrower, catapult
+  ['boulder', 'fireball', 'oil'], // 1 Castle: catapult, fire catapult, oil pourer
+];
+
+export function turretProjectileKind(ageIndex, turretIndex) {
+  const row = TURRET_KINDS[ageIndex] || TURRET_KINDS[0];
+  return row[turretIndex] || 'rock';
+}
+
 export class SpatialHash {
   constructor(cellSize) {
     this.cellSize = cellSize;
@@ -247,8 +266,8 @@ export class Unit {
 
   attack(target, projectilePool) {
     if (this.type === 'ranged' || this.type === 'siege' || this.type === 'armored' || this.type === 'elite') {
-      // Heavy shot types loft burning boulders; light ranged units sling rocks.
-      const kind = (this.type === 'siege' || this.type === 'armored' || this.type === 'elite') ? 'boulder' : 'rock';
+      // Heavy Stone shot lofts burning boulders; light ranged units sling rocks.
+      const kind = unitProjectileKind(this.ageIndex, this.type);
       projectilePool.acquire(
         this.x, this.y - 10,
         target.x, target.y,
@@ -329,8 +348,8 @@ export class Turret {
     }
 
     if (closest && this.attackCooldown <= 0) {
-      // Mirrors TURRET_PROJECTILE in turrets/turrets.js (render layer).
-      const kind = ['rock', 'egg', 'boulder'][this.turretIndex] || 'rock';
+      // Mirrors the render layer (TURRET_PROJECTILE in turrets/turrets.js).
+      const kind = turretProjectileKind(this.ageIndex, this.turretIndex);
       projectilePool.acquire(
         this.x, this.y - 15,
         closest.x, closest.y,

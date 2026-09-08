@@ -1,13 +1,15 @@
 import * as THREE from 'three';
 import {
-  pbr, basic, glowMat, solidify, cloneMats, makeHpBar, makeCloth, disposeDeep, SIDE_ACCENT,
+  pbr, basic, glowMat, glowSprite, solidify, cloneMats, makeHpBar, makeCloth, disposeDeep, SIDE_ACCENT,
 } from '../core/pbr.js';
 
-// Stone Age stronghold: great-menhir core ringed by a timber palisade, skull
-// totems and a war banner in the owner's color. Faces +X for the player,
-// -X for the enemy (mirrored war paint).
+// Strongholds, one per age: Stone is a great-menhir core ringed by a timber
+// palisade, skull totems and a war banner; Castle is a crenellated keep with
+// corner turret, curtain wall, gatehouse and braziers. Both face +X for the
+// player, -X for the enemy, and fly the owner's color on shared cloth.
 //
-// Contract: BaseMesh(side, ageIndex) -> { mesh, setHp(frac), dispose() }
+// Contract: BaseMesh(side, ageIndex) -> { mesh, setHp(frac), update(dt), dispose() }
+// Unknown ages reuse the Stone hold so evolve never renders a missing mesh.
 
 const WOOD = '#8a5f36';
 const WOOD_DK = '#654522';
@@ -50,11 +52,7 @@ function skullTotem(h) {
   return g;
 }
 
-export function BaseMesh(side, ageIndex) {
-  void ageIndex;
-  const accent = SIDE_ACCENT[side] || SIDE_ACCENT.player;
-  const mirror = side === 'player' ? 1 : -1;
-
+function buildStoneHold(accent, mirror, side) {
   const mesh = new THREE.Group();
 
   // foundation mound
@@ -138,13 +136,7 @@ export function BaseMesh(side, ageIndex) {
   mesh.add(fire);
 
   // damage states: cracked slabs + fallen timber, revealed as HP drops
-  const dmg2 = new THREE.Group(); // < 66%: cracks + lean
-  for (let i = 0; i < 4; i++) {
-    const slab = new THREE.Mesh(new THREE.BoxGeometry(0.5 + i * 0.2, 0.4, 0.8), pbr(ROCK_DK, 0.95));
-    slab.position.set((Math.sin(i * 2.4) * 2.4), 0.75, Math.cos(i * 1.7) * 2.8);
-    slab.rotation.set(i, i * 2, 0.4);
-    dmg2.add(slab);
-  }
+  const dmg2 = rubble(pbr(ROCK_DK, 0.95)); // < 66%: cracks + lean
   const dmg1 = new THREE.Group(); // < 33%: banner torn, core tilted, fire out
   const fallen = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.24, 3.4, 7), palMatDk);
   fallen.position.set(2.2 * mirror, 0.9, -2.4);
@@ -167,10 +159,8 @@ export function BaseMesh(side, ageIndex) {
 
   let t = Math.random() * 10;
   return {
-    mesh,
-    setHp(frac) {
-      const f = THREE.MathUtils.clamp(frac, 0, 1);
-      bar.set(f);
+    group: mesh,
+    setHp(f) {
       dmg2.visible = f < 0.66;
       dmg1.visible = f < 0.33;
       core.rotation.z = f < 0.33 ? 0.06 : 0;
@@ -189,6 +179,216 @@ export function BaseMesh(side, ageIndex) {
       }
       rune.rotation.z = t * 0.4;
     },
+  };
+}
+
+const CASTLE_STONE = '#8d8d94';
+const CASTLE_DK = '#6e6e76';
+const IRON = '#5a6068';
+
+function crenellate(g, w, d, y, mat) {
+  const nx = Math.max(2, Math.round(w / 0.7));
+  const nz = Math.max(2, Math.round(d / 0.7));
+  for (let i = 0; i < nx; i++) {
+    for (const s of [-1, 1]) {
+      const m = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.4, 0.3), mat);
+      m.position.set(-w / 2 + (i + 0.5) * (w / nx), y, s * (d / 2));
+      g.add(m);
+    }
+  }
+  for (let i = 0; i < nz; i++) {
+    for (const s of [-1, 1]) {
+      const m = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.4, 0.4), mat);
+      m.position.set(s * (w / 2), y, -d / 2 + (i + 0.5) * (d / nz));
+      g.add(m);
+    }
+  }
+}
+
+function rubble(mat) {
+  const dmg2 = new THREE.Group();
+  for (let i = 0; i < 4; i++) {
+    const slab = new THREE.Mesh(new THREE.BoxGeometry(0.5 + i * 0.2, 0.4, 0.8), mat);
+    slab.position.set((Math.sin(i * 2.4) * 2.4), 0.75, Math.cos(i * 1.7) * 2.8);
+    slab.rotation.set(i, i * 2, 0.4);
+    dmg2.add(slab);
+  }
+  return dmg2;
+}
+
+function brazier(mat) {
+  const g = new THREE.Group();
+  const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.13, 1.0, 8), mat);
+  stem.position.y = 0.5; g.add(stem);
+  const bowl = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.2, 0.4, 10), mat);
+  bowl.position.y = 1.0; g.add(bowl);
+  const flame = new THREE.Mesh(new THREE.ConeGeometry(0.24, 0.7, 8), glowMat('#ff9a3a', 0.9));
+  flame.position.y = 1.5; g.add(flame);
+  const ember = new THREE.Mesh(new THREE.SphereGeometry(0.14, 8, 6), glowMat('#ffd23a', 0.9));
+  ember.position.y = 1.25; g.add(ember);
+  const halo = glowSprite('#ff9a3a', 0.5, 1.6);
+  halo.position.y = 1.5; g.add(halo);
+  return { group: g, flame, ember };
+}
+
+function buildCastleKeep(accent, mirror) {
+  const mesh = new THREE.Group();
+  const stone = pbr(CASTLE_STONE, 0.9);
+  const stoneDk = pbr(CASTLE_DK, 0.95);
+
+  // foundation platform
+  const mound = new THREE.Mesh(new THREE.CylinderGeometry(4.0, 4.8, 0.7, 18), stoneDk);
+  mound.position.y = 0.3;
+  mesh.add(mound);
+
+  // keep core with stone course bands
+  const keep = new THREE.Mesh(new THREE.BoxGeometry(3.2, 5.0, 3.2), stone);
+  keep.position.y = 3.15;
+  mesh.add(keep);
+  for (const y of [1.9, 3.6]) {
+    const band = new THREE.Mesh(new THREE.BoxGeometry(3.3, 0.22, 3.3), stoneDk);
+    band.position.y = y;
+    mesh.add(band);
+  }
+  crenellate(mesh, 3.2, 3.2, 5.85, stoneDk);
+
+  // corner turret with the owner's color on the cone roof
+  const turret = new THREE.Mesh(new THREE.CylinderGeometry(1.0, 1.1, 1.8, 12), stone);
+  turret.position.set(-0.9 * mirror, 6.4, -0.9);
+  mesh.add(turret);
+  const roof = new THREE.Mesh(new THREE.ConeGeometry(1.3, 1.2, 12), pbr(accent, 0.7));
+  roof.position.set(-0.9 * mirror, 7.9, -0.9);
+  mesh.add(roof);
+
+  // lit slit windows on the battlefield face, darkened as the keep falls
+  const windows = [];
+  for (const [wy, off] of [[4.6, -0.8], [4.6, 0.8], [3.4, 0]]) {
+    const w = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.5, 0.28), glowMat('#ffca5a', 0.9));
+    w.position.set(1.62 * mirror, wy, off);
+    mesh.add(w);
+    windows.push(w);
+  }
+
+  // heater shield in the owner's color over the gate
+  const shield = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.4, 0.15, 3), pbr(accent, 0.65));
+  shield.rotation.z = Math.PI / 2;
+  shield.position.set(1.65 * mirror, 5.3, 0);
+  mesh.add(shield);
+
+  // curtain wall arc facing the battlefield, gate in the middle
+  for (let i = -2; i <= 2; i++) {
+    if (i === 0) continue;
+    const a = (i / 2) * 0.55;
+    const seg = new THREE.Mesh(new THREE.BoxGeometry(0.6, 2.6, 1.7), (i % 2 ? stone : stoneDk));
+    seg.position.set(Math.cos(a) * 3.4 * mirror, 1.9, Math.sin(a) * 3.7);
+    seg.rotation.y = -a * mirror;
+    mesh.add(seg);
+    const cap = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.35, 1.8), stoneDk);
+    cap.position.set(Math.cos(a) * 3.4 * mirror, 3.35, Math.sin(a) * 3.7);
+    cap.rotation.y = -a * mirror;
+    mesh.add(cap);
+  }
+  // gatehouse: jambs + lintel + dark opening + portcullis bars
+  for (const s of [-1, 1]) {
+    const jamb = new THREE.Mesh(new THREE.BoxGeometry(0.7, 3.0, 0.6), stoneDk);
+    jamb.position.set(3.4 * mirror, 2.1, s * 1.0);
+    mesh.add(jamb);
+  }
+  const lintel = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.6, 2.6), stoneDk);
+  lintel.position.set(3.4 * mirror, 3.8, 0);
+  mesh.add(lintel);
+  const opening = new THREE.Mesh(new THREE.PlaneGeometry(1.4, 2.8), basic('#0a0a12'));
+  opening.position.set(3.35 * mirror, 2.0, 0);
+  opening.rotation.y = mirror > 0 ? Math.PI / 2 : -Math.PI / 2;
+  mesh.add(opening);
+  for (let i = -2; i <= 2; i++) {
+    const bar = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 2.6, 6), pbr(IRON, 0.6));
+    bar.position.set(3.28 * mirror, 2.0, i * 0.28);
+    mesh.add(bar);
+  }
+
+  // braziers flanking the gate
+  const braziers = [];
+  for (const s of [-1, 1]) {
+    const br = brazier(stoneDk);
+    br.group.position.set(2.4 * mirror, 0.6, s * 2.6);
+    mesh.add(br.group);
+    braziers.push(br);
+  }
+
+  // war banner on the keep, hoist pinned to the pole
+  const bannerPole = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.09, 2.6, 8), pbr(WOOD_DK, 0.9));
+  bannerPole.position.set(1.0 * mirror, 6.9, 1.0);
+  mesh.add(bannerPole);
+  const cloth = makeCloth(1.6, 0.95, 6, pbr(accent, 0.75));
+  const flag = cloth.mesh;
+  flag.position.set(1.0 * mirror, 7.85, 1.0);
+  if (mirror < 0) flag.rotation.y = Math.PI;
+  mesh.add(flag);
+
+  const dmg2 = rubble(stoneDk);
+  const dmg1 = new THREE.Group(); // < 33%: windows out, one brazier out, banner torn
+  const fallen = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.5, 0.6), stoneDk);
+  fallen.position.set(2.4 * mirror, 0.9, -2.6);
+  fallen.rotation.set(0.3, 0.6, 0.2);
+  dmg1.add(fallen);
+  mesh.add(dmg2, dmg1);
+  dmg2.visible = false;
+  dmg1.visible = false;
+
+  let t = Math.random() * 10;
+  return {
+    group: mesh,
+    setHp(f) {
+      dmg2.visible = f < 0.66;
+      dmg1.visible = f < 0.33;
+      for (const w of windows) w.visible = f > 0.33;
+      braziers[1].flame.visible = f > 0.33;
+      braziers[1].ember.visible = f > 0.33;
+      const s = 0.55 + f * 0.45;
+      flag.scale.set(s, f < 0.33 ? 0.7 : 1, 1);
+    },
+    update(dt) {
+      t += dt;
+      cloth.update(t);
+      for (const br of braziers) {
+        if (!br.flame.visible) continue;
+        const k = 1 + Math.sin(t * 13 + br.group.position.z) * 0.15;
+        br.flame.scale.set(1 / Math.sqrt(k), k, 1 / Math.sqrt(k));
+      }
+    },
+  };
+}
+
+export function BaseMesh(side, ageIndex) {
+  // Unknown ages reuse the Stone hold so evolve never renders a missing mesh.
+  const accent = SIDE_ACCENT[side] || SIDE_ACCENT.player;
+  const mirror = side === 'player' ? 1 : -1;
+
+  const mesh = new THREE.Group();
+  const inner = ageIndex === 1
+    ? buildCastleKeep(accent, mirror)
+    : buildStoneHold(accent, mirror, side);
+  mesh.add(inner.group);
+
+  // HP bar rides over the stronghold, Clash-style
+  const bar = makeHpBar(4.2);
+  bar.sprite.position.y = 8.4;
+  bar.set(1);
+  mesh.add(bar.sprite);
+
+  solidify(mesh);
+  cloneMats(mesh);
+  mesh.rotation.y = mirror > 0 ? 0 : Math.PI;
+
+  return {
+    mesh,
+    setHp(frac) {
+      const f = THREE.MathUtils.clamp(frac, 0, 1);
+      bar.set(f);
+      inner.setHp(f);
+    },
+    update(dt) { inner.update(dt); },
     dispose() {
       disposeDeep(mesh);
       bar.sprite.material.map?.dispose?.();

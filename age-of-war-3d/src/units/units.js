@@ -4,8 +4,10 @@ import {
   pbr, basic, glowMat, solidify, cloneMats, makeHpBar, disposeDeep, SIDE_ACCENT,
 } from '../core/pbr.js';
 
-// Procedural Stone Age units, Clash-Royale chunky style. Every model faces +X;
-// the outer group yaws PI for enemy units. Inner `body` group carries walk,
+// Procedural units, Clash-Royale chunky style, one builder set per age
+// (Stone: clubman/slinger/dino-rider/shaman; Castle: swordsman/archer/
+// knight/paladin). Every model faces +X; the outer group yaws PI for enemy
+// units. Inner `body` group carries walk,
 // attack and death poses so facing never fights animation.
 //
 // Contract: UnitMesh(entity, ageIndex) -> { mesh, update(dt, entity), dispose() }
@@ -242,13 +244,197 @@ function buildShaman(accent) {
   return { body: b, legL: null, legR: null, armL, armR, head, height: 2.4, aura };
 }
 
-const BUILDERS = { melee: buildClubman, ranged: buildSlinger, fast: buildDinoRider };
+// ---- Castle Age (age 1): plate, mail and heraldry in the same chunky idiom ----
+const STEEL = '#9aa0a8';
+const STEEL_DK = '#5a6068';
+const LEATHER = '#5a3d26';
+const GOLD = '#c9a13a';
+const PLUME = '#a83a3a';
+
+function sword(len = 0.85) {
+  const g = new THREE.Group();
+  const blade = new THREE.Mesh(new THREE.BoxGeometry(0.07, len, 0.11), pbr(STEEL, 0.3));
+  blade.position.y = -len / 2 - 0.1; g.add(blade);
+  const tip = new THREE.Mesh(new THREE.ConeGeometry(0.06, 0.16, 4), pbr(STEEL, 0.3));
+  tip.rotation.x = Math.PI; tip.position.y = -len - 0.18; g.add(tip);
+  const guard = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.06, 0.16), pbr(GOLD, 0.5));
+  guard.position.y = -0.08; g.add(guard);
+  return g;
+}
+
+function helm(head, accent, crest) {
+  const dome = new THREE.Mesh(new THREE.SphereGeometry(0.26, 14, 10, 0, Math.PI * 2, 0, Math.PI * 0.62), pbr(STEEL, 0.45));
+  dome.position.y = 0.04; head.add(dome);
+  const brim = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.06, 14), pbr(STEEL_DK, 0.6));
+  brim.position.y = 0.06; head.add(brim);
+  const nasal = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.22, 0.05), pbr(STEEL_DK, 0.6));
+  nasal.position.set(0.25, -0.06, 0); head.add(nasal);
+  const plume = new THREE.Mesh(new THREE.ConeGeometry(0.07, crest || 0.34, 6), pbr(crest ? GOLD : PLUME, 0.7));
+  plume.position.set(-0.05, 0.36, 0); plume.rotation.z = 0.3; head.add(plume);
+  const band = new THREE.Mesh(new THREE.CylinderGeometry(0.265, 0.265, 0.07, 14), pbr(accent, 0.6));
+  band.position.y = 0.1; head.add(band);
+}
+
+function buildSwordsman(accent) {
+  const b = new THREE.Group();
+  const steel = pbr(STEEL, 0.45);
+  const legL = leg(0.11, 0.85, steel); legL.position.set(0, 0.95, 0.16);
+  const legR = leg(0.11, 0.85, steel); legR.position.set(0, 0.95, -0.16);
+  b.add(legL, legR);
+  const torso = new THREE.Group(); torso.position.y = 1.0;
+  const chest = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.3, 0.6, 10), steel);
+  chest.position.y = 0.32; torso.add(chest);
+  const surcoat = new THREE.Mesh(new THREE.CylinderGeometry(0.31, 0.37, 0.42, 10), pbr(accent, 0.8));
+  surcoat.position.y = 0.02; torso.add(surcoat);
+  const belt = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.08, 10), pbr(LEATHER, 0.9));
+  belt.position.y = -0.14; torso.add(belt);
+  b.add(torso);
+  const shield = new THREE.Group();
+  const plate = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.34, 0.08, 14), pbr(accent, 0.6));
+  plate.rotation.x = Math.PI / 2; shield.add(plate);
+  const boss = new THREE.Mesh(new THREE.SphereGeometry(0.1, 10, 8), pbr(STEEL_DK, 0.5));
+  boss.position.z = 0.08; shield.add(boss);
+  const armL = arm(0.09, 0.6, steel, shield); armL.position.set(0, 1.52, 0.36);
+  const armR = arm(0.09, 0.6, steel, sword()); armR.position.set(0, 1.52, -0.36);
+  b.add(armL, armR);
+  const head = new THREE.Group(); head.position.y = 1.86;
+  head.add(new THREE.Mesh(new THREE.SphereGeometry(0.22, 14, 12), pbr(SKIN, 0.75)));
+  eyes(head, 0.0, 0.17, 0.11);
+  helm(head, accent);
+  b.add(head);
+  return { body: b, legL, legR, armL, armR, head, height: 2.15 };
+}
+
+function buildArcher(accent) {
+  const b = new THREE.Group();
+  const cloth = pbr('#4a5a3a', 0.9);
+  const legL = leg(0.09, 0.8, pbr(LEATHER, 0.9)); legL.position.set(0, 0.9, 0.14);
+  const legR = leg(0.09, 0.8, pbr(LEATHER, 0.9)); legR.position.set(0, 0.9, -0.14);
+  b.add(legL, legR);
+  const torso = new THREE.Group(); torso.position.y = 0.95;
+  const chest = new THREE.Mesh(new THREE.CylinderGeometry(0.19, 0.24, 0.58, 10), cloth);
+  chest.position.y = 0.3; torso.add(chest);
+  const strap = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.09, 0.12), pbr(accent, 0.7));
+  strap.position.set(0, 0.36, 0); strap.rotation.x = 0.5; torso.add(strap);
+  b.add(torso);
+  // quiver of arrows on the back
+  const quiver = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.07, 0.55, 8), pbr(LEATHER, 0.9));
+  quiver.position.set(-0.2, 1.35, 0.12); quiver.rotation.z = 0.35; b.add(quiver);
+  for (let i = 0; i < 3; i++) {
+    const tip = new THREE.Mesh(new THREE.ConeGeometry(0.03, 0.1, 5), pbr(STEEL, 0.4));
+    tip.position.set(-0.28 + i * 0.05, 1.66, 0.12); b.add(tip);
+  }
+  // longbow in the left hand, arc opening forward (+X)
+  const bow = new THREE.Group();
+  const arc = new THREE.Mesh(new THREE.TorusGeometry(0.38, 0.03, 6, 14, Math.PI), pbr(WOOD, 0.85));
+  arc.rotation.z = -Math.PI / 2; bow.add(arc);
+  const string = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, 0.76, 4), basic('#d8cfb8'));
+  string.position.x = 0; bow.add(string);
+  const armL = arm(0.075, 0.55, cloth, bow); armL.position.set(0, 1.44, 0.3);
+  const armR = arm(0.075, 0.55, cloth); armR.position.set(0, 1.44, -0.3);
+  b.add(armL, armR);
+  const head = new THREE.Group(); head.position.y = 1.74;
+  head.add(new THREE.Mesh(new THREE.SphereGeometry(0.2, 14, 12), pbr(SKIN, 0.75)));
+  const hood = new THREE.Mesh(new THREE.ConeGeometry(0.24, 0.42, 10), cloth);
+  hood.position.y = 0.2; head.add(hood);
+  eyes(head, 0.0, 0.16, 0.1);
+  b.add(head);
+  return { body: b, legL, legR, armL, armR, head, height: 2.0 };
+}
+
+function buildKnight(accent) {
+  const b = new THREE.Group();
+  const horse = pbr('#4a3428', 0.9);
+  const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.46, 1.5, 10), horse);
+  barrel.rotation.z = Math.PI / 2; barrel.position.y = 1.25; b.add(barrel);
+  const caparison = new THREE.Mesh(new THREE.CylinderGeometry(0.47, 0.51, 0.8, 10), pbr(accent, 0.85));
+  caparison.rotation.z = Math.PI / 2; caparison.position.set(-0.25, 1.25, 0); b.add(caparison);
+  const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.26, 0.7, 8), horse);
+  neck.position.set(0.85, 1.6, 0); neck.rotation.z = -0.6; b.add(neck);
+  const horseHead = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.28, 0.24), horse);
+  horseHead.position.set(1.15, 1.9, 0); b.add(horseHead);
+  const chamfron = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.2, 0.26), pbr(STEEL_DK, 0.6));
+  chamfron.position.set(1.2, 1.92, 0); b.add(chamfron);
+  const crest = new THREE.Mesh(new THREE.ConeGeometry(0.07, 0.4, 6), pbr(PLUME, 0.7));
+  crest.position.set(1.05, 2.2, 0); crest.rotation.z = -0.4; b.add(crest);
+  const tailM = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.7, 7), pbr('#2e2018', 0.95));
+  tailM.position.set(-0.95, 1.3, 0); tailM.rotation.z = 2.6; b.add(tailM);
+  // near-side legs trot (rig); far-side pair is static dressing
+  const legL = leg(0.09, 1.0, horse); legL.position.set(0.55, 1.0, 0.2);
+  const legR = leg(0.09, 1.0, horse); legR.position.set(-0.55, 1.0, 0.2);
+  const farL = leg(0.09, 1.0, horse); farL.position.set(0.55, 1.0, -0.2);
+  const farR = leg(0.09, 1.0, horse); farR.position.set(-0.55, 1.0, -0.2);
+  b.add(legL, legR, farL, farR);
+  // rider
+  const steel = pbr(STEEL, 0.45);
+  const torso = new THREE.Group(); torso.position.y = 1.7;
+  const chest = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.28, 0.55, 10), steel);
+  chest.position.y = 0.3; torso.add(chest);
+  const cross = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.3, 0.3), pbr(accent, 0.7));
+  cross.position.set(0.26, 0.32, 0); torso.add(cross);
+  b.add(torso);
+  // couched lance: shaft forward along +X, strike anim reads as the thrust
+  const lance = new THREE.Group();
+  const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 2.3, 7), pbr(WOOD, 0.85));
+  shaft.rotation.z = Math.PI / 2; shaft.position.x = 0.9; lance.add(shaft);
+  const point = new THREE.Mesh(new THREE.ConeGeometry(0.06, 0.3, 6), pbr(STEEL, 0.35));
+  point.rotation.z = -Math.PI / 2; point.position.x = 2.15; lance.add(point);
+  const pennon = new THREE.Mesh(new THREE.PlaneGeometry(0.35, 0.18), pbr(accent, 0.7));
+  pennon.position.set(1.75, 0.12, 0); lance.add(pennon);
+  const armL = arm(0.09, 0.55, steel); armL.position.set(0, 2.2, 0.32);
+  const armR = arm(0.09, 0.55, steel, lance); armR.position.set(0, 2.2, -0.32);
+  b.add(armL, armR);
+  const head = new THREE.Group(); head.position.y = 2.5;
+  const helmM = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.23, 0.34, 12), steel);
+  head.add(helmM);
+  eyes(head, 0.02, 0.18, 0.09);
+  b.add(head);
+  return { body: b, legL, legR, armL, armR, head, height: 2.9, tail: tailM };
+}
+
+function buildPaladin(accent) {
+  const b = new THREE.Group();
+  const steel = pbr(STEEL, 0.35);
+  const legL = leg(0.12, 0.9, steel); legL.position.set(0, 1.0, 0.17);
+  const legR = leg(0.12, 0.9, steel); legR.position.set(0, 1.0, -0.17);
+  b.add(legL, legR);
+  const torso = new THREE.Group(); torso.position.y = 1.05;
+  const chest = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.33, 0.66, 12), steel);
+  chest.position.y = 0.34; torso.add(chest);
+  const trim = new THREE.Mesh(new THREE.TorusGeometry(0.3, 0.04, 8, 18), pbr(GOLD, 0.5));
+  trim.rotation.x = Math.PI / 2; trim.position.y = 0.6; torso.add(trim);
+  const cape = new THREE.Mesh(new THREE.BoxGeometry(0.06, 1.1, 0.62), pbr('#7a1f1f', 0.9));
+  cape.position.set(-0.32, 0.1, 0); cape.rotation.z = 0.12; torso.add(cape);
+  b.add(torso);
+  const armL = arm(0.1, 0.65, steel); armL.position.set(0, 1.62, 0.38);
+  const armR = arm(0.1, 0.65, steel, sword(1.0)); armR.position.set(0, 1.62, -0.38);
+  b.add(armL, armR);
+  const head = new THREE.Group(); head.position.y = 1.98;
+  head.add(new THREE.Mesh(new THREE.SphereGeometry(0.24, 14, 12), pbr(SKIN, 0.75)));
+  eyes(head, 0.02, 0.19, 0.11);
+  helm(head, accent, true);
+  b.add(head);
+  const aura = new THREE.Mesh(
+    new THREE.TorusGeometry(0.95, 0.05, 8, 32),
+    glowMat('#ffd23a', 0.55)
+  );
+  aura.rotation.x = Math.PI / 2; aura.position.y = 0.08;
+  b.add(aura);
+  return { body: b, legL, legR, armL, armR, head, height: 2.5, aura };
+}
+
+const BUILDERS = {
+  0: { melee: buildClubman, ranged: buildSlinger, fast: buildDinoRider },
+  1: { melee: buildSwordsman, ranged: buildArcher, fast: buildKnight },
+};
+const HEROES = { 0: buildShaman, 1: buildPaladin };
 
 export function UnitMesh(entity, ageIndex) {
-  void ageIndex;
+  // Unknown ages reuse the Stone rigs so evolve never renders a missing mesh.
+  const age = ageIndex === 1 ? 1 : 0;
   const accent = SIDE_ACCENT[entity.side] || SIDE_ACCENT.player;
-  const rig = entity.isHero ? buildShaman(accent)
-    : (BUILDERS[entity.type] || buildClubman)(accent);
+  const rig = entity.isHero ? (HEROES[age] || buildShaman)(accent)
+    : ((BUILDERS[age] || BUILDERS[0])[entity.type] || buildClubman)(accent);
 
   const mesh = new THREE.Group();
   mesh.add(rig.body);

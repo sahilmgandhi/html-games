@@ -1,8 +1,10 @@
 import * as THREE from 'three';
 import { pbr, glowMat, glowSprite, solidify, disposeDeep } from '../core/pbr.js';
 
-// Pooled 3D projectiles. Kinds: 'rock' (sling stone), 'egg' (white, wobbles),
-// 'boulder' (catapult shot, burning trail, splash).
+// Pooled 3D projectiles. Stone kinds: 'rock' (sling stone), 'egg' (white,
+// wobbles), 'boulder' (catapult shot, burning trail, splash). Castle kinds:
+// 'arrow' (archer shaft, pale streak), 'fireball' (burning shot, long flame
+// trail), 'oil' (dark glossy glob, sickly trail, splash).
 //
 // Contract: ProjectileMesh(kind) -> { mesh, update(dt), dispose() }
 // The battle sync sets mesh.position each frame; update() derives velocity
@@ -23,6 +25,13 @@ const KIND_STYLE = {
   rock: { build: null, trailColor: '#c9bfa8', trailLen: 0.9, glowScale: 0.7, spin: 9 },
   egg: { build: null, trailColor: '#fff4d6', trailLen: 0.7, glowScale: 0.6, spin: 5 },
   boulder: { build: null, trailColor: '#ff7a2a', trailLen: 2.2, glowScale: 1.6, spin: 6 },
+  arrow: { build: null, trailColor: '#ffe9b8', trailLen: 1.4, glowScale: 0.5, spin: 0 },
+  fireball: { build: null, trailColor: '#ff7a2a', trailLen: 2.4, glowScale: 1.8, spin: 7 },
+  oil: { build: null, trailColor: '#6a7a2a', trailLen: 1.2, glowScale: 0.9, spin: 5 },
+};
+
+const GLOW_COLOR = {
+  boulder: '#ff9a3a', fireball: '#ff6a2a', oil: '#8a9a3a',
 };
 
 function buildCore(kind) {
@@ -44,6 +53,38 @@ function buildCore(kind) {
     g.add(crack);
     return g;
   }
+  if (kind === 'arrow') {
+    // Shaft along +X (the aim axis); spin stays 0 so it never tumbles.
+    const g = new THREE.Group();
+    const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.9, 6), pbr('#7a5a34', 0.8));
+    shaft.rotation.z = -Math.PI / 2;
+    g.add(shaft);
+    const head = new THREE.Mesh(new THREE.ConeGeometry(0.06, 0.2, 6), pbr('#b8bcc4', 0.35));
+    head.rotation.z = -Math.PI / 2;
+    head.position.x = 0.55;
+    g.add(head);
+    for (const s of [-1, 1]) {
+      const fletch = new THREE.Mesh(new THREE.PlaneGeometry(0.22, 0.12), pbr('#a83a3a', 0.7));
+      fletch.position.x = -0.36;
+      fletch.rotation.x = s * Math.PI / 2;
+      g.add(fletch);
+    }
+    return g;
+  }
+  if (kind === 'fireball') {
+    const g = new THREE.Group();
+    g.add(new THREE.Mesh(new THREE.SphereGeometry(0.3, 12, 10), glowMat('#ff7a2a', 0.9)));
+    g.add(new THREE.Mesh(new THREE.SphereGeometry(0.16, 10, 8), glowMat('#ffd23a', 0.95)));
+    return g;
+  }
+  if (kind === 'oil') {
+    const g = new THREE.Group();
+    g.add(new THREE.Mesh(new THREE.SphereGeometry(0.26, 12, 10), pbr('#2a2418', 0.25)));
+    const sheen = new THREE.Mesh(new THREE.SphereGeometry(0.09, 8, 6), pbr('#6a7a3a', 0.4));
+    sheen.position.set(0.12, 0.12, 0.1);
+    g.add(sheen);
+    return g;
+  }
   return new THREE.Mesh(rockGeo(0.16, 1), pbr('#8d8d94', 0.85));
 }
 
@@ -54,7 +95,7 @@ export function ProjectileMesh(kind) {
   const core = buildCore(kind);
   mesh.add(core);
 
-  const glow = glowSprite(kind === 'boulder' ? '#ff9a3a' : '#fff2c8', 0.75, style.glowScale);
+  const glow = glowSprite(GLOW_COLOR[kind] || '#fff2c8', 0.75, style.glowScale);
   mesh.add(glow);
 
   // stretched additive trail, aimed along -velocity each frame
