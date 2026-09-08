@@ -1,1 +1,117 @@
-{"a_b_gates": {"castle": {"date": "2026-09-07", "enemy_half_volley": "pale-gold impacts + damage/gold labels read at gameplay distance", "result": "PASS", "stone_vs_castle": ["distinct mood (day mesas vs moonlit fortress)", "unit/turret readability at parity", "base readability Castle > Stone", "HUD fully age-driven both"], "verdict": "night darkness acceptable; 2D original Castle is night too; mid-field combat readable"}, "renaissance": {"castle_vs_renaissance": ["distinct mood (moonlit blue night vs golden-amber dusk)", "unit readability at parity (combat + labels both)", "bases both strong (keep mass vs palazzo + domelets + campanile)", "HUD fully age-driven both"], "date": "2026-09-08", "result": "PASS", "verdict": "matched 8s fresh shots; camera framing variance is pre-existing camera behavior"}, "modern": {"date": "2026-09-08", "result": "PASS", "renaissance_vs_modern": ["distinct mood (golden-amber dusk vs dark olive overcast)", "unit readability at parity", "bases both strong (palazzo+dome vs pillbox+bunker+ruins)", "HUD fully age-driven both"], "verdict": "matched 8s fresh shots; zero errors both"}}, "completed_ages": {"castle": {"commits": ["69e7c75", "495bf06", "4aad384", "157bd5f"], "waves": {"a": "terrain/lighting/environment + Castle ambient audio beds", "b": "units/bases/turrets/projectiles + sim kind tables + sim-kinds tests (10 asserts)", "c": "Arrow Volley FX + age:evolve wiring in battle-view + demo-battle/castle/showcase.js"}}, "renaissance": {"commits": ["f914581", "98e33c5", "7a2c00f"], "waves": {"a": "golden-dusk town backdrop (villa/campanile/cypress/amber hills)", "b": "dueler/musketeer/cannoneer/engineer + palazzo + gun redoubts + musketball/cannonball/shell + sim routing + 4 tests", "c": "Artillery Strike FX + demo-battle/renaissance/showcase.js + main.js nested line"}}, "stone": {"note": "pre-existing MVP; banner retrofitted to shared makeCloth helper during Castle work; showcase slimmed onto stageShowcase helper during Renaissance close-out"}, "modern": {"commits": ["bf57c9b", "c0930bc", "c4169b5"], "waves": {"a": "ruined-city backdrop (ruin towers/walls, bunker, sandbags, poles, olive mounds); lighting already overcast", "b": "melee/infantry/tank/commander + bunker + gun turrets + bullet/rocket/shell + sim routing + 5 tests", "c": "Airstrike FX + demo-battle/modern/showcase.js + main.js nested line"}}}, "current_age": 3, "deviations": ["single agent acted as builder/critic/integrator (protocol asks one builder per folder + separate critic); critic screenshots were always fresh takes at new angles, never builder reuses"], "next_age": 4, "open_issues": ["showcase-mode HUD stub shows 'undefined' texts (pre-existing, not Castle)", "Stone menhir base reads as pale column up close (pre-existing)", "all player turrets share x=140 (sim slot layout stacks them; pre-existing)", "camera parks at base when action is elsewhere (pre-existing)", "HUD hint/top-bar text mismatch (pre-existing)"], "parity_score": 9, "pending": ["Future"]}
+{
+  "a_b_gates": {
+    "castle": {
+      "date": "2026-09-07",
+      "enemy_half_volley": "pale-gold impacts + damage/gold labels read at gameplay distance",
+      "result": "PASS",
+      "stone_vs_castle": [
+        "distinct mood (day mesas vs moonlit fortress)",
+        "unit/turret readability at parity",
+        "base readability Castle > Stone",
+        "HUD fully age-driven both"
+      ],
+      "verdict": "night darkness acceptable; 2D original Castle is night too; mid-field combat readable"
+    },
+    "future": {
+      "date": "2026-09-08",
+      "modern_vs_future": [
+        "distinct mood (dark olive overcast vs neon-blue night)",
+        "unit readability at parity (tank+dmg vs war-machine+600s)",
+        "bases both strong (bunker+pennant vs citadel+crown ring)",
+        "HUD fully age-driven both"
+      ],
+      "result": "PASS",
+      "verdict": "matched 8s fresh shots; zero errors both"
+    },
+    "modern": {
+      "date": "2026-09-08",
+      "renaissance_vs_modern": [
+        "distinct mood (golden-amber dusk vs dark olive overcast)",
+        "unit readability at parity",
+        "bases both strong (palazzo+dome vs pillbox+bunker+ruins)",
+        "HUD fully age-driven both"
+      ],
+      "result": "PASS",
+      "verdict": "matched 8s fresh shots; zero errors both"
+    },
+    "renaissance": {
+      "castle_vs_renaissance": [
+        "distinct mood (moonlit blue night vs golden-amber dusk)",
+        "unit readability at parity (combat + labels both)",
+        "bases both strong (keep mass vs palazzo + domelets + campanile)",
+        "HUD fully age-driven both"
+      ],
+      "date": "2026-09-08",
+      "result": "PASS",
+      "verdict": "matched 8s fresh shots; camera framing variance is pre-existing camera behavior"
+    }
+  },
+  "completed_ages": {
+    "castle": {
+      "commits": [
+        "69e7c75",
+        "495bf06",
+        "4aad384",
+        "157bd5f"
+      ],
+      "waves": {
+        "a": "terrain/lighting/environment + Castle ambient audio beds",
+        "b": "units/bases/turrets/projectiles + sim kind tables + sim-kinds tests (10 asserts)",
+        "c": "Arrow Volley FX + age:evolve wiring in battle-view + demo-battle/castle/showcase.js"
+      }
+    },
+    "future": {
+      "commits": [
+        "9b58cb6",
+        "b555522",
+        "cd49548"
+      ],
+      "waves": {
+        "a": "neon-dusk skyline backdrop (spires/dome habs/pylons/dark steel mounds)",
+        "b": "gods-blade/blaster/war-machine/super-soldier/titan + citadel + tech-pad turrets + laser/plasma + sim routing + 6 tests (36/36)",
+        "c": "Orbital Laser FX (SPECIAL_FX row) + demo-battle/future/showcase.js + main.js nested line"
+      }
+    },
+    "modern": {
+      "commits": [
+        "bf57c9b",
+        "c0930bc",
+        "c4169b5"
+      ],
+      "waves": {
+        "a": "ruined-city backdrop (ruin towers/walls, bunker, sandbags, poles, olive mounds); lighting already overcast",
+        "b": "melee/infantry/tank/commander + bunker + gun turrets + bullet/rocket/shell + sim routing + 5 tests",
+        "c": "Airstrike FX + demo-battle/modern/showcase.js + main.js nested line"
+      }
+    },
+    "renaissance": {
+      "commits": [
+        "f914581",
+        "98e33c5",
+        "7a2c00f"
+      ],
+      "waves": {
+        "a": "golden-dusk town backdrop (villa/campanile/cypress/amber hills)",
+        "b": "dueler/musketeer/cannoneer/engineer + palazzo + gun redoubts + musketball/cannonball/shell + sim routing + 4 tests",
+        "c": "Artillery Strike FX + demo-battle/renaissance/showcase.js + main.js nested line"
+      }
+    },
+    "stone": {
+      "note": "pre-existing MVP; banner retrofitted to shared makeCloth helper during Castle work; showcase slimmed onto stageShowcase helper during Renaissance close-out"
+    }
+  },
+  "current_age": 4,
+  "deviations": [
+    "single agent acted as builder/critic/integrator (protocol asks one builder per folder + separate critic); critic screenshots were always fresh takes at new angles, never builder reuses"
+  ],
+  "next_age": null,
+  "open_issues": [
+    "showcase-mode HUD stub shows 'undefined' texts (pre-existing, not Castle)",
+    "Stone menhir base reads as pale column up close (pre-existing)",
+    "all player turrets share x=140 (sim slot layout stacks them; pre-existing)",
+    "camera parks at base when action is elsewhere (pre-existing)",
+    "HUD hint/top-bar text mismatch (pre-existing)"
+  ],
+  "parity_score": 9,
+  "pending": []
+}
