@@ -37,12 +37,15 @@ const KIND_STYLE = {
   shell: { build: null, trailColor: '#ff9a3a', trailLen: 2.0, glowScale: 1.4, spin: 6 },
   bullet: { build: null, trailColor: '#ff6a4a', trailLen: 1.1, glowScale: 0.8, spin: 0 },
   rocket: { build: null, trailColor: '#b8b8b0', trailLen: 2.2, glowScale: 1.5, spin: 0 },
+  laser: { build: null, trailColor: '#00e5ff', trailLen: 2.0, glowScale: 1.2, spin: 0 },
+  plasma: { build: null, trailColor: '#ff5ad0', trailLen: 1.8, glowScale: 1.7, spin: 4 },
 };
 
 const GLOW_COLOR = {
   boulder: '#ff9a3a', fireball: '#ff6a2a', oil: '#8a9a3a',
   musketball: '#fff2b8', cannonball: '#c8c8d0', shell: '#ff8a3a',
   bullet: '#ffd28a', rocket: '#ff9a3a',
+  laser: '#00e5ff', plasma: '#ff5ad0',
 };
 
 function buildCore(kind) {
@@ -145,6 +148,24 @@ function buildCore(kind) {
     const exhaust = new THREE.Mesh(new THREE.SphereGeometry(0.11, 8, 6), glowMat('#ff9a3a', 0.95));
     exhaust.position.x = -0.4;
     g.add(exhaust);
+    return g;
+  }
+  if (kind === 'laser') {
+    // cyan beam bolt along +X (the aim axis); spin 0 so it never tumbles
+    const g = new THREE.Group();
+    const bolt = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.8, 8), glowMat('#00e5ff', 0.95));
+    bolt.rotation.z = -Math.PI / 2;
+    g.add(bolt);
+    const core = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.95, 6),
+      new THREE.MeshBasicMaterial({ color: '#e8feff', fog: false }));
+    core.rotation.z = -Math.PI / 2;
+    g.add(core);
+    return g;
+  }
+  if (kind === 'plasma') {
+    const g = new THREE.Group();
+    g.add(new THREE.Mesh(new THREE.SphereGeometry(0.3, 12, 10), glowMat('#ff5ad0', 0.9)));
+    g.add(new THREE.Mesh(new THREE.SphereGeometry(0.14, 10, 8), glowMat('#ffe8f8', 0.95)));
     return g;
   }
   return new THREE.Mesh(rockGeo(0.16, 1), pbr('#8d8d94', 0.85));

@@ -20,17 +20,23 @@ import {
 //   0 Single Turret  — concrete pit, shielded direct-fire gun (bullet)
 //   1 Rocket Turret  — angled multi-tube launcher rack (rocket)
 //   2 Double Turret  — twin barrels on a steel dome (bullet)
+// Future turrets (by turretIndex):
+//   0 Titanium Shooter — dark tech pad, twin railgun rails (bullet)
+//   1 Lazer Cannon   — lensed emitter housing (laser)
+//   2 Ion Ray        — coil tower with a plasma orb (plasma)
 //
 // Contract: TurretMesh(turret, ageIndex) -> { mesh, aimAt(x,y,z), dispose() }
 // Extras: update(dt) (recoil/flash decay), fire() (recoil + muzzle flash),
 // kind (projectile kind), muzzle (Object3D at the barrel tip).
-// Builders branch on ageIndex (0 Stone, 1 Castle, 2 Renaissance, 3 Modern); unknown ages fall back to Stone.
+// Builders branch on ageIndex (0 Stone, 1 Castle, 2 Renaissance, 3 Modern,
+// 4 Future); unknown ages fall back to Stone.
 
 export const TURRET_PROJECTILE = [
   ['rock', 'egg', 'boulder'],
   ['boulder', 'fireball', 'oil'],
   ['cannonball', 'cannonball', 'shell'],
   ['bullet', 'rocket', 'bullet'],
+  ['bullet', 'laser', 'plasma'],
 ];
 
 const WOOD = '#6e4a2c';
@@ -550,11 +556,109 @@ function buildDoubleTurret(accent) {
   return { root, head, arm, muzzle, flash, height: 3.6, restArmZ: 0, armAxis: 'throw' };
 }
 
+// shared Future mount: dark hex pad, glowing rim ring, pivot pylon
+function techPad(accent) {
+  const root = new THREE.Group();
+  const pad = new THREE.Mesh(new THREE.CylinderGeometry(1.8, 2.0, 0.5, 6), pbr('#0d1522', 0.8));
+  pad.position.y = 0.25;
+  root.add(pad);
+  const rim = new THREE.Mesh(new THREE.TorusGeometry(1.8, 0.06, 8, 6), glowMat('#00e5ff', 0.9));
+  rim.rotation.x = Math.PI / 2;
+  rim.position.y = 0.5;
+  root.add(rim);
+  const head = new THREE.Group();
+  head.position.y = 0.5;
+  const pivot = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.45, 0.8, 6), pbr('#1c2940', 0.6));
+  pivot.position.y = 0.7;
+  head.add(pivot);
+  const trim = new THREE.Mesh(new THREE.TorusGeometry(1.8, 0.05, 8, 6), pbr(accent, 0.6));
+  trim.rotation.x = Math.PI / 2;
+  trim.position.y = 0.15;
+  head.add(trim);
+  root.add(head);
+  const arm = new THREE.Group();
+  arm.position.set(0, 1.2, 0);
+  head.add(arm);
+  return { root, head, arm };
+}
+
+// 0 — Titanium Shooter (Future): twin railgun rails with a power strip
+function buildTitaniumShooter(accent) {
+  const { root, head, arm } = techPad(accent);
+  for (const s of [-1, 1]) {
+    const rail = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.12, 0.14), pbr('#2a3648', 0.5));
+    rail.position.set(1.0, 0.5, s * 0.22);
+    arm.add(rail);
+  }
+  const strip = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.06, 0.1), glowMat('#00e5ff', 0.95));
+  strip.position.set(1.0, 0.32, 0);
+  arm.add(strip);
+  const breech = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.6, 0.6), pbr('#1c2940', 0.6));
+  breech.position.set(-0.2, 0.4, 0);
+  arm.add(breech);
+  const muzzle = new THREE.Object3D();
+  muzzle.position.set(2.1, 0.5, 0);
+  arm.add(muzzle);
+  const flash = flashSprite(1.3);
+  flash.position.copy(muzzle.position);
+  arm.add(flash);
+  return { root, head, arm, muzzle, flash, height: 3.6, restArmZ: 0, armAxis: 'throw' };
+}
+
+// 1 — Lazer Cannon (Future): lensed emitter housing
+function buildLazerCannon(accent) {
+  const { root, head, arm } = techPad(accent);
+  const housing = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.7, 1.4, 10), pbr('#1c2940', 0.6));
+  housing.rotation.z = -Math.PI / 2;
+  housing.position.set(0.5, 0.45, 0);
+  arm.add(housing);
+  const lens = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 0.1, 12), glowMat('#00e5ff', 1));
+  lens.rotation.z = -Math.PI / 2;
+  lens.position.set(1.22, 0.45, 0);
+  arm.add(lens);
+  const coil = new THREE.Mesh(new THREE.TorusGeometry(0.55, 0.07, 8, 14), pbr('#2a3648', 0.5));
+  coil.rotation.y = Math.PI / 2;
+  coil.position.set(0.1, 0.45, 0);
+  arm.add(coil);
+  const muzzle = new THREE.Object3D();
+  muzzle.position.set(1.35, 0.45, 0);
+  arm.add(muzzle);
+  const flash = flashSprite(1.7);
+  flash.position.copy(muzzle.position);
+  arm.add(flash);
+  return { root, head, arm, muzzle, flash, height: 4.0, restArmZ: 0, armAxis: 'throw' };
+}
+
+// 2 — Ion Ray (Future): coil tower crowned with a plasma orb
+function buildIonRay(accent) {
+  const { root, head, arm } = techPad(accent);
+  const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.18, 2.2, 8), pbr('#1c2940', 0.6));
+  mast.position.y = 1.3;
+  arm.add(mast);
+  for (const fy of [0.8, 1.4, 2.0]) {
+    const coil = new THREE.Mesh(new THREE.TorusGeometry(0.34, 0.07, 8, 14), pbr('#2a3648', 0.5));
+    coil.rotation.x = Math.PI / 2;
+    coil.position.y = fy;
+    arm.add(coil);
+  }
+  const orb = new THREE.Mesh(new THREE.SphereGeometry(0.32, 12, 10), glowMat('#ff5ad0', 1));
+  orb.position.y = 2.6;
+  arm.add(orb);
+  const muzzle = new THREE.Object3D();
+  muzzle.position.set(0.4, 2.6, 0);
+  arm.add(muzzle);
+  const flash = flashSprite(1.8);
+  flash.position.set(0, 2.6, 0);
+  arm.add(flash);
+  return { root, head, arm, muzzle, flash, height: 4.6, restArmZ: 0, armAxis: 'throw' };
+}
+
 const BUILDERS = {
   0: [buildSlingshot, buildEgg, buildCatapult],
   1: [buildMilCatapult, buildFireCatapult, buildOilTower],
   2: [buildSmallCannon, buildLargeCannon, buildExplosiveCannon],
   3: [buildSingleTurret, buildRocketTurret, buildDoubleTurret],
+  4: [buildTitaniumShooter, buildLazerCannon, buildIonRay],
 };
 
 export function TurretMesh(turret, ageIndex) {

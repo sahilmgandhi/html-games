@@ -17,6 +17,7 @@ export function unitProjectileKind(ageIndex, type) {
   if (ageIndex === 1) return 'arrow'; // Castle archers; melee/fast never call this
   if (ageIndex === 2) return type === 'ranged' ? 'musketball' : 'cannonball'; // Musketeer / Cannoneer, War Engineer
   if (ageIndex === 3) return type === 'ranged' ? 'bullet' : 'shell'; // Infantry, Commander / Tank
+  if (ageIndex === 4) return type === 'ranged' ? 'laser' : 'plasma'; // Blaster, Titan / War Machine, Super Soldier, God's Blade
   if (type === 'siege' || type === 'armored' || type === 'elite') return 'boulder';
   return 'rock';
 }
@@ -26,6 +27,7 @@ const TURRET_KINDS = [
   ['boulder', 'fireball', 'oil'], // 1 Castle: catapult, fire catapult, oil pourer
   ['cannonball', 'cannonball', 'shell'], // 2 Renaissance: small/large/explosive cannon
   ['bullet', 'rocket', 'bullet'], // 3 Modern: single turret, rocket turret, double turret
+  ['bullet', 'laser', 'plasma'], // 4 Future: titanium shooter, lazer cannon, ion ray
 ];
 
 export function turretProjectileKind(ageIndex, turretIndex) {

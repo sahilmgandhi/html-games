@@ -24,9 +24,16 @@ export default [
       t.assert('single turret fires bullet', turretProjectileKind(3, 0) === 'bullet');
       t.assert('rocket turret fires rocket', turretProjectileKind(3, 1) === 'rocket');
       t.assert('double turret fires bullet', turretProjectileKind(3, 2) === 'bullet');
+      // Future routing.
+      t.assert('blaster fires laser', unitProjectileKind(4, 'ranged') === 'laser');
+      t.assert('war machine fires plasma', unitProjectileKind(4, 'armored') === 'plasma');
+      t.assert('super soldier fires plasma', unitProjectileKind(4, 'elite') === 'plasma');
+      t.assert('titanium shooter fires bullet', turretProjectileKind(4, 0) === 'bullet');
+      t.assert('lazer cannon fires laser', turretProjectileKind(4, 1) === 'laser');
+      t.assert('ion ray fires plasma', turretProjectileKind(4, 2) === 'plasma');
       // Unknown ages fall back to the Stone row, never undefined.
-      t.assert('future unit falls back to rock', unitProjectileKind(4, 'ranged') === 'rock');
-      t.assert('future turret falls back to stone row', turretProjectileKind(4, 2) === 'boulder');
+      t.assert('unknown age unit falls back to rock', unitProjectileKind(9, 'ranged') === 'rock');
+      t.assert('unknown age turret falls back to stone row', turretProjectileKind(9, 2) === 'boulder');
       t.assert('bad turret index falls back to rock', turretProjectileKind(1, 9) === 'rock');
     },
   },

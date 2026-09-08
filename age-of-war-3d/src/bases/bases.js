@@ -536,13 +536,94 @@ function buildModernBunker(accent, mirror) {
   };
 }
 
+const FUT_ALLOY = '#1c2940';
+const FUT_DARK = '#0d1522';
+
+function buildFutureCitadel(accent, mirror) {
+  const mesh = new THREE.Group();
+  const alloy = pbr(FUT_ALLOY, 0.6);
+  const dark = pbr(FUT_DARK, 0.7);
+
+  // octagonal plinth + tapered command spire
+  const plinth = new THREE.Mesh(new THREE.CylinderGeometry(3.0, 3.4, 0.8, 8), dark);
+  plinth.position.y = 0.4;
+  mesh.add(plinth);
+  const spire = new THREE.Mesh(new THREE.CylinderGeometry(1.1, 1.9, 5.2, 6), alloy);
+  spire.position.y = 3.4;
+  mesh.add(spire);
+  // lit window strips facing the field (+x), dark when ruined
+  const strips = [];
+  for (const wy of [2.2, 3.4, 4.6]) {
+    const s = new THREE.Mesh(new THREE.PlaneGeometry(0.5, 0.28),
+      new THREE.MeshBasicMaterial({ color: '#00e5ff' }));
+    s.position.set(1.62 * mirror, wy, 0);
+    s.rotation.y = mirror > 0 ? Math.PI / 2 : -Math.PI / 2;
+    mesh.add(s);
+    strips.push(s);
+  }
+  // glowing crown ring + beacon mast
+  const crown = new THREE.Mesh(new THREE.TorusGeometry(1.25, 0.09, 8, 24), glowMat('#00e5ff', 0.9));
+  crown.rotation.x = Math.PI / 2;
+  crown.position.y = 6.1;
+  mesh.add(crown);
+  const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.07, 1.6, 6), dark);
+  mast.position.y = 6.9;
+  mesh.add(mast);
+  const beacon = new THREE.Mesh(new THREE.SphereGeometry(0.15, 8, 6), glowMat('#00e5ff', 1));
+  beacon.position.y = 7.7;
+  mesh.add(beacon);
+  // dome annex + side-color banner on a pole
+  const annex = new THREE.Mesh(new THREE.SphereGeometry(1.3, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2), dark);
+  annex.position.set(-2.2 * mirror, 0, 1.6);
+  mesh.add(annex);
+  const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.06, 2.6, 6), dark);
+  pole.position.set(-2.2 * mirror, 2.2, -1.4);
+  mesh.add(pole);
+  const cloth = makeCloth(1.5, 0.9, 6, pbr(accent, 0.75));
+  const flag = cloth.mesh;
+  flag.position.set(-2.2 * mirror, 3.1, -1.4);
+  if (mirror < 0) flag.rotation.y = Math.PI;
+  mesh.add(flag);
+
+  const dmg2 = rubble(dark);
+  const dmg1 = new THREE.Group(); // < 33%: strips dark, crown out, banner torn
+  const fallen = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.11, 2.4, 6), dark);
+  fallen.position.set(2.0 * mirror, 0.7, -1.8);
+  fallen.rotation.set(0.3, 0.4, Math.PI / 2.2);
+  dmg1.add(fallen);
+  mesh.add(dmg2, dmg1);
+  dmg2.visible = false;
+  dmg1.visible = false;
+
+  let t = Math.random() * 10;
+  return {
+    group: mesh,
+    setHp(f) {
+      dmg2.visible = f < 0.66;
+      dmg1.visible = f < 0.33;
+      for (const s of strips) s.material.color.set(f > 0.33 ? '#00e5ff' : '#0d1522');
+      crown.visible = f > 0.33;
+      beacon.visible = f > 0.05;
+      mast.visible = f > 0.33;
+      const s = 0.55 + f * 0.45;
+      flag.scale.set(s, f < 0.33 ? 0.7 : 1, 1);
+    },
+    update(dt) {
+      t += dt;
+      cloth.update(t);
+    },
+  };
+}
+
 export function BaseMesh(side, ageIndex) {
   // Unknown ages reuse the Stone hold so evolve never renders a missing mesh.
   const accent = SIDE_ACCENT[side] || SIDE_ACCENT.player;
   const mirror = side === 'player' ? 1 : -1;
 
   const mesh = new THREE.Group();
-  const inner = ageIndex === 3
+  const inner = ageIndex === 4
+    ? buildFutureCitadel(accent, mirror)
+    : ageIndex === 3
     ? buildModernBunker(accent, mirror)
     : ageIndex === 2
     ? buildRenaissancePalazzo(accent, mirror)

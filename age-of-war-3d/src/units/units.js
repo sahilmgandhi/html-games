@@ -727,13 +727,190 @@ function buildCommander(accent) {
   return { body: b, legL, legR, armL, armR, head, height: 2.3, aura };
 }
 
+// Future: black-glass armor with cyan power accents and glowing visors.
+const FUT_DARK = '#141c28';
+const FUT_PLATE = '#232f44';
+const FUT_GLOW = '#00e5ff';
+
+function visor(head) {
+  const v = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.07, 0.05), glowMat(FUT_GLOW, 0.95));
+  v.position.set(0.14, 0.05, 0);
+  head.add(v);
+}
+
+function blaster() {
+  const g = new THREE.Group();
+  const body = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.12, 0.12), pbr(FUT_DARK, 0.6));
+  g.add(body);
+  const tip = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.22, 8), glowMat(FUT_GLOW, 0.95));
+  tip.rotation.z = Math.PI / 2; tip.position.set(0.4, 0, 0); g.add(tip);
+  return g;
+}
+
+function energyBlade(len) {
+  const g = new THREE.Group();
+  const hilt = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.22, 8), pbr(FUT_DARK, 0.6));
+  hilt.position.y = -0.3; g.add(hilt);
+  const blade = new THREE.Mesh(new THREE.BoxGeometry(0.05, len, 0.09), glowMat(FUT_GLOW, 0.9));
+  blade.position.y = -0.3 + len / 2; g.add(blade);
+  return g;
+}
+
+function buildGodsBlade(accent) {
+  const b = new THREE.Group();
+  const armor = pbr(FUT_PLATE, 0.65);
+  const legL = leg(0.12, 0.88, pbr(FUT_DARK, 0.7)); legL.position.set(0, 0.98, 0.17);
+  const legR = leg(0.12, 0.88, pbr(FUT_DARK, 0.7)); legR.position.set(0, 0.98, -0.17);
+  b.add(legL, legR);
+  const torso = new THREE.Group(); torso.position.y = 1.03;
+  const chest = new THREE.Mesh(new THREE.CylinderGeometry(0.29, 0.34, 0.68, 12), armor);
+  chest.position.y = 0.36; torso.add(chest);
+  const trim = new THREE.Mesh(new THREE.TorusGeometry(0.31, 0.035, 8, 18), pbr(accent, 0.5));
+  trim.rotation.x = Math.PI / 2; trim.position.y = 0.6; torso.add(trim);
+  b.add(torso);
+  const armL = arm(0.1, 0.62, armor); armL.position.set(0, 1.6, 0.38);
+  const armR = arm(0.1, 0.62, armor, energyBlade(0.85)); armR.position.set(0, 1.6, -0.38);
+  b.add(armL, armR);
+  const head = new THREE.Group(); head.position.y = 1.98;
+  head.add(new THREE.Mesh(new THREE.SphereGeometry(0.22, 14, 12), pbr(FUT_DARK, 0.6)));
+  visor(head);
+  b.add(head);
+  return { body: b, legL, legR, armL, armR, head, height: 2.3 };
+}
+
+function buildBlasterUnit(accent) {
+  const b = new THREE.Group();
+  const suit = pbr(FUT_DARK, 0.7);
+  const legL = leg(0.11, 0.85, suit); legL.position.set(0, 0.95, 0.16);
+  const legR = leg(0.11, 0.85, suit); legR.position.set(0, 0.95, -0.16);
+  b.add(legL, legR);
+  const torso = new THREE.Group(); torso.position.y = 1.0;
+  const chest = new THREE.Mesh(new THREE.CylinderGeometry(0.27, 0.31, 0.62, 10), pbr(FUT_PLATE, 0.65));
+  chest.position.y = 0.33; torso.add(chest);
+  const cell = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.2, 0.06), glowMat(FUT_GLOW, 0.9));
+  cell.position.set(0.2, 0.35, 0.12); torso.add(cell);
+  const sigil = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.16, 0.2), pbr(accent, 0.6));
+  sigil.position.set(-0.2, 0.4, 0); torso.add(sigil);
+  b.add(torso);
+  const armL = arm(0.095, 0.6, suit); armL.position.set(0, 1.52, 0.36);
+  const aim = new THREE.Group();
+  const gun = blaster(); gun.position.set(0.35, -0.55, 0); aim.add(gun);
+  const armR = arm(0.095, 0.6, suit, aim); armR.position.set(0, 1.52, -0.36);
+  b.add(armL, armR);
+  const head = new THREE.Group(); head.position.y = 1.88;
+  head.add(new THREE.Mesh(new THREE.SphereGeometry(0.21, 14, 12), pbr(FUT_DARK, 0.6)));
+  visor(head);
+  b.add(head);
+  return { body: b, legL, legR, armL, armR, head, height: 2.15 };
+}
+
+function buildWarMachine(accent) {
+  const b = new THREE.Group();
+  const hullM = pbr(FUT_PLATE, 0.55);
+  for (const s of [-1, 1]) {
+    const track = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.6, 0.5), pbr('#0c1018', 0.8));
+    track.position.set(0, 0.38, s * 0.66);
+    b.add(track);
+    for (const wx of [-0.75, 0, 0.75]) {
+      const wheel = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 0.1, 10), pbr('#2a3648', 0.5));
+      wheel.rotation.x = Math.PI / 2;
+      wheel.position.set(wx, 0.35, s * 0.93);
+      b.add(wheel);
+    }
+  }
+  const hull = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.55, 1.05), hullM);
+  hull.position.y = 0.95; b.add(hull);
+  const stripe = new THREE.Mesh(new THREE.BoxGeometry(2.22, 0.1, 1.07), glowMat(FUT_GLOW, 0.9));
+  stripe.position.y = 1.0; b.add(stripe);
+  const trim = new THREE.Mesh(new THREE.BoxGeometry(2.22, 0.1, 1.07), pbr(accent, 0.5));
+  trim.position.y = 0.78; b.add(trim);
+  // twin cannon turret doubles as the rig head
+  const turret = new THREE.Group(); turret.position.set(-0.2, 1.4, 0);
+  const dome = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.55, 0.42, 12), hullM);
+  turret.add(dome);
+  for (const s of [-1, 1]) {
+    const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.08, 1.6, 10), pbr('#0c1018', 0.5));
+    barrel.rotation.z = -Math.PI / 2 + 0.05;
+    barrel.position.set(1.0, 0.1, s * 0.2);
+    turret.add(barrel);
+  }
+  const eye = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.12, 0.5), glowMat(FUT_GLOW, 0.95));
+  eye.position.set(0.42, 0.05, 0); turret.add(eye);
+  b.add(turret);
+  return { body: b, head: turret, height: 2.6 };
+}
+
+function buildSuperSoldier(accent) {
+  const b = new THREE.Group();
+  const armor = pbr(FUT_PLATE, 0.6);
+  const legL = leg(0.15, 1.0, pbr(FUT_DARK, 0.7)); legL.position.set(0, 1.1, 0.2);
+  const legR = leg(0.15, 1.0, pbr(FUT_DARK, 0.7)); legR.position.set(0, 1.1, -0.2);
+  b.add(legL, legR);
+  const torso = new THREE.Group(); torso.position.y = 1.15;
+  const chest = new THREE.Mesh(new THREE.CylinderGeometry(0.38, 0.44, 0.8, 12), armor);
+  chest.position.y = 0.42; torso.add(chest);
+  for (const s of [-1, 1]) {
+    const pad = new THREE.Mesh(new THREE.SphereGeometry(0.2, 10, 8), armor);
+    pad.position.set(0.05, 0.72, s * 0.48); torso.add(pad);
+  }
+  const core = new THREE.Mesh(new THREE.SphereGeometry(0.1, 10, 8), glowMat(FUT_GLOW, 0.95));
+  core.position.set(0.36, 0.4, 0); torso.add(core);
+  const stripe = new THREE.Mesh(new THREE.TorusGeometry(0.4, 0.03, 8, 18), pbr(accent, 0.6));
+  stripe.rotation.x = Math.PI / 2; stripe.position.y = 0.1; torso.add(stripe);
+  b.add(torso);
+  const armL = arm(0.12, 0.72, armor); armL.position.set(0, 1.82, 0.5);
+  const armR = arm(0.12, 0.72, armor, energyBlade(1.0)); armR.position.set(0, 1.82, -0.5);
+  b.add(armL, armR);
+  const head = new THREE.Group(); head.position.y = 2.24;
+  head.add(new THREE.Mesh(new THREE.SphereGeometry(0.24, 14, 12), pbr(FUT_DARK, 0.6)));
+  visor(head);
+  b.add(head);
+  return { body: b, legL, legR, armL, armR, head, height: 2.8 };
+}
+
+function buildTitan(accent) {
+  const b = new THREE.Group();
+  const armor = pbr(FUT_PLATE, 0.55);
+  const legL = leg(0.16, 1.05, pbr(FUT_DARK, 0.7)); legL.position.set(0, 1.15, 0.22);
+  const legR = leg(0.16, 1.05, pbr(FUT_DARK, 0.7)); legR.position.set(0, 1.15, -0.22);
+  b.add(legL, legR);
+  const torso = new THREE.Group(); torso.position.y = 1.2;
+  const chest = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.47, 0.85, 12), armor);
+  chest.position.y = 0.44; torso.add(chest);
+  const trim = new THREE.Mesh(new THREE.TorusGeometry(0.42, 0.04, 8, 20), pbr(GOLD, 0.5));
+  trim.rotation.x = Math.PI / 2; trim.position.y = 0.72; torso.add(trim);
+  const crest = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.22, 0.3), pbr(accent, 0.5));
+  crest.position.set(-0.1, 0.85, 0); torso.add(crest);
+  b.add(torso);
+  const cannon = new THREE.Group();
+  const tube = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.11, 0.9, 10), pbr(FUT_DARK, 0.5));
+  tube.rotation.z = Math.PI / 2 - 0.1; tube.position.set(0.3, -0.6, 0); cannon.add(tube);
+  const muzzle = new THREE.Mesh(new THREE.SphereGeometry(0.1, 8, 6), glowMat(FUT_GLOW, 0.95));
+  muzzle.position.set(0.72, -0.65, 0); cannon.add(muzzle);
+  const armL = arm(0.13, 0.75, armor); armL.position.set(0, 1.9, 0.52);
+  const armR = arm(0.13, 0.75, armor, cannon); armR.position.set(0, 1.9, -0.52);
+  b.add(armL, armR);
+  const head = new THREE.Group(); head.position.y = 2.36;
+  head.add(new THREE.Mesh(new THREE.SphereGeometry(0.25, 14, 12), pbr(FUT_DARK, 0.6)));
+  visor(head);
+  b.add(head);
+  const aura = new THREE.Mesh(
+    new THREE.TorusGeometry(1.15, 0.055, 8, 32),
+    glowMat('#ffd23a', 0.55)
+  );
+  aura.rotation.x = Math.PI / 2; aura.position.y = 0.08;
+  b.add(aura);
+  return { body: b, legL, legR, armL, armR, head, height: 3.0, aura };
+}
+
 const BUILDERS = {
   0: { melee: buildClubman, ranged: buildSlinger, fast: buildDinoRider },
   1: { melee: buildSwordsman, ranged: buildArcher, fast: buildKnight },
   2: { melee: buildDueler, ranged: buildMusketeer, siege: buildCannoneer },
   3: { melee: buildMeleeInfantry, ranged: buildInfantry, armored: buildTank },
+  4: { melee: buildGodsBlade, ranged: buildBlasterUnit, armored: buildWarMachine, elite: buildSuperSoldier },
 };
-const HEROES = { 0: buildShaman, 1: buildPaladin, 2: buildWarEngineer, 3: buildCommander };
+const HEROES = { 0: buildShaman, 1: buildPaladin, 2: buildWarEngineer, 3: buildCommander, 4: buildTitan };
 
 export function UnitMesh(entity, ageIndex) {
   // Unknown ages reuse the Stone rigs so evolve never renders a missing mesh.
