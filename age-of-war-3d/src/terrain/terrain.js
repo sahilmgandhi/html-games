@@ -8,27 +8,50 @@ import { glowSprite } from '../core/pbr.js';
 
 function makeGroundTexture(baseColor, seed) {
   const rng = mulberry32(seed);
+  const S = 1024;
   const c = document.createElement('canvas');
-  c.width = 512;
-  c.height = 512;
+  c.width = S;
+  c.height = S;
   const g = c.getContext('2d');
   g.fillStyle = baseColor;
-  g.fillRect(0, 0, 512, 512);
+  g.fillRect(0, 0, S, S);
   // Dry mottling: thousands of low-alpha splotches.
   for (let i = 0; i < 5200; i++) {
     const r = 1 + rng() * 5;
     const v = rng();
     g.fillStyle = v < 0.5 ? 'rgba(0,0,0,0.10)' : 'rgba(255,240,210,0.08)';
     g.beginPath();
-    g.arc(rng() * 512, rng() * 512, r, 0, Math.PI * 2);
+    g.arc(rng() * S, rng() * S, r, 0, Math.PI * 2);
     g.fill();
+  }
+  // Fine grit grain: dense single-pixel speckle for close-up definition.
+  for (let i = 0; i < 14000; i++) {
+    const v = rng();
+    g.fillStyle = v < 0.55 ? 'rgba(0,0,0,0.14)' : 'rgba(255,244,220,0.10)';
+    g.fillRect(rng() * S, rng() * S, 1.5, 1.5);
+  }
+  // Cracks: short dark craggy streaks for a grittier read.
+  for (let i = 0; i < 260; i++) {
+    g.strokeStyle = 'rgba(10,8,5,0.28)';
+    g.lineWidth = 1 + rng() * 1.5;
+    let x = rng() * S;
+    let y = rng() * S;
+    const a = rng() * Math.PI * 2;
+    g.beginPath();
+    g.moveTo(x, y);
+    for (let s = 0; s < 3; s++) {
+      x += Math.cos(a + (rng() - 0.5) * 1.2) * (8 + rng() * 18);
+      y += Math.sin(a + (rng() - 0.5) * 1.2) * (8 + rng() * 18);
+      g.lineTo(x, y);
+    }
+    g.stroke();
   }
   // Grass tufts (dry savanna flecks).
   for (let i = 0; i < 900; i++) {
     g.strokeStyle = rng() < 0.5 ? 'rgba(122,124,58,0.55)' : 'rgba(90,94,40,0.55)';
     g.lineWidth = 1.5;
-    const x = rng() * 512;
-    const y = rng() * 512;
+    const x = rng() * S;
+    const y = rng() * S;
     g.beginPath();
     g.moveTo(x, y);
     g.lineTo(x + (rng() - 0.5) * 6, y - 3 - rng() * 5);
@@ -40,14 +63,14 @@ function makeGroundTexture(baseColor, seed) {
     const shade = 52 + Math.floor(rng() * 42);
     g.fillStyle = `rgb(${shade},${shade - 8},${shade - 18})`;
     g.beginPath();
-    g.arc(rng() * 512, rng() * 512, r, 0, Math.PI * 2);
+    g.arc(rng() * S, rng() * S, r, 0, Math.PI * 2);
     g.fill();
   }
   const tex = new THREE.CanvasTexture(c);
   tex.wrapS = THREE.RepeatWrapping;
   tex.wrapT = THREE.RepeatWrapping;
   tex.colorSpace = THREE.SRGBColorSpace;
-  tex.anisotropy = 4;
+  tex.anisotropy = 8;
   return tex;
 }
 
