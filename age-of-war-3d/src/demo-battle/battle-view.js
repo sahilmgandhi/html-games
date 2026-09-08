@@ -84,6 +84,33 @@ export function attachBattleView(game, sim, fx) {
   // action; decays back to the unit-midpoint fallback when combat goes quiet.
   let focusX = CONFIG.WORLD.WIDTH / 2;
   let focusTtl = 0;
+  // Screen shake + scorch decals: render-only combat feel.
+  let shakeT = 0, shakeDur = 1, shakeAmp = 0;
+  function shake(amp, dur) { shakeAmp = amp; shakeT = shakeDur = dur; }
+  const scorchGeo = new THREE.CircleGeometry(1.1, 14);
+  const scorches = [];
+  for (let i = 0; i < 12; i++) {
+    const m = new THREE.Mesh(scorchGeo, new THREE.MeshBasicMaterial({
+      color: '#0a0a0a', transparent: true, opacity: 0,
+      depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2,
+    }));
+    m.rotation.x = -Math.PI / 2;
+    m.position.y = 0.08;
+    m.visible = false;
+    m.renderOrder = 1;
+    scene.add(m);
+    scorches.push({ mesh: m, ttl: 0 });
+  }
+  let scorchCursor = 0;
+  function scorchAt(px, z) {
+    const sc = scorches[scorchCursor];
+    scorchCursor = (scorchCursor + 1) % scorches.length;
+    sc.mesh.position.x = toMeters(px);
+    sc.mesh.position.z = z || 0;
+    sc.mesh.visible = true;
+    sc.mesh.material.opacity = 0.55;
+    sc.ttl = 9;
+  }
 
   function burstAt(px, z, color, count, label, labelColor) {
     const mx = toMeters(px);
@@ -106,8 +133,13 @@ export function attachBattleView(game, sim, fx) {
         focusX = hit.entity.x;
         focusTtl = Math.max(focusTtl, 1.2);
       }
-      if (!hit || hit.melee || !hit.entity) return;
+      if (!hit || !hit.entity) return;
       const e = hit.entity;
+      if (hit.melee) {
+        // Melee clash: pale sparks instead of the side-colored ranged burst.
+        burstAt(e.x, e.z || 0, '#ffe9a8', 6);
+        return;
+      }
       const color = e.side === 'player' ? '#5aa0ff' : '#ff6a5a';
       burstAt(e.x, e.z || 0, hit.special ? '#ff8800' : color, hit.special ? 30 : 10, hit.damage);
     }));
@@ -115,6 +147,7 @@ export function attachBattleView(game, sim, fx) {
       if (!e) return;
       focusX = e.x;
       focusTtl = Math.max(focusTtl, 2.5);
+      if (e.maxHp >= 1200) shake(0.22, 0.35); // heavy deaths thump
       const color = e.side === 'player' ? '#4a8af4' : '#f44a4a';
       burstAt(e.x, e.z || 0, color, 22);
       if (e instanceof Unit) burstAt(e.x, (e.z || 0) + 0.3, '#ffe98a', 6, `+${e.goldReward}`, '#ffe98a');
@@ -130,13 +163,16 @@ export function attachBattleView(game, sim, fx) {
     };
     unsubs.push(bus.on('special:activate', ({ side, ageIndex }) => {
       const fx = SPECIAL_FX[ageIndex] || SPECIAL_FX[0];
+      shake(0.45, 0.7);
       const enemyHalf = side === 'player';
       for (let i = 0; i < fx.n; i++) {
         const px = enemyHalf
           ? CONFIG.WORLD.WIDTH * (0.55 + Math.random() * 0.4)
           : CONFIG.WORLD.WIDTH * (0.05 + Math.random() * 0.4);
         setTimeout(() => {
-          burstAt(px, (Math.random() * 2 - 1) * 1.6, i % 2 ? fx.colors[0] : fx.colors[1], fx.count);
+          const pz = (Math.random() * 2 - 1) * 1.6;
+          burstAt(px, pz, i % 2 ? fx.colors[0] : fx.colors[1], fx.count);
+          scorchAt(px, pz);
         }, i * fx.stagger);
       }
     }));
@@ -278,6 +314,20 @@ export function attachBattleView(game, sim, fx) {
       cur.lerp(lookGoal, k);
       cam.lookAt(cur);
     }
+    // Screen shake: decayed offset on top of the follow position.
+    if (shakeT > 0) {
+      shakeT = Math.max(0, shakeT - dt);
+      const s = shakeAmp * (shakeT / shakeDur);
+      cam.position.x += (Math.random() * 2 - 1) * s;
+      cam.position.y += (Math.random() * 2 - 1) * s * 0.6;
+    }
+    // Scorch decals fade over ~9s.
+    for (const sc of scorches) {
+      if (sc.ttl <= 0) continue;
+      sc.ttl -= dt;
+      if (sc.ttl <= 0) { sc.mesh.visible = false; continue; }
+      sc.mesh.material.opacity = Math.min(0.55, sc.ttl * 0.12);
+    }
   }
 
   game.onUpdate(update);
@@ -289,6 +339,8 @@ export function attachBattleView(game, sim, fx) {
       for (const [, w] of turrets) { scene.remove(w.mesh); w.dispose(); }
       for (const [, w] of buildings) { scene.remove(w.mesh); w.dispose(); }
       for (const [, w] of projectiles) { scene.remove(w.mesh); w.dispose(); }
+      for (const sc of scorches) scene.remove(sc.mesh);
+      scorchGeo.dispose();
       scene.remove(playerBase.mesh);
       scene.remove(enemyBase.mesh);
       playerBase.dispose();
