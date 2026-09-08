@@ -284,15 +284,31 @@ export function attachBattleView(game, sim, fx) {
         if (u.x > maxX) maxX = u.x;
       }
     }
-    const midPx = seen ? (minX + maxX) / 2 : CONFIG.WORLD.WIDTH / 2;
-    const spreadPx = seen ? (maxX - minX) : CONFIG.WORLD.WIDTH;
+    const fieldW = CONFIG.WORLD.WIDTH;
+    const clusterPx = seen ? (minX + maxX) / 2 : fieldW / 2;
+    const clusterW = seen ? (maxX - minX) : fieldW;
+    // Idle opening: action bunched at one gate (or nothing spawned yet)
+    // frames a wide mid-field vista instead of parking inside a base.
+    const oneSided = seen && clusterW < fieldW * 0.25 &&
+      (clusterPx < fieldW * 0.3 || clusterPx > fieldW * 0.7);
     focusTtl = Math.max(0, focusTtl - dt);
+    const idle = focusTtl <= 0 && (!seen || oneSided);
+    const midPx = idle ? fieldW / 2 : clusterPx;
+    const spreadPx = idle ? fieldW : clusterW;
     const anchorPx = focusTtl > 0 ? focusX * 0.65 + midPx * 0.35 : midPx;
     const midM = toMeters(anchorPx);
-    const dist = THREE.MathUtils.clamp(11 + toMeters(spreadPx) * 0.9, 13, 26);
+    // Keep-out: near a base, rise above the rooftops and pull back so the
+    // camera never sits inside base geometry during gate fights.
+    const baseMs = [toMeters(sim.playerBase.x), toMeters(sim.enemyBase.x)];
+    const nearBase = baseMs.some((bx) => Math.abs(midM - bx) < 7);
+    const baseY = THREE.MathUtils.clamp(4.5 + toMeters(spreadPx) * 0.35, 5, 11);
+    const dist = Math.max(
+      THREE.MathUtils.clamp(11 + toMeters(spreadPx) * 0.9, 13, 26),
+      nearBase ? 20 : 0,
+    );
     camGoal.set(
       THREE.MathUtils.clamp(midM, 5, 19),
-      THREE.MathUtils.clamp(4.5 + toMeters(spreadPx) * 0.35, 5, 11),
+      nearBase ? Math.max(baseY, 9) : baseY,
       dist,
     );
     lookGoal.set(THREE.MathUtils.clamp(midM, 5, 19), 1.5, 0);

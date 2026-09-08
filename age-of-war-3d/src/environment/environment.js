@@ -258,11 +258,11 @@ function brazier(seed) {
   cup.position.y = 1.7;
   g.add(cup);
   const flame = new THREE.Mesh(new THREE.ConeGeometry(0.22, 0.7, 7), glowMat('#ff9a3a', 0.95));
-  flame.position.y = 2.2;
+  flame.position.y = 2.0;
   flame.userData.seed = seed;
   g.add(flame);
   const glow = glowSprite('#ff8a2a', 0.5, 3);
-  glow.position.y = 2.2;
+  glow.position.y = 2.0;
   g.add(glow);
   return { group: g, flame };
 }
