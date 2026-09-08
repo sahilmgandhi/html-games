@@ -175,6 +175,11 @@ export class HUD {
         if (this._unitBtns[i]) {
           this._unitBtns[i].disabled = !u.affordable;
           this._unitBtns[i].title = u.tooltip || u.name;
+          const pips = this._unitBtns[i].querySelector('.aow-pips');
+          if (pips) {
+            const s = '●'.repeat(u.tier) + '○'.repeat(Math.max(0, u.maxTier - u.tier));
+            if (pips.textContent !== s) pips.textContent = s;
+          }
         }
         const up = this._upgBtns[i];
         if (up) {
