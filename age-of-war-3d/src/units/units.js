@@ -53,6 +53,9 @@ function eyes(head, y, xOff, spread = 0.13) {
     const pupil = new THREE.Mesh(new THREE.SphereGeometry(0.038, 8, 8), basic('#1a1210'));
     pupil.position.set(xOff + 0.055, y, s * spread);
     head.add(pupil);
+    const glint = new THREE.Mesh(new THREE.SphereGeometry(0.014, 6, 6), basic('#ffffff'));
+    glint.position.set(xOff + 0.08, y + 0.018, s * spread);
+    head.add(glint);
   }
 }
 
@@ -251,7 +254,7 @@ const LEATHER = '#5a3d26';
 const GOLD = '#c9a13a';
 const PLUME = '#a83a3a';
 
-function sword(len = 0.85) {
+function sword(len = 1.0) {
   const g = new THREE.Group();
   const blade = new THREE.Mesh(new THREE.BoxGeometry(0.07, len, 0.11), pbr(STEEL, 0.35, 0.85));
   blade.position.y = -len / 2 - 0.1; g.add(blade);
@@ -292,6 +295,8 @@ function buildSwordsman(accent) {
   const shield = new THREE.Group();
   const plate = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.34, 0.08, 14), pbr(accent, 0.6));
   plate.rotation.x = Math.PI / 2; shield.add(plate);
+  const rimRing = new THREE.Mesh(new THREE.TorusGeometry(0.34, 0.03, 8, 20), pbr('#1c1c22', 0.7));
+  shield.add(rimRing);
   const sigil = new THREE.Mesh(new THREE.CircleGeometry(0.26, 14),
     new THREE.MeshStandardMaterial({ map: emblemTexture(accent, '#e8e2d4', 'cross'), roughness: 0.6 }));
   sigil.position.z = 0.045; shield.add(sigil);
@@ -428,8 +433,8 @@ function buildPaladin(accent) {
 
 function musket() {
   const g = new THREE.Group();
-  const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 1.1, 8), pbr(STEEL_DK, 0.5, 0.65));
-  barrel.rotation.z = Math.PI / 2 - 0.12; barrel.position.set(0.3, -0.5, 0); g.add(barrel);
+  const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 1.25, 8), pbr(STEEL_DK, 0.5, 0.65));
+  barrel.rotation.z = Math.PI / 2 - 0.12; barrel.position.set(0.35, -0.5, 0); g.add(barrel);
   const stock = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.09, 0.09), pbr(WOOD_DK, 0.9));
   stock.position.set(-0.25, -0.62, 0); stock.rotation.z = -0.12; g.add(stock);
   return g;
@@ -604,12 +609,12 @@ function helmet(accent) {
 
 function rifle() {
   const g = new THREE.Group();
-  const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 1.2, 8), pbr(STEEL_DK, 0.4, 0.8));
-  barrel.rotation.z = Math.PI / 2 - 0.1; barrel.position.set(0.35, -0.5, 0); g.add(barrel);
+  const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 1.35, 8), pbr(STEEL_DK, 0.4, 0.8));
+  barrel.rotation.z = Math.PI / 2 - 0.1; barrel.position.set(0.4, -0.5, 0); g.add(barrel);
   const stock = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.1, 0.09), pbr(WOOD_DK, 0.9));
   stock.position.set(-0.3, -0.6, 0); stock.rotation.z = -0.1; g.add(stock);
   const bayonet = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 0.35, 6), pbr(STEEL, 0.35, 0.85));
-  bayonet.rotation.z = Math.PI / 2 - 0.1; bayonet.position.set(1.1, -0.43, 0); g.add(bayonet);
+  bayonet.rotation.z = Math.PI / 2 - 0.1; bayonet.position.set(1.22, -0.43, 0); g.add(bayonet);
   return g;
 }
 
@@ -743,10 +748,10 @@ function visor(head) {
 
 function blaster() {
   const g = new THREE.Group();
-  const body = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.12, 0.12), pbr(FUT_DARK, 0.6, 0.4));
+  const body = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.12, 0.12), pbr(FUT_DARK, 0.6, 0.4));
   g.add(body);
   const tip = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.22, 8), glowMat(FUT_GLOW, 0.95));
-  tip.rotation.z = Math.PI / 2; tip.position.set(0.4, 0, 0); g.add(tip);
+  tip.rotation.z = Math.PI / 2; tip.position.set(0.45, 0, 0); g.add(tip);
   return g;
 }
 
