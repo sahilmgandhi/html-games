@@ -337,6 +337,114 @@ function renaissanceBackdrop() {
   return g;
 }
 
+// Modern: overcast ruined-city skyline — broken concrete towers, a bunker,
+// sandbag lines and tilted utility poles along a churned olive-drab field.
+const CONCRETE = '#7a7a72';
+const CONCRETE_DK = '#54544e';
+const RUST = '#7a4a2e';
+const SANDBAG = '#8a7a5a';
+
+function ruinTower(rng) {
+  const g = new THREE.Group();
+  const h = 5 + rng() * 4;
+  const shaft = new THREE.Mesh(new THREE.BoxGeometry(2.4, h, 2.4), pbr(CONCRETE, 0.95));
+  shaft.position.y = h / 2;
+  shaft.rotation.y = (rng() - 0.5) * 0.2;
+  g.add(shaft);
+  // snapped top: tilted cap slab + exposed rebar
+  const cap = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.5, 2.2), pbr(CONCRETE_DK, 0.95));
+  cap.position.set((rng() - 0.5) * 0.8, h + 0.1, (rng() - 0.5) * 0.8);
+  cap.rotation.set((rng() - 0.5) * 0.5, rng(), (rng() - 0.5) * 0.5);
+  g.add(cap);
+  for (let i = 0; i < 3; i++) {
+    const bar = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 1.1, 5), pbr(RUST, 0.8));
+    bar.position.set((rng() - 0.5) * 1.6, h + 0.5, (rng() - 0.5) * 1.6);
+    bar.rotation.set((rng() - 0.5) * 0.9, 0, (rng() - 0.5) * 0.9);
+    g.add(bar);
+  }
+  // dark blown-out window holes facing the lane
+  const holeM = new THREE.MeshBasicMaterial({ color: '#0c0e0c' });
+  for (const wy of [h * 0.35, h * 0.6]) {
+    const hole = new THREE.Mesh(new THREE.PlaneGeometry(0.7, 0.9), holeM);
+    hole.position.set(0, wy, 1.22);
+    g.add(hole);
+  }
+  return g;
+}
+
+function ruinedWall(rng) {
+  const g = new THREE.Group();
+  const w = 3 + rng() * 3;
+  const wall = new THREE.Mesh(new THREE.BoxGeometry(w, 1.2 + rng() * 0.8, 0.5), pbr(CONCRETE, 0.95));
+  wall.position.y = 0.6;
+  wall.rotation.y = (rng() - 0.5) * 0.6;
+  g.add(wall);
+  return g;
+}
+
+function bunker() {
+  const g = new THREE.Group();
+  const body = new THREE.Mesh(new THREE.BoxGeometry(4.4, 1.8, 3), pbr(CONCRETE_DK, 0.95));
+  body.position.y = 0.9;
+  g.add(body);
+  const roof = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 1.7, 3.2, 10, 1, false, 0, Math.PI),
+    pbr(CONCRETE, 0.95));
+  roof.rotation.z = Math.PI / 2;
+  roof.rotation.y = Math.PI / 2;
+  roof.position.y = 1.8;
+  g.add(roof);
+  const slit = new THREE.Mesh(new THREE.PlaneGeometry(2.6, 0.35),
+    new THREE.MeshBasicMaterial({ color: '#0c0e0c' }));
+  slit.position.set(0, 1.1, 1.52);
+  g.add(slit);
+  return g;
+}
+
+function sandbagLine(n) {
+  const g = new THREE.Group();
+  for (let i = 0; i < n; i++) {
+    const bag = new THREE.Mesh(new THREE.SphereGeometry(0.42, 8, 6), pbr(SANDBAG, 1.0));
+    bag.scale.set(1.25, 0.55, 0.8);
+    bag.position.set(i * 0.85, 0.22 + (i % 2) * 0.38, (i % 2) * 0.1);
+    bag.rotation.y = (i * 0.7) % 0.6;
+    g.add(bag);
+  }
+  return g;
+}
+
+function utilityPole(rng) {
+  const g = new THREE.Group();
+  const h = 5.5 + rng() * 1.5;
+  const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.13, h, 6), pbr('#3a322a', 0.95));
+  pole.position.y = h / 2;
+  pole.rotation.z = (rng() - 0.5) * 0.22;
+  g.add(pole);
+  const arm = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.09, 0.09), pbr('#3a322a', 0.95));
+  arm.position.y = h - 0.6;
+  arm.rotation.z = pole.rotation.z;
+  g.add(arm);
+  return g;
+}
+
+function modernBackdrop(rng) {
+  const g = new THREE.Group();
+  for (const [x, z] of [[-9, -1], [9.5, -2], [0.5, -4]]) {
+    const t = ruinTower(rng);
+    t.position.set(x, 0, z);
+    g.add(t);
+  }
+  for (const [x, z] of [[-5, 1.5], [5.5, 1]]) {
+    const w = ruinedWall(rng);
+    w.position.set(x, 0, z);
+    g.add(w);
+  }
+  const b = bunker();
+  b.position.set(15.5, 0, -3);
+  b.rotation.y = -0.3;
+  g.add(b);
+  return g;
+}
+
 function scatter(rng, count, x0, x1, zBands, avoidLane) {
   const out = [];
   for (let i = 0; i < count; i++) {
@@ -425,6 +533,35 @@ export function createEnvironment(scene, ageIndex) {
   }
 
   function build(age) {
+    if (age === 3) {
+      const ruins = modernBackdrop(rng);
+      ruins.position.set(11, 0, -32);
+      group.add(ruins);
+      // churned olive mounds flank the ruins
+      for (const [x, z, w, h] of [[-14, -30, 12, 3], [34, -31, 14, 4], [-2, -37, 18, 5]]) {
+        const m = new THREE.Mesh(new THREE.SphereGeometry(1, 12, 8), pbr('#33331f', 1.0));
+        m.scale.set(w, h, w * 0.5);
+        m.position.set(x, 0, z);
+        group.add(m);
+      }
+      // tilted utility poles strictly behind the lane
+      for (const [x, z] of scatter(rng, 10, -12, 36, [[-14, -5]], true)) {
+        const p = utilityPole(rng);
+        p.position.set(x, 0, z);
+        p.rotation.y = rng() * Math.PI * 2;
+        group.add(p);
+      }
+      // sandbag lines guard both lane edges
+      for (const [x, z, ry] of [[-4, -3.4, 0.2], [8, 3.4, -0.15], [20, -3.4, 0.15], [30, 3.4, -0.2]]) {
+        const s = sandbagLine(7);
+        s.position.set(x, 0, z);
+        s.rotation.y = ry;
+        group.add(s);
+      }
+      addRocks();
+      addSky('#4a5248');
+      return;
+    }
     if (age === 2) {
       const town = renaissanceBackdrop();
       town.position.set(11, 0, -32);
