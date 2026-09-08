@@ -40,12 +40,95 @@
   bottom: 12px;
   transform: translateX(-50%);
   display: flex;
-  gap: 8px;
-  align-items: stretch;
+  flex-direction: column;
+  gap: 6px;
+  align-items: center;
   pointer-events: auto;
+  max-width: 96vw;
 }
 
+.aow-row { display: flex; gap: 8px; align-items: stretch; flex-wrap: wrap; justify-content: center; }
+
 .aow-cards { display: flex; gap: 8px; }
+
+.aow-unit-wrap { display: flex; gap: 3px; align-items: stretch; }
+
+.aow-upg {
+  min-width: 30px;
+  padding: 4px 5px;
+  background: rgba(30, 20, 44, 0.85);
+  border: 1px solid rgba(178, 132, 255, 0.5);
+  border-radius: 8px;
+  color: #e2ccff;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 700;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.aow-upg small { font-size: 9px; color: #ffd97a; font-weight: 400; }
+
+.aow-upg:hover:not(:disabled) { background: rgba(70, 44, 110, 0.9); border-color: #d3aaff; }
+
+.aow-upg:disabled { opacity: 0.45; cursor: default; }
+
+.aow-pips { font-size: 9px; color: #ffcc55; letter-spacing: 2px; }
+
+.aow-mini {
+  pointer-events: auto;
+  cursor: pointer;
+  font-size: 13px;
+  padding: 5px 10px;
+}
+
+.aow-btn.aow-small {
+  min-width: 0;
+  padding: 5px 9px;
+  font-size: 11px;
+  flex-direction: column;
+}
+
+.aow-btn.aow-small .aow-card-name { font-size: 11px; }
+.aow-btn.aow-small .aow-card-cost { font-size: 10px; }
+
+.aow-sell { border-color: rgba(255, 110, 110, 0.5); }
+.aow-sell:hover:not(:disabled) { background: rgba(90, 26, 26, 0.9); border-color: #ff8080; }
+
+.aow-speed.aow-active {
+  border-color: #00e5ff;
+  color: #00e5ff;
+  box-shadow: 0 0 8px rgba(0, 229, 255, 0.4);
+}
+
+.aow-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.72);
+  pointer-events: auto;
+  z-index: 20;
+}
+
+.aow-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  background: rgba(14, 12, 20, 0.95);
+  border: 1px solid rgba(255, 210, 120, 0.4);
+  border-radius: 14px;
+  padding: 28px 48px;
+}
+
+.aow-panel h1 { margin: 0 0 6px; font-size: 42px; letter-spacing: 0.06em; }
+.aow-win { color: #6db8ff; }
+.aow-lose { color: #ff6a6a; }
+.aow-stat { font-size: 13px; color: rgba(245, 234, 210, 0.75); font-family: monospace; }
 
 .aow-card, .aow-btn {
   display: flex;

@@ -36,7 +36,7 @@ if (until) {
 }
 const expr = opt('expr', '({ units: window.__battle?.units?.length })');
 try {
-  const result = await page.evaluate(`(() => { const window = self; return (${expr}); })()`);
+  const result = await page.evaluate(`(async () => { const window = self; return (${expr}); })()`);
   console.log(JSON.stringify(result, null, 2));
 } catch (e) {
   console.error(`eval failed: ${e.message}`);

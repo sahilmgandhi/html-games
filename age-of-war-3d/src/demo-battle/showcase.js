@@ -4,7 +4,7 @@
 import { BattleSim } from '../simulation/battle.js';
 import { mulberry32 } from '../simulation/rng.js';
 import { ParticleSystem3D } from '../particles/particles.js';
-import { attachBattleView } from './battle-view.js';
+import { attachBattleView, applyBattleAction } from './battle-view.js';
 
 export function runShowcase(game) {
   const fx = new ParticleSystem3D(game.scene);
@@ -32,10 +32,5 @@ export function runShowcase(game) {
   attachBattleView(game, sim, fx);
   game.onUpdate((dt) => fx.update(dt));
   window.__battle = sim;
-  window.__hud?.on((action) => {
-    if (action.type === 'spawn-unit') sim.spawnUnit(action.index);
-    else if (action.type === 'spawn-hero') sim.spawnHero('player');
-    else if (action.type === 'evolve') sim.evolve();
-    else if (action.type === 'special') sim.useSpecial();
-  });
+  window.__hud?.on((action) => applyBattleAction(sim, action));
 }

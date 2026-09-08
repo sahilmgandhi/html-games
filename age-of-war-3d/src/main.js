@@ -7,7 +7,7 @@ import { HUD } from './hud/hud.js';
 import { AudioManager } from './audio/audio.js';
 import { BattleSim } from './simulation/battle.js';
 import { CONFIG } from './simulation/config.js';
-import { attachBattleView } from './demo-battle/battle-view.js';
+import { attachBattleView, applyBattleAction } from './demo-battle/battle-view.js';
 
 window.__errors = [];
 window.addEventListener('error', (e) => window.__errors.push(`error: ${e.message}`));
@@ -52,12 +52,7 @@ if (!showcase) {
     autoPlayer: false,
   });
   attachBattleView(game, sim, particles);
-  hud.on((action) => {
-    if (action.type === 'spawn-unit') sim.spawnUnit(action.index);
-    else if (action.type === 'spawn-hero') sim.spawnHero('player');
-    else if (action.type === 'evolve') sim.evolve();
-    else if (action.type === 'special') sim.useSpecial();
-  });
+  hud.on((action) => applyBattleAction(sim, action));
   window.__battle = sim;
 }
 

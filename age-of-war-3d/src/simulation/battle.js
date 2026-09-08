@@ -62,10 +62,24 @@ export class BattleSim {
 
     this.gameOver = false;
     this.winner = null;
+    this.paused = false;
+    this.gameSpeed = 1;
+    this.formationMode = 0;
     this.gameTime = 0;
     this.totalSpawned = 0;
     this.totalGoldSpent = 0;
+    this.playerLowestHp = CONFIG.BASE_HP;
     this._demoTimer = 0;
+  }
+
+  restart() {
+    const difficulty = this.difficulty;
+    const rng = this.rng;
+    this.resetState();
+    this.difficulty = difficulty;
+    this.rng = rng;
+    this.ai = new AI(this, this.rng);
+    this._sound('evolve');
   }
 
   emit(name, payload) {
@@ -117,9 +131,23 @@ export class BattleSim {
       this.enemyGold -= data.cost;
     }
 
-    const spawnX = isPlayer
+    let spawnX = isPlayer
       ? CONFIG.BASE_X_OFFSET + 30
       : CONFIG.WORLD.WIDTH - CONFIG.BASE_X_OFFSET - 30;
+
+    if (isPlayer && this.formationMode > 0) {
+      const sameType = this.units.filter(
+        (u) => u.side === 'player' && u.unitIndex === unitIndex && u.alive);
+      const count = sameType.length;
+      const spacing = 20;
+      if (this.formationMode === 1) {
+        spawnX += (count % 5) * spacing - Math.min(count, 5) * spacing / 2;
+      } else if (this.formationMode === 2) {
+        const row = Math.floor(count / 5);
+        const col = count % 5;
+        spawnX += (col - 2) * spacing * (1 - row * 0.15);
+      }
+    }
     const u = new Unit(
       spawnX, CONFIG.GROUND_Y, side,
       isPlayer ? this.currentAge : this.enemyAge, unitIndex,
@@ -324,9 +352,55 @@ export class BattleSim {
     }
   }
 
+  buySlot() {
+    if (this.playerSlotsBought >= CONFIG.TURRET_SLOTS) return false;
+    if (this.gold < CONFIG.TURRET_SLOT_COST) return false;
+    this.gold -= CONFIG.TURRET_SLOT_COST;
+    this.totalGoldSpent += CONFIG.TURRET_SLOT_COST;
+    this.playerSlotsBought++;
+    this._sound('spawn');
+    return true;
+  }
+
+  playerTurrets() {
+    return this.turrets.filter((t) => t.side === 'player' && t.alive);
+  }
+
+  sellTurret(turretIndex) {
+    const playerTurrets = this.playerTurrets();
+    if (turretIndex >= playerTurrets.length) return false;
+    const t = playerTurrets[turretIndex];
+    const refund = Math.floor(t.cost * CONFIG.TURRET_REFUND_RATE);
+    this.gold += refund;
+    t.alive = false;
+    this.emit('gold:change', { side: 'player', amount: refund });
+    this._sound('gold');
+    return true;
+  }
+
+  getUnitUpgradeCost(unitIndex) {
+    const tier = this.unitUpgrades[unitIndex] || 0;
+    if (tier >= CONFIG.MAX_UPGRADE_TIER) return null;
+    const age = CONFIG.AGES[this.currentAge];
+    const baseCost = age.units[unitIndex].cost;
+    return Math.round(baseCost * CONFIG.UNIT_UPGRADE_COSTS[tier + 1]);
+  }
+
+  upgradeUnit(unitIndex) {
+    const tier = this.unitUpgrades[unitIndex] || 0;
+    if (tier >= CONFIG.MAX_UPGRADE_TIER) return false;
+    const cost = this.getUnitUpgradeCost(unitIndex);
+    if (cost === null || this.gold < cost) return false;
+    this.gold -= cost;
+    this.totalGoldSpent += cost;
+    this.unitUpgrades[unitIndex] = tier + 1;
+    this._sound('evolve');
+    return true;
+  }
+
   // ---- per-frame update (same order as the original) ----
   update(dt) {
-    if (this.gameOver) return;
+    if (this.gameOver || this.paused) return;
 
     this.gameTime += dt;
     if (CONFIG.PASSIVE_GOLD_RATE) {
@@ -483,29 +557,75 @@ export class BattleSim {
     const age = CONFIG.AGES[this.currentAge];
     const next = CONFIG.AGES[this.currentAge + 1];
     const spCost = (CONFIG.SPECIAL_XP_COST && CONFIG.SPECIAL_XP_COST[this.currentAge]) || 0;
+    const hasSpXp = this.xp >= spCost;
+    const spReady = this.specialCooldown <= 0 && hasSpXp && !this.specialAnim;
+    const placed = this.playerTurrets();
+    const FORMATIONS = ['Scatter', 'Line', 'Wedge'];
     return {
       gold: this.gold,
       xp: this.xp,
       ageIndex: this.currentAge,
       ageName: age.name,
-      units: age.units.map((u, i) => ({
-        name: u.name, cost: u.cost, hotkey: String(i + 1), affordable: this.gold >= u.cost,
-      })),
+      units: age.units.map((u, i) => {
+        const tier = this.unitUpgrades[i] || 0;
+        const upgCost = this.getUnitUpgradeCost(i);
+        return {
+          name: u.name, cost: u.cost, hotkey: String(i + 1), affordable: this.gold >= u.cost,
+          tier, maxTier: CONFIG.MAX_UPGRADE_TIER,
+          upgCost, upgAffordable: upgCost !== null && this.gold >= upgCost,
+          tooltip: `HP ${Math.round(u.hp * CONFIG.UNIT_UPGRADE_HP_MULT[tier])} · DMG ${Math.round(u.damage * CONFIG.UNIT_UPGRADE_DMG_MULT[tier])} · RNG ${u.range} · T${tier}`,
+        };
+      }),
       hero: age.hero
-        ? { name: age.hero.name, cost: age.hero.cost, hotkey: 'H', affordable: this.gold >= age.hero.cost && this.heroCooldown <= 0 }
+        ? {
+          name: age.hero.name, cost: age.hero.cost, hotkey: 'H',
+          affordable: this.gold >= age.hero.cost && this.heroCooldown <= 0,
+          cooldownSecs: this.heroCooldown > 0 ? Math.ceil(this.heroCooldown) : 0,
+        }
         : null,
       evolve: next
         ? { label: `Evolve: ${next.name}`, cost: CONFIG.EVOLVE_XP[this.currentAge + 1], affordable: this.xp >= CONFIG.EVOLVE_XP[this.currentAge + 1] }
         : null,
       special: {
         name: age.specialName,
-        ready: this.specialCooldown <= 0 && this.xp >= spCost && !this.specialAnim,
+        ready: spReady,
+        status: this.specialCooldown > 0 ? `${Math.ceil(this.specialCooldown)}s`
+          : (!hasSpXp ? `${spCost} XP` : (this.specialAnim ? '...' : 'READY')),
         frac: this.specialAnim ? this.specialAnim.timer / this.specialAnim.duration
           : Math.max(0, Math.min(1, this.specialCooldown / CONFIG.SPECIAL_COOLDOWN)),
       },
+      slots: {
+        bought: this.playerSlotsBought, max: CONFIG.TURRET_SLOTS,
+        cost: CONFIG.TURRET_SLOT_COST,
+        affordable: this.gold >= CONFIG.TURRET_SLOT_COST && this.playerSlotsBought < CONFIG.TURRET_SLOTS,
+        full: this.playerSlotsBought >= CONFIG.TURRET_SLOTS,
+      },
+      turrets: age.turrets.map((t) => ({
+        name: t.name, cost: t.cost,
+        placeable: this.gold >= t.cost && placed.length < this.playerSlotsBought,
+      })),
+      sell: placed.map((t) => ({
+        name: t.name, refund: Math.floor(t.cost * CONFIG.TURRET_REFUND_RATE),
+      })),
+      buildings: CONFIG.BUILDINGS.map((b) => ({
+        name: b.name, cost: b.cost, affordable: this.gold >= b.cost,
+      })),
+      speeds: [1, 2, 3].map((s) => ({ speed: s, active: this.gameSpeed === s })),
+      formation: FORMATIONS[this.formationMode],
+      paused: this.paused,
+      over: this.gameOver ? {
+        winner: this.winner,
+        title: this.winner === 'player' ? 'VICTORY!' : 'DEFEAT!',
+        stats: [
+          `Time: ${Math.floor(this.gameTime)}s`,
+          `Units Spawned: ${this.totalSpawned}`,
+          `Age Reached: ${CONFIG.AGES[this.currentAge].name}`,
+          `Gold Spent: ${Math.floor(this.totalGoldSpent)}`,
+        ],
+      } : null,
       hint: this.gameOver
-        ? (this.winner === 'player' ? 'VICTORY — refresh to replay' : 'DEFEAT — refresh to retry')
-        : '1-3 spawn · H hero · E evolve · Q special',
+        ? (this.winner === 'player' ? 'VICTORY — restart to replay' : 'DEFEAT — restart to retry')
+        : '1-3 spawn · B/N buildings · T speed · P pause',
       gameOver: this.gameOver,
       winner: this.winner,
     };

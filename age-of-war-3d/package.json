@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite --port 3001",
     "build": "vite build",
+    "test": "node test-runner.js",
     "preview": "vite preview",
     "shot": "PLAYWRIGHT_BROWSERS_PATH=./.browsers node tools/screenshot.mjs"
   },

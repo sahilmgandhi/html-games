@@ -55,11 +55,33 @@ check('spawnUnit', !!s.spawnUnit(0), '');
 check('spawnHero gates on gold', (() => { s.gold = 0; return s.spawnHero('player') === null; })(), '');
 s.gold = 10000;
 check('buyBuilding', !!s.buyBuilding(0), '');
+check('buySlot', s.buySlot() === true && s.playerSlotsBought === 2, '');
 check('spawnTurret', !!s.spawnTurret(0), '');
+check('sellTurret refunds', (() => {
+  const before = s.gold;
+  const ok = s.sellTurret(0);
+  return ok && s.gold > before && s.playerTurrets().length === 0;
+})(), '');
+s.gold = 10000;
+check('upgradeUnit', s.upgradeUnit(0) === true && s.unitUpgrades[0] === 1, '');
+check('upgrade cost scales', s.getUnitUpgradeCost(0) > 0, '');
+s.unitUpgrades[0] = 2;
+check('upgrade capped', s.upgradeUnit(0) === false, '');
 s.xp = 100000;
 check('special fires', s.useSpecial() === true && !!s.specialAnim, '');
 for (let i = 0; i < 200; i++) s.update(1 / 60);
 check('special resolves', s.specialAnim === null, '');
+s.paused = true;
+const gt = s.gameTime;
+s.update(1);
+check('pause halts sim', s.gameTime === gt, '');
+s.paused = false;
+s.playerBase.hp = 0;
+s.update(1 / 60);
+check('game over on base fall', s.gameOver && s.winner === 'enemy', '');
+s.restart();
+check('restart resets match',
+  !s.gameOver && s.units.length === 0 && s.gold === 200 && s.playerBase.hp === 1000, '');
 
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);
