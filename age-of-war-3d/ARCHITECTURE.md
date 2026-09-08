@@ -38,20 +38,40 @@ src/
 Each gameplay module owns only its folder and exposes one factory or class:
 
 - `terrain.createTerrain(scene, ageIndex)` → `{ group, update(dt), setAge(i), dispose() }`
-- `lighting.createLighting(scene)` → `{ update(dt), dispose() }`
+- `lighting.createLighting(scene)` → `{ sun, update(dt), setAge(i), dispose() }`
 - `environment.createEnvironment(scene, ageIndex)` → `{ group, setAge(i), dispose() }`
 - `units.UnitMesh(entity, ageIndex)` → `{ mesh, update(dt, entity), dispose() }`
-- `bases.BaseMesh(side, ageIndex)` → `{ mesh, setHp(frac), dispose() }`
+- `bases.BaseMesh(side, ageIndex)` → `{ mesh, setHp(frac), update(dt), dispose() }`
 - `turrets.TurretMesh(turret, ageIndex)` → `{ mesh, aimAt(x,y,z), dispose() }`
-- `buildings.BuildingMesh(building)` → `{ mesh, dispose() }`
+- `buildings.BuildingMesh(building)` → `{ mesh, dispose() }` (age-agnostic: mine/barracks look identical in every age, matching the original)
 - `projectiles.ProjectileMesh(kind)` → `{ mesh, update(dt), dispose() }`
 - `particles.ParticleSystem3D(scene)` → `{ damageNumber(), goldNumber(), burst(), update(dt) }`
 - `hud.HUD(root, game)` → `{ update(state), on(action), dispose() }`
 - `audio.AudioManager` → `{ play(name), startMusic(age), updateMusicAge(age) }`
 - `simulation.*` → pure classes, importable in Node for tests.
-- `demo-battle.runDemoBattle(game)` → drives a scripted Stone Age battle.
+- `demo-battle.runShowcase(game)` → scripted Stone Age match; `demo-battle/castle/showcase.js` `runShowcase(game)` → scripted Castle Age match (both sides evolved to age 1). Future ages follow the same `demo-battle/<slug>/showcase.js` pattern; the `?showcase=` loader resolves `<folder>/showcase.js` unchanged.
 
 Core (`src/core/`) is touched only by the integrator. Builders request core changes instead of making them.
+
+## Age routing (Castle Age onwards; single-agent deviation noted in STATUS.json)
+
+- `UnitMesh`/`TurretMesh`/`BaseMesh` branch builders on `ageIndex`: age 1 = Castle
+  rigs (Swordsman/Archer/Knight/Paladin, stone keep, Catapult/Fire Catapult/Oil).
+  Unknown ages fall back to the age-0 rig for the same `type`/`turretIndex`, so
+  evolve never renders a missing mesh.
+- Projectile kinds: `rock`, `egg`, `boulder` (Stone) plus `arrow`, `fireball`,
+  `oil` (Castle). `simulation/entities.js` (ours, sim-side) maps unit/turret
+  type+age to kind; render only builds the mesh. Kind strings flow sim→render
+  through the existing projectile pool.
+- `age:evolve` transitions live in `demo-battle/battle-view.js`: on evolve it
+  calls `setAge` on the shared `window.__world` terrain/environment, rebuilds
+  both `BaseMesh`es for the new ages, and calls `audio.updateMusicAge`.
+  Special-attack FX dispatches per `ageIndex` there too (Meteor Shower for 0,
+  Arrow Volley for 1).
+- Shared `core/pbr.js` cloth helper: `makeCloth(w, h, segW, mat)` returns
+  `{ mesh, update(t) }`, a double-sided rippling banner. Both Stone and Castle
+  bases use it (Stone retrofit approved); veto on flat-quad cloth applies to
+  every age.
 
 ## Data flow
 
