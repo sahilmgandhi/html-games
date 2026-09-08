@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import {
-  pbr, basic, glowMat, solidify, cloneMats, makeHpBar, disposeDeep, SIDE_ACCENT,
+  pbr, basic, glowMat, solidify, cloneMats, makeHpBar, makeCloth, disposeDeep, SIDE_ACCENT,
 } from '../core/pbr.js';
 
 // Stone Age stronghold: great-menhir core ringed by a timber palisade, skull
@@ -109,17 +109,15 @@ export function BaseMesh(side, ageIndex) {
     mesh.add(totem);
   }
 
-  // war banner on the menhir
+  // war banner on the menhir, hoist pinned to the pole
   const bannerPole = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.1, 3.4, 8), palMatDk);
   bannerPole.position.set(-0.6 * mirror, 8.6, 0);
   mesh.add(bannerPole);
-  const flagGeo = new THREE.PlaneGeometry(1.7, 1.0, 6, 2);
-  const flag = new THREE.Mesh(flagGeo, pbr(accent, 0.75));
-  flag.material.side = THREE.DoubleSide;
-  flag.position.set(0.35 * mirror - 0.6 * mirror, 9.6, 0);
+  const cloth = makeCloth(1.7, 1.0, 6, pbr(accent, 0.75));
+  const flag = cloth.mesh;
+  flag.position.set(-0.6 * mirror, 9.6, 0);
   if (mirror < 0) flag.rotation.y = Math.PI;
   mesh.add(flag);
-  const flagBase = flagGeo.attributes.position.array.slice();
 
   // campfire at the gate
   const fire = new THREE.Group();
@@ -182,15 +180,7 @@ export function BaseMesh(side, ageIndex) {
     },
     update(dt) {
       t += dt;
-      // banner ripple
-      const pos = flagGeo.attributes.position;
-      for (let i = 0; i < pos.count; i++) {
-        const bx = flagBase[i * 3];
-        const wave = Math.sin(t * 5 + bx * 3) * 0.12 * (bx + 0.85);
-        pos.setZ(i, wave);
-      }
-      pos.needsUpdate = true;
-      flagGeo.computeVertexNormals();
+      cloth.update(t);
       // fire flicker
       if (flame.visible) {
         const f = 1 + Math.sin(t * 13) * 0.15 + Math.sin(t * 29) * 0.08;
@@ -201,7 +191,6 @@ export function BaseMesh(side, ageIndex) {
     },
     dispose() {
       disposeDeep(mesh);
-      flagGeo.dispose();
       bar.sprite.material.map?.dispose?.();
       bar.sprite.material.dispose?.();
     },

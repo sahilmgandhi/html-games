@@ -139,6 +139,33 @@ export function makeHpBar(width = 1.4) {
   };
 }
 
+// Rippling cloth banner shared by every age's base. Hoist edge pinned at
+// local x=0, wave amplitude growing toward the fly end. The material is
+// cloned so DoubleSide stays local to the banner. Returns { mesh, update(t) }.
+export function makeCloth(w, h, segW, mat) {
+  const geo = new THREE.PlaneGeometry(w, h, segW, 2);
+  geo.translate(w / 2, 0, 0);
+  const m = mat.clone();
+  m.side = THREE.DoubleSide;
+  const mesh = new THREE.Mesh(geo, m);
+  const base = geo.attributes.position.array.slice();
+  return {
+    mesh,
+    update(t) {
+      const pos = geo.attributes.position;
+      for (let i = 0; i < pos.count; i++) {
+        const bx = base[i * 3];
+        const by = base[i * 3 + 1];
+        const k = bx / w;
+        pos.setZ(i, Math.sin(t * 5 + bx * 3 + by * 1.5) * 0.14 * k
+          + Math.sin(t * 9 + by * 4) * 0.04 * k);
+      }
+      pos.needsUpdate = true;
+      geo.computeVertexNormals();
+    },
+  };
+}
+
 export function disposeDeep(root) {
   root.traverse((o) => {
     if (o.isMesh) {
