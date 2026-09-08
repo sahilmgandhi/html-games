@@ -109,55 +109,24 @@ export function attachBattleView(game, sim, fx) {
       burstAt(e.x, e.z || 0, color, 22);
       if (e instanceof Unit) burstAt(e.x, (e.z || 0) + 0.3, '#ffe98a', 6, `+${e.goldReward}`, '#ffe98a');
     }));
+    // Special-attack FX per age: { volleys, count, colors, staggerMs }.
+    // Future ages add one table row. Rendering-only; Math.random() allowed.
+    const SPECIAL_FX = {
+      3: { n: 18, count: 40, colors: ['#ffffff', '#ffb347'], stagger: 90 }, // Airstrike
+      2: { n: 16, count: 34, colors: ['#ff5500', '#ffaa33'], stagger: 110 }, // Artillery
+      1: { n: 14, count: 16, colors: ['#fff2c0', '#ffd34d'], stagger: 120 }, // Arrow Volley
+      0: { n: 10, count: 26, colors: ['#ff8800', '#ffcc66'], stagger: 130 }, // Meteor Shower
+    };
     unsubs.push(bus.on('special:activate', ({ side, ageIndex }) => {
-      // Airstrike (Modern): a strafing run of white-hot impacts sweeps the half.
-      if (ageIndex === 3) {
-        const enemyHalf = side === 'player';
-        for (let i = 0; i < 18; i++) {
-          const px = enemyHalf
-            ? CONFIG.WORLD.WIDTH * (0.55 + Math.random() * 0.4)
-            : CONFIG.WORLD.WIDTH * (0.05 + Math.random() * 0.4);
-          setTimeout(() => {
-            burstAt(px, (Math.random() * 2 - 1) * 1.6, i % 2 ? '#ffffff' : '#ffb347', 40);
-          }, i * 90);
-        }
-        return;
-      }
-      // Artillery Strike (Renaissance): heavy shell impacts walk the enemy half.
-      if (ageIndex === 2) {
-        const enemyHalf = side === 'player';
-        for (let i = 0; i < 16; i++) {
-          const px = enemyHalf
-            ? CONFIG.WORLD.WIDTH * (0.55 + Math.random() * 0.4)
-            : CONFIG.WORLD.WIDTH * (0.05 + Math.random() * 0.4);
-          setTimeout(() => {
-            burstAt(px, (Math.random() * 2 - 1) * 1.6, i % 2 ? '#ff5500' : '#ffaa33', 34);
-          }, i * 110);
-        }
-        return;
-      }
-      // Arrow Volley (Castle): pale impact streaks rain across the enemy half.
-      if (ageIndex === 1) {
-        const enemyHalf = side === 'player';
-        for (let i = 0; i < 14; i++) {
-          const px = enemyHalf
-            ? CONFIG.WORLD.WIDTH * (0.55 + Math.random() * 0.4)
-            : CONFIG.WORLD.WIDTH * (0.05 + Math.random() * 0.4);
-          setTimeout(() => {
-            burstAt(px, (Math.random() * 2 - 1) * 1.6, i % 2 ? '#fff2c0' : '#ffd34d', 16);
-          }, i * 120);
-        }
-        return;
-      }
-      // Meteor Shower: a volley of burning impacts across the enemy half.
+      const fx = SPECIAL_FX[ageIndex] || SPECIAL_FX[0];
       const enemyHalf = side === 'player';
-      for (let i = 0; i < 10; i++) {
+      for (let i = 0; i < fx.n; i++) {
         const px = enemyHalf
           ? CONFIG.WORLD.WIDTH * (0.55 + Math.random() * 0.4)
           : CONFIG.WORLD.WIDTH * (0.05 + Math.random() * 0.4);
         setTimeout(() => {
-          burstAt(px, (Math.random() * 2 - 1) * 1.6, i % 2 ? '#ff8800' : '#ffcc66', 26);
-        }, i * 130);
+          burstAt(px, (Math.random() * 2 - 1) * 1.6, i % 2 ? fx.colors[0] : fx.colors[1], fx.count);
+        }, i * fx.stagger);
       }
     }));
     unsubs.push(bus.on('age:evolve', ({ side, ageIndex }) => {
