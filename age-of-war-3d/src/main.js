@@ -64,7 +64,8 @@ game.onUpdate((dt) => {
   hud.update(window.__battle ? window.__battle.hudState() : stubState());
 });
 
-// Placeholder state for module showcases (no battle running).
+// Placeholder state for module showcases (no battle running). Mirrors the
+// BattleSim.hudState() shape so the HUD never renders 'undefined'.
 function stubState() {
   const age = CONFIG.AGES[0];
   return {
@@ -72,11 +73,31 @@ function stubState() {
     xp: CONFIG.STARTING_XP,
     ageIndex: 0,
     ageName: age.name,
-    units: age.units.map((u, i) => ({ name: u.name, cost: u.cost, hotkey: String(i + 1), affordable: CONFIG.STARTING_GOLD >= u.cost })),
-    hero: { name: age.hero.name, cost: age.hero.cost, hotkey: 'H', affordable: false },
+    units: age.units.map((u, i) => ({
+      name: u.name, cost: u.cost, hotkey: String(i + 1),
+      affordable: CONFIG.STARTING_GOLD >= u.cost,
+      tier: 0, maxTier: CONFIG.MAX_UPGRADE_TIER,
+      upgCost: Math.round(u.cost * CONFIG.UNIT_UPGRADE_COSTS[1]),
+      upgAffordable: false,
+      tooltip: `${u.name} · HP ${u.hp} · DMG ${u.damage} · RNG ${u.range}`,
+    })),
+    hero: {
+      name: age.hero.name, cost: age.hero.cost, hotkey: 'H',
+      affordable: false, cooldownSecs: 0,
+    },
     evolve: { label: `Evolve: ${CONFIG.AGES[1].name}`, cost: CONFIG.EVOLVE_XP[1], affordable: false },
-    special: { name: age.specialName, ready: false, frac: 1 },
-    hint: '1-3 spawn · H hero · E evolve · Q special',
+    special: { name: age.specialName, ready: false, status: '—', frac: 1 },
+    slots: {
+      bought: 0, max: CONFIG.TURRET_SLOTS, cost: CONFIG.TURRET_SLOT_COST, affordable: false, full: false,
+    },
+    turrets: age.turrets.map((t) => ({ name: t.name, cost: t.cost, placeable: false })),
+    sell: [],
+    buildings: CONFIG.BUILDINGS.map((b) => ({ name: b.name, cost: b.cost, affordable: false })),
+    speeds: [1, 2, 3].map((s) => ({ speed: s, active: s === 1 })),
+    formation: 'Scatter',
+    paused: false,
+    over: null,
+    hint: CONFIG.HINT,
   };
 }
 

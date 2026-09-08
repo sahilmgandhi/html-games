@@ -52,6 +52,9 @@ export const CONFIG = {
 
   HERO_COOLDOWN: 60,
 
+  // Single hint-bar text shared by live battles and showcase stubs.
+  HINT: '1-3 spawn · H hero · E evolve · Q special · B/N shops · T speed · P pause',
+
   BUILDINGS: [
     { name: 'Gold Mine', cost: 200, hp: 200, produceAmount: 3, produceInterval: 4 },
     { name: 'Barracks', cost: 300, hp: 300, healAmount: 2, healRadius: 80 },

@@ -625,7 +625,7 @@ export class BattleSim {
       } : null,
       hint: this.gameOver
         ? (this.winner === 'player' ? 'VICTORY — restart to replay' : 'DEFEAT — restart to retry')
-        : '1-3 spawn · B/N buildings · T speed · P pause',
+        : CONFIG.HINT,
       gameOver: this.gameOver,
       winner: this.winner,
     };
