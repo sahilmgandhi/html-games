@@ -492,7 +492,7 @@ function buildSingleTurret(accent) {
   const shield = new THREE.Mesh(new THREE.BoxGeometry(0.18, 1.0, 1.4), pbr('#4a4f56', 0.55));
   shield.position.set(0.35, 0.35, 0);
   arm.add(shield);
-  const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.11, 2.2, 12), pbr('#2c3036', 0.4));
+  const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.11, 2.2, 12), pbr('#2c3036', 0.4, 0.8));
   barrel.rotation.z = -Math.PI / 2 + 0.08;
   barrel.position.set(1.2, 0.4, 0);
   arm.add(barrel);
@@ -513,7 +513,7 @@ function buildRocketTurret(accent) {
   rack.rotation.z = 0.5; // fixed skyward tilt; the head still yaws to track
   for (const dy of [-0.16, 0.16]) {
     for (const dz of [-0.28, 0, 0.28]) {
-      const tube = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.11, 1.5, 8), pbr('#3d4436', 0.6));
+      const tube = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.11, 1.5, 8), pbr('#3d4436', 0.6, 0.3));
       tube.rotation.z = -Math.PI / 2;
       tube.position.set(0.3, dy, dz);
       rack.add(tube);
@@ -542,7 +542,7 @@ function buildDoubleTurret(accent) {
   dome.position.y = -0.1;
   arm.add(dome);
   for (const s of [-1, 1]) {
-    const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.11, 2.4, 12), pbr('#2c3036', 0.4));
+    const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.11, 2.4, 12), pbr('#2c3036', 0.4, 0.8));
     barrel.rotation.z = -Math.PI / 2 + 0.1;
     barrel.position.set(1.3, 0.6, s * 0.3);
     arm.add(barrel);
@@ -568,7 +568,7 @@ function techPad(accent) {
   root.add(rim);
   const head = new THREE.Group();
   head.position.y = 0.5;
-  const pivot = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.45, 0.8, 6), pbr('#1c2940', 0.6));
+  const pivot = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.45, 0.8, 6), pbr('#1c2940', 0.6, 0.6));
   pivot.position.y = 0.7;
   head.add(pivot);
   const trim = new THREE.Mesh(new THREE.TorusGeometry(1.8, 0.05, 8, 6), pbr(accent, 0.6));
@@ -586,14 +586,14 @@ function techPad(accent) {
 function buildTitaniumShooter(accent) {
   const { root, head, arm } = techPad(accent);
   for (const s of [-1, 1]) {
-    const rail = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.12, 0.14), pbr('#2a3648', 0.5));
+    const rail = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.12, 0.14), pbr('#2a3648', 0.5, 0.7));
     rail.position.set(1.0, 0.5, s * 0.22);
     arm.add(rail);
   }
   const strip = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.06, 0.1), glowMat('#00e5ff', 0.95));
   strip.position.set(1.0, 0.32, 0);
   arm.add(strip);
-  const breech = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.6, 0.6), pbr('#1c2940', 0.6));
+  const breech = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.6, 0.6), pbr('#1c2940', 0.6, 0.6));
   breech.position.set(-0.2, 0.4, 0);
   arm.add(breech);
   const muzzle = new THREE.Object3D();
@@ -608,7 +608,7 @@ function buildTitaniumShooter(accent) {
 // 1 — Lazer Cannon (Future): lensed emitter housing
 function buildLazerCannon(accent) {
   const { root, head, arm } = techPad(accent);
-  const housing = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.7, 1.4, 10), pbr('#1c2940', 0.6));
+  const housing = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.7, 1.4, 10), pbr('#1c2940', 0.6, 0.6));
   housing.rotation.z = -Math.PI / 2;
   housing.position.set(0.5, 0.45, 0);
   arm.add(housing);
@@ -616,7 +616,7 @@ function buildLazerCannon(accent) {
   lens.rotation.z = -Math.PI / 2;
   lens.position.set(1.22, 0.45, 0);
   arm.add(lens);
-  const coil = new THREE.Mesh(new THREE.TorusGeometry(0.55, 0.07, 8, 14), pbr('#2a3648', 0.5));
+  const coil = new THREE.Mesh(new THREE.TorusGeometry(0.55, 0.07, 8, 14), pbr('#2a3648', 0.5, 0.7));
   coil.rotation.y = Math.PI / 2;
   coil.position.set(0.1, 0.45, 0);
   arm.add(coil);
@@ -632,11 +632,11 @@ function buildLazerCannon(accent) {
 // 2 — Ion Ray (Future): coil tower crowned with a plasma orb
 function buildIonRay(accent) {
   const { root, head, arm } = techPad(accent);
-  const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.18, 2.2, 8), pbr('#1c2940', 0.6));
+  const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.18, 2.2, 8), pbr('#1c2940', 0.6, 0.6));
   mast.position.y = 1.3;
   arm.add(mast);
   for (const fy of [0.8, 1.4, 2.0]) {
-    const coil = new THREE.Mesh(new THREE.TorusGeometry(0.34, 0.07, 8, 14), pbr('#2a3648', 0.5));
+    const coil = new THREE.Mesh(new THREE.TorusGeometry(0.34, 0.07, 8, 14), pbr('#2a3648', 0.5, 0.7));
     coil.rotation.x = Math.PI / 2;
     coil.position.y = fy;
     arm.add(coil);
