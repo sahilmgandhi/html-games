@@ -89,6 +89,7 @@ if (showcase) {
   const nested = {
     'demo-battle/castle': () => import('./demo-battle/castle/showcase.js'),
     'demo-battle/renaissance': () => import('./demo-battle/renaissance/showcase.js'),
+    'demo-battle/modern': () => import('./demo-battle/modern/showcase.js'),
   }[showcase];
   (nested ? nested() : import(`./${showcase}/showcase.js`))
     .then((m) => m.runShowcase?.(game))

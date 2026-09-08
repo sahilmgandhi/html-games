@@ -110,6 +110,19 @@ export function attachBattleView(game, sim, fx) {
       if (e instanceof Unit) burstAt(e.x, (e.z || 0) + 0.3, '#ffe98a', 6, `+${e.goldReward}`, '#ffe98a');
     }));
     unsubs.push(bus.on('special:activate', ({ side, ageIndex }) => {
+      // Airstrike (Modern): a strafing run of white-hot impacts sweeps the half.
+      if (ageIndex === 3) {
+        const enemyHalf = side === 'player';
+        for (let i = 0; i < 18; i++) {
+          const px = enemyHalf
+            ? CONFIG.WORLD.WIDTH * (0.55 + Math.random() * 0.4)
+            : CONFIG.WORLD.WIDTH * (0.05 + Math.random() * 0.4);
+          setTimeout(() => {
+            burstAt(px, (Math.random() * 2 - 1) * 1.6, i % 2 ? '#ffffff' : '#ffb347', 40);
+          }, i * 90);
+        }
+        return;
+      }
       // Artillery Strike (Renaissance): heavy shell impacts walk the enemy half.
       if (ageIndex === 2) {
         const enemyHalf = side === 'player';
