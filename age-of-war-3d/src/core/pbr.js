@@ -110,30 +110,47 @@ export const SIDE_ACCENT = {
 };
 
 // Floating HP bar billboard. set(frac) redraws only on visible change.
+// 256x32 canvas with an iron border and segmented fill so the bar stays
+// crisp at close camera range instead of smearing like the old 64x10.
 export function makeHpBar(width = 1.4) {
+  const W = 256;
+  const H = 32;
   const c = document.createElement('canvas');
-  c.width = 64;
-  c.height = 10;
+  c.width = W;
+  c.height = H;
   const tex = new THREE.CanvasTexture(c);
   tex.colorSpace = THREE.SRGBColorSpace;
+  tex.generateMipmaps = false;
+  tex.minFilter = THREE.LinearFilter;
+  tex.anisotropy = 4;
   const sprite = new THREE.Sprite(
     new THREE.SpriteMaterial({ map: tex, depthTest: false, transparent: true })
   );
-  sprite.scale.set(width, width * (10 / 64), 1);
+  sprite.scale.set(width, width * (H / W), 1);
   sprite.renderOrder = 20;
   let last = -1;
   return {
     sprite,
     set(frac) {
-      const q = Math.round(THREE.MathUtils.clamp(frac, 0, 1) * 24);
+      const q = Math.round(THREE.MathUtils.clamp(frac, 0, 1) * 48);
       if (q === last) return;
       last = q;
       const g = c.getContext('2d');
-      g.clearRect(0, 0, 64, 10);
-      g.fillStyle = 'rgba(0,0,0,0.65)';
-      g.fillRect(0, 0, 64, 10);
-      g.fillStyle = q > 12 ? '#5dd35d' : q > 6 ? '#e8b53a' : '#e05252';
-      g.fillRect(1, 1, Math.ceil(62 * (q / 24)), 8);
+      g.clearRect(0, 0, W, H);
+      g.fillStyle = 'rgba(8,8,10,0.78)';
+      g.fillRect(0, 0, W, H);
+      g.strokeStyle = '#1c1c22';
+      g.lineWidth = 4;
+      g.strokeRect(2, 2, W - 4, H - 4);
+      g.fillStyle = q > 24 ? '#5dd35d' : q > 12 ? '#e8b53a' : '#e05252';
+      const inner = W - 16;
+      g.fillRect(8, 8, Math.ceil(inner * (q / 48)), H - 16);
+      // segment gaps: gritty riveted-plate read
+      g.fillStyle = 'rgba(8,8,10,0.78)';
+      for (let i = 1; i < 12; i++) {
+        const x = 8 + Math.round((inner * i) / 12);
+        g.fillRect(x - 1, 8, 2, H - 16);
+      }
       tex.needsUpdate = true;
     },
   };
