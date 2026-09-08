@@ -445,6 +445,88 @@ function modernBackdrop(rng) {
   return g;
 }
 
+// Future: neon skyline over a dark steel plain — black-glass spires with lit
+// window grids, a habitat dome and glowing cyan pylons along the lane.
+const SPIRE = '#16283a';
+const SPIRE_DK = '#0c1622';
+const NEON = '#00e5ff';
+const NEON_WARM = '#ff5ad0';
+
+function spireTower(rng) {
+  const g = new THREE.Group();
+  const h = 7 + rng() * 5;
+  const shaft = new THREE.Mesh(new THREE.BoxGeometry(2.2, h, 2.2), pbr(SPIRE, 0.7));
+  shaft.position.y = h / 2;
+  shaft.rotation.y = (rng() - 0.5) * 0.3;
+  g.add(shaft);
+  // lit window grid facing the lane
+  const litM = new THREE.MeshBasicMaterial({ color: NEON });
+  const litM2 = new THREE.MeshBasicMaterial({ color: NEON_WARM });
+  for (let r = 0; r < 4; r++) {
+    for (let c = 0; c < 3; c++) {
+      if (rng() < 0.35) continue;
+      const w = new THREE.Mesh(new THREE.PlaneGeometry(0.28, 0.4), rng() < 0.85 ? litM : litM2);
+      w.position.set((c - 1) * 0.6, h * (0.2 + r * 0.18), 1.12);
+      w.rotation.y = shaft.rotation.y;
+      g.add(w);
+    }
+  }
+  // antenna + beacon
+  const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.06, 1.6, 5), pbr(SPIRE_DK, 0.8));
+  mast.position.y = h + 0.8;
+  g.add(mast);
+  const beacon = new THREE.Mesh(new THREE.SphereGeometry(0.14, 8, 6), glowMat(NEON, 1));
+  beacon.position.y = h + 1.6;
+  g.add(beacon);
+  return g;
+}
+
+function domeHab(rng) {
+  const g = new THREE.Group();
+  const dome = new THREE.Mesh(new THREE.SphereGeometry(2.6, 14, 8, 0, Math.PI * 2, 0, Math.PI / 2),
+    pbr(SPIRE, 0.6));
+  dome.position.y = 0;
+  g.add(dome);
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(2.6, 0.09, 8, 24), glowMat(NEON, 0.9));
+  ring.rotation.x = Math.PI / 2;
+  ring.position.y = 0.15;
+  g.add(ring);
+  const door = new THREE.Mesh(new THREE.PlaneGeometry(1.0, 1.2),
+    new THREE.MeshBasicMaterial({ color: NEON }));
+  door.position.set(0, 0.6, 2.55);
+  g.add(door);
+  void rng;
+  return g;
+}
+
+function pylon(seed) {
+  const g = new THREE.Group();
+  const post = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.14, 2.6, 6), pbr(SPIRE_DK, 0.8));
+  post.position.y = 1.3;
+  g.add(post);
+  const lamp = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.5, 0.3), glowMat(NEON, 1));
+  lamp.position.y = 2.8;
+  lamp.userData.seed = seed;
+  g.add(lamp);
+  const halo = glowSprite(NEON, 0.5, 1.6);
+  halo.position.y = 2.8;
+  g.add(halo);
+  return { group: g, flame: lamp };
+}
+
+function futureBackdrop(rng) {
+  const g = new THREE.Group();
+  for (const [x, z] of [[-9, -2], [9.5, -3], [0.5, -5]]) {
+    const t = spireTower(rng);
+    t.position.set(x, 0, z);
+    g.add(t);
+  }
+  const d = domeHab(rng);
+  d.position.set(-4.5, 0, 1);
+  g.add(d);
+  return g;
+}
+
 function scatter(rng, count, x0, x1, zBands, avoidLane) {
   const out = [];
   for (let i = 0; i < count; i++) {
@@ -533,6 +615,29 @@ export function createEnvironment(scene, ageIndex) {
   }
 
   function build(age) {
+    if (age === 4) {
+      const skyline = futureBackdrop(rng);
+      skyline.position.set(11, 0, -32);
+      group.add(skyline);
+      // dark steel swells flank the skyline
+      for (const [x, z, w, h] of [[-14, -30, 12, 3], [34, -31, 14, 4], [-2, -37, 18, 5]]) {
+        const m = new THREE.Mesh(new THREE.SphereGeometry(1, 12, 8), pbr('#141f2e', 1.0));
+        m.scale.set(w, h, w * 0.5);
+        m.position.set(x, 0, z);
+        group.add(m);
+      }
+      // glowing pylons light both lane edges
+      let seed = 0;
+      for (const [x, z] of [[-6, -3.2], [6, 3.2], [18, -3.2], [30, 3.2]]) {
+        const p = pylon(seed += 1.3);
+        p.group.position.set(x, 0, z);
+        group.add(p.group);
+        animated.fires.push(p.flame);
+      }
+      addRocks();
+      addSky('#23234a');
+      return;
+    }
     if (age === 3) {
       const ruins = modernBackdrop(rng);
       ruins.position.set(11, 0, -32);
