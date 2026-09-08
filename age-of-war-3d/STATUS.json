@@ -115,7 +115,9 @@
     "opening camera parked inside enemy base (idle one-sided action now frames wide mid-field vista; verified cam 12,11,26)",
     "camera clipping into base geometry at gates (near-base keep-out: rise to y>=9, pull back to dist>=20)",
     "Castle brazier flame floating above stand (flame + glow seated to y=2.0, buried in cup; close-up verified)",
-    "rune halo investigated: torus hugs menhir core (r=1.32 vs core ~1.28), no change needed"
+    "rune halo investigated: torus hugs menhir core (r=1.32 vs core ~1.28), no change needed",
+    "unit upgrade pips never refreshing after purchase (87c3340: refresh .aow-pips in hud.js update loop; verified tier 1 + T1 tooltip)",
+    "phantom objects at player base investigated: blue banner/pole/ring + campfire + rubble composing oddly at glancing angles (projection-probe decoded every part to sim-backed base dressings + the 1 enemy turret); single canvas/renderer confirmed; no bug, no change"
   ],
   "graphics_upgrades": {
     "ground": "8720c45: instanced pebbles/tufts (per-age tints) + lane-wear decal, analytic height seating",
