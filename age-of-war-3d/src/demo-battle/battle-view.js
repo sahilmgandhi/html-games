@@ -5,6 +5,8 @@
 //
 // Contract: attachBattleView(game, sim, fx) -> { dispose() }
 // Registers ONE game.onUpdate that steps the sim first, then syncs.
+// Owns age transitions: on age:evolve it re-moods the shared world to the
+// player's age, rebuilds the evolved side's base, and switches the music.
 
 import * as THREE from 'three';
 import { CONFIG, toMeters } from '../simulation/config.js';
@@ -52,12 +54,28 @@ export function attachBattleView(game, sim, fx) {
   const buildings = new Map();
   const projectiles = new Map();
 
-  const playerBase = BaseMesh('player', sim.currentAge);
+  let playerBase = BaseMesh('player', sim.currentAge);
   playerBase.mesh.position.set(toMeters(sim.playerBase.x), 0, 0);
   scene.add(playerBase.mesh);
-  const enemyBase = BaseMesh('enemy', sim.enemyAge);
+  let enemyBase = BaseMesh('enemy', sim.enemyAge);
   enemyBase.mesh.position.set(toMeters(sim.enemyBase.x), 0, 0);
   scene.add(enemyBase.mesh);
+
+  // Rebuild one side's base mesh for its new age (keep position, HP, damage).
+  function rebuildBase(side) {
+    const isPlayer = side === 'player';
+    const old = isPlayer ? playerBase : enemyBase;
+    const base = isPlayer ? sim.playerBase : sim.enemyBase;
+    const age = isPlayer ? sim.currentAge : sim.enemyAge;
+    scene.remove(old.mesh);
+    old.dispose();
+    const next = BaseMesh(side, age);
+    next.mesh.position.set(toMeters(base.x), 0, 0);
+    next.setHp(base.hp / base.maxHp);
+    scene.add(next.mesh);
+    if (isPlayer) playerBase = next;
+    else enemyBase = next;
+  }
 
   const camGoal = new THREE.Vector3(12, 7, 17);
   const lookGoal = new THREE.Vector3(12, 1.5, 0);
@@ -92,6 +110,19 @@ export function attachBattleView(game, sim, fx) {
       if (e instanceof Unit) burstAt(e.x, (e.z || 0) + 0.3, '#ffe98a', 6, `+${e.goldReward}`, '#ffe98a');
     }));
     unsubs.push(bus.on('special:activate', ({ side, ageIndex }) => {
+      // Arrow Volley (Castle): pale impact streaks rain across the enemy half.
+      if (ageIndex === 1) {
+        const enemyHalf = side === 'player';
+        for (let i = 0; i < 14; i++) {
+          const px = enemyHalf
+            ? CONFIG.WORLD.WIDTH * (0.55 + Math.random() * 0.4)
+            : CONFIG.WORLD.WIDTH * (0.05 + Math.random() * 0.4);
+          setTimeout(() => {
+            burstAt(px, (Math.random() * 2 - 1) * 1.6, i % 2 ? '#fff2c0' : '#ffd34d', 16);
+          }, i * 120);
+        }
+        return;
+      }
       // Meteor Shower: a volley of burning impacts across the enemy half.
       const enemyHalf = side === 'player';
       for (let i = 0; i < 10; i++) {
@@ -102,7 +133,17 @@ export function attachBattleView(game, sim, fx) {
           burstAt(px, (Math.random() * 2 - 1) * 1.6, i % 2 ? '#ff8800' : '#ffcc66', 26);
         }, i * 130);
       }
-      void ageIndex;
+    }));
+    unsubs.push(bus.on('age:evolve', ({ side, ageIndex }) => {
+      // World mood follows the player; each side's base rebuilds for its age.
+      if (side === 'player') {
+        const world = window.__world;
+        world?.terrain?.setAge?.(ageIndex);
+        world?.lighting?.setAge?.(ageIndex);
+        world?.environment?.setAge?.(ageIndex);
+        try { sim.audio?.updateMusicAge?.(ageIndex); } catch { /* cosmetic */ }
+      }
+      rebuildBase(side);
     }));
   }
 

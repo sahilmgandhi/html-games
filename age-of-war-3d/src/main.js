@@ -84,7 +84,12 @@ if (params.get('camera')) game.setCameraPreset(params.get('camera'));
 game.start();
 
 if (showcase) {
-  import(`./${showcase}/showcase.js`)
+  // Nested showcases (demo-battle/<age>) need static imports: Vite only
+  // allows single-level dynamic import variables. Each age adds one line.
+  const nested = {
+    'demo-battle/castle': () => import('./demo-battle/castle/showcase.js'),
+  }[showcase];
+  (nested ? nested() : import(`./${showcase}/showcase.js`))
     .then((m) => m.runShowcase?.(game))
     .catch((err) => window.__errors.push(`showcase: ${err.message}`));
 }
