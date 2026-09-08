@@ -88,6 +88,7 @@ if (showcase) {
   // allows single-level dynamic import variables. Each age adds one line.
   const nested = {
     'demo-battle/castle': () => import('./demo-battle/castle/showcase.js'),
+    'demo-battle/renaissance': () => import('./demo-battle/renaissance/showcase.js'),
   }[showcase];
   (nested ? nested() : import(`./${showcase}/showcase.js`))
     .then((m) => m.runShowcase?.(game))

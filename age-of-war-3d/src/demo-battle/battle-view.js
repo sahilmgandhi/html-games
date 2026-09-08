@@ -110,6 +110,19 @@ export function attachBattleView(game, sim, fx) {
       if (e instanceof Unit) burstAt(e.x, (e.z || 0) + 0.3, '#ffe98a', 6, `+${e.goldReward}`, '#ffe98a');
     }));
     unsubs.push(bus.on('special:activate', ({ side, ageIndex }) => {
+      // Artillery Strike (Renaissance): heavy shell impacts walk the enemy half.
+      if (ageIndex === 2) {
+        const enemyHalf = side === 'player';
+        for (let i = 0; i < 16; i++) {
+          const px = enemyHalf
+            ? CONFIG.WORLD.WIDTH * (0.55 + Math.random() * 0.4)
+            : CONFIG.WORLD.WIDTH * (0.05 + Math.random() * 0.4);
+          setTimeout(() => {
+            burstAt(px, (Math.random() * 2 - 1) * 1.6, i % 2 ? '#ff5500' : '#ffaa33', 34);
+          }, i * 110);
+        }
+        return;
+      }
       // Arrow Volley (Castle): pale impact streaks rain across the enemy half.
       if (ageIndex === 1) {
         const enemyHalf = side === 'player';
