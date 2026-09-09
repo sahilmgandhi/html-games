@@ -5,7 +5,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { fetchQuatCast, setQuatTemplates, QuatUnitMesh, QUAT_ROLES, CASTLE_ROLES, RENAISSANCE_ROLES, quatRoleFor } from '../src/units/gltf-cast.js';
+import { fetchQuatCast, setQuatTemplates, QuatUnitMesh, QUAT_ROLES, CASTLE_ROLES, RENAISSANCE_ROLES, MODERN_ROLES, quatRoleFor } from '../src/units/gltf-cast.js';
 import { UnitMesh } from '../src/units/units.js';
 import * as THREE from 'three';
 
@@ -128,9 +128,9 @@ export default [
       t.assert('quat mesh with templates', quat.currentClip === 'Idle', quat.currentClip);
       quat.dispose();
 
-      const castle = UnitMesh(fakeEntity(), 3);
-      t.assert('later ages stay procedural', castle.currentClip === undefined, '');
-      castle.dispose();
+      const future = UnitMesh(fakeEntity(), 4);
+      t.assert('later ages stay procedural', future.currentClip === undefined, '');
+      future.dispose();
       setQuatTemplates(null);
     },
   },
@@ -364,6 +364,67 @@ export default [
       let luteVisible = false;
       inst.mesh.traverse((o) => { if (o.name === 'Weapon_Lute' && o.visible) luteVisible = true; });
       t.assert('lute hidden', !luteVisible, '');
+      inst.dispose();
+    },
+  },
+  {
+    name: 'modern templates parse with walk, attack and death clips',
+    async run(t) {
+      const tpl = await loadTemplates();
+      for (const role of ['meleeinf', 'infantry', 'commander']) {
+        t.assert(`${role} template loaded`, !!tpl[role] && tpl[role].clips.size > 0, `${tpl[role]?.clips.size} clips`);
+        t.assert(`${role} has Walk`, tpl[role].clips.has('Walk'), '');
+        t.assert(`${role} has Death`, tpl[role].clips.has('Death'), '');
+      }
+      t.assert('infantry holds an aimed shot', tpl.infantry.clips.has('Idle_Shoot'), '');
+      t.assert('tank drive template loaded', !!tpl.tank && tpl.tank.clips.has('Tank_Forward'), '');
+      t.assert('AK prop template loaded', !!tpl.akProp && !!tpl.akProp.object, '');
+    },
+  },
+  {
+    name: 'modern instances scale to procedural heights',
+    async run(t) {
+      const tpl = await loadTemplates();
+      // procedural rig.height targets: meleeinf 2.15, infantry 2.15, commander-hero 2.3*1.18, tank 2.4
+      const targets = { meleeinf: 2.15, infantry: 2.15, commander: 2.3 * 1.18, tank: 2.4 };
+      for (const [role, want] of Object.entries(targets)) {
+        const got = tpl[role].height;
+        t.assert(`${role} height ~${want}m`, Math.abs(got - want) / want < 0.05, `${got.toFixed(2)}m`);
+      }
+    },
+  },
+  {
+    name: 'UnitMesh delegates modern age to the cast once loaded',
+    async run(t) {
+      const tpl = await loadTemplates();
+      setQuatTemplates(tpl);
+      const q = UnitMesh(fakeEntity(), 3);
+      t.assert('quat modern mesh', q.currentClip === 'Idle', q.currentClip);
+      q.dispose();
+      t.assert('melee maps to meleeinf', quatRoleFor(fakeEntity({ type: 'melee' }), 3) === MODERN_ROLES.melee, '');
+      t.assert('ranged maps to infantry', quatRoleFor(fakeEntity({ type: 'ranged' }), 3) === MODERN_ROLES.ranged, '');
+      t.assert('armored maps to tank', quatRoleFor(fakeEntity({ type: 'armored' }), 3) === MODERN_ROLES.armored, '');
+      t.assert('hero maps to commander', quatRoleFor(fakeEntity({ isHero: true }), 3) === MODERN_ROLES.hero, '');
+      t.assert('renaissance mapping unchanged', quatRoleFor(fakeEntity({ type: 'melee' }), 2) === RENAISSANCE_ROLES.melee, '');
+      setQuatTemplates(null);
+    },
+  },
+  {
+    name: 'modern infantry shoulders the AK',
+    async run(t) {
+      const tpl = await loadTemplates();
+      const inst = QuatUnitMesh(fakeEntity({ type: 'ranged' }), MODERN_ROLES.ranged, tpl);
+      const hand = inst.mesh.getObjectByName('Middle1R');
+      t.assert('AK hangs off the firing hand', !!hand && !!hand.getObjectByName('ak'), '');
+      inst.dispose();
+    },
+  },
+  {
+    name: 'tank is a vehicle, not a fighter',
+    async run(t) {
+      const tpl = await loadTemplates();
+      const inst = QuatUnitMesh(fakeEntity({ type: 'armored' }), MODERN_ROLES.armored, tpl);
+      t.assert('tank rolls on Tank_Forward', inst.currentClip === 'Tank_Forward', inst.currentClip);
       inst.dispose();
     },
   },

@@ -1113,12 +1113,12 @@ const HEROES = { 0: buildShaman, 1: buildPaladin, 2: buildWarEngineer, 3: buildC
 export function UnitMesh(entity, ageIndex) {
   // Unknown ages reuse the Stone rigs so evolve never renders a missing mesh.
   const age = BUILDERS[ageIndex] ? ageIndex : 0;
-  // Stone + castle + renaissance pilot: vendored CC0 skeletal cast once loaded, with the
+  // Stone + castle + renaissance + modern pilot: vendored CC0 skeletal cast once loaded, with the
   // procedural rigs as the fallback until the fetch lands (and in tests).
   // The kick is here so every covered-age render path (battle, showcases)
   // loads the cast without its own wiring.
   ensureQuatLoaded();
-  const quat = age <= 2 ? getQuatTemplates() : null;
+  const quat = age <= 3 ? getQuatTemplates() : null;
   if (quat) return QuatUnitMesh(entity, quatRoleFor(entity, age), quat);
   const accent = SIDE_ACCENT[entity.side] || SIDE_ACCENT.player;
   const rig = entity.isHero ? (HEROES[age] || buildShaman)(accent)

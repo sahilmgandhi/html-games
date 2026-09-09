@@ -128,6 +128,16 @@
           "no shoot clip in pirate set: musketeer/cannoneer attack on Punch"
         ]
       },
+      "modPilot": {
+        "status": "working end-to-end, verdict: coherent modern cast, AK + tank verified",
+        "verified": "modern battle wide (40 skinned, soldiers+tanks both sides, 0 errors) + close-up (hazmat commander, AKs held, tank with turret+gun, team rings, HP bar); 273/273 asserts",
+        "cast": "Quaternius Toon Shooter CC0 (Characters+Guns glTF) + Animated Tanks CC0 FBX (License.txt vendored): Soldier=meleeinf, Enemy=infantry, Hazmat=commander hero, Tank=vehicle",
+        "notes": [
+          "shooter rig has Middle1R gun hand like pirate set: AK parents there, rotation.z=PI/2",
+          "tank is a vehicle branch: Tank_Forward drive clip for walk/attack/idle, no death clip",
+          "rifle spec generalized from boolean to template key (rifleProp vs akProp)"
+        ]
+      },
       "fixed": [
         "castle demo 1583 -> 1384 draw calls via solidify() skipping sub-0.22m casters (tests/shadow-budget.test.js, 2 asserts)",
         "hit-flash emissive 0.55/0.5 -> 0.3 (mid-flash still blows out to white in night stills; transient 0.1s, kept as game feel)",

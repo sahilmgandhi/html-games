@@ -1,4 +1,4 @@
-// Quaternius CC0 stone + castle + renaissance casts. Parses the vendored assets/quat files
+// Quaternius CC0 stone + castle + renaissance + modern casts. Parses the vendored assets/quat files
 // once, then spawns per-instance SkeletonUtils clones with an
 // AnimationMixer each, mirroring the UnitMesh {mesh, update, dispose}
 // contract (HP bar, team rings, hero scale, hit-flash, death fade) so
@@ -17,6 +17,7 @@ import {
 export const QUAT_ROLES = { melee: 'clubman', ranged: 'slinger', fast: 'dino', hero: 'hero' };
 export const CASTLE_ROLES = { melee: 'swordsman', ranged: 'archer', fast: 'knight', hero: 'paladin' };
 export const RENAISSANCE_ROLES = { melee: 'dueler', ranged: 'musketeer', siege: 'cannoneer', hero: 'engineer' };
+export const MODERN_ROLES = { melee: 'meleeinf', ranged: 'infantry', armored: 'tank', hero: 'commander' };
 
 // Procedural rig heights the cast must match (units.js builders).
 // heroModel: template is already modeled at hero height, skip the 1.18x.
@@ -36,11 +37,16 @@ const ROLE_SPEC = {
   knight: { file: 'Horse', kind: 'fbx', targetH: 2.9, walk: 'Walk', attack: 'Run', death: 'Death', idle: 'Idle', lift: 5.0 },
   knightRider: { file: 'Knight_Male', kind: 'gltf', targetH: 1.5, walk: 'Walk', attack: 'SwordSlash', death: 'Death', idle: 'Idle' },
   dueler: { file: 'Pirate_Barbarossa', kind: 'gltf', targetH: 2.1, walk: 'Walk', attack: 'Sword', death: 'Death', idle: 'Idle' },
-  musketeer: { file: 'Pirate_Mako', kind: 'gltf', targetH: 2.15, walk: 'Walk', attack: 'Punch', death: 'Death', idle: 'Idle', rifle: true, hide: ['Weapon_Sword'] },
+  musketeer: { file: 'Pirate_Mako', kind: 'gltf', targetH: 2.15, walk: 'Walk', attack: 'Punch', death: 'Death', idle: 'Idle', rifle: 'rifleProp', hide: ['Weapon_Sword'] },
   cannoneer: { file: 'Pirate_Henry', kind: 'gltf', targetH: 2.2, walk: 'Walk', attack: 'Punch', death: 'Death', idle: 'Idle', hide: ['Weapon_Lute'] },
   engineer: { file: 'Pirate_Anne', kind: 'gltf', targetH: 2.6 * 1.18, walk: 'Walk', attack: 'Sword', death: 'Death', idle: 'Idle', heroModel: true },
   cannon: { file: 'Pirate_Cannon', kind: 'gltf', targetH: 1.13, walk: 'Idle', attack: 'Idle', death: 'Death', idle: 'Idle' },
   rifle: { file: 'Pirate_Rifle', kind: 'gltf', targetH: 0.69, walk: 'Idle', attack: 'Idle', death: 'Death', idle: 'Idle' },
+  meleeinf: { file: 'Shooter_Soldier', kind: 'gltf', targetH: 2.15, walk: 'Walk', attack: 'Punch', death: 'Death', idle: 'Idle', rifle: 'akProp', gunName: 'ak' },
+  infantry: { file: 'Shooter_Enemy', kind: 'gltf', targetH: 2.15, walk: 'Walk', attack: 'Idle_Shoot', death: 'Death', idle: 'Idle', rifle: 'akProp', gunName: 'ak' },
+  commander: { file: 'Shooter_Hazmat', kind: 'gltf', targetH: 2.3 * 1.18, walk: 'Walk', attack: 'Punch', death: 'Death', idle: 'Idle', heroModel: true },
+  tank: { file: 'Quat_Tank', kind: 'fbx', targetH: 2.4, walk: 'Tank_Forward', attack: 'Tank_Forward', death: null, idle: 'Tank_Forward' },
+  ak: { file: 'Shooter_AK', kind: 'gltf', targetH: 1.42, walk: 'Idle', attack: 'Idle', death: 'Death', idle: 'Idle' },
 };
 
 // Mounted roles: rider template, rider attack clip, how far the feet hang
@@ -78,11 +84,14 @@ export async function fetchQuatCast(fetchFn = fetch, base = 'assets/quat/') {
     return fbxLoader.parse(await res.arrayBuffer(), '');
   }
   const [viking, goblin, wizard, raptor, knight, golden, elf, horse,
-    barbarossa, mako, henry, anne, cannon, rifle] = await Promise.all([
+    barbarossa, mako, henry, anne, cannon, rifle,
+    soldier, enemy, hazmat, ak, tank] = await Promise.all([
     loadGltf('Viking_Male'), loadGltf('Goblin_Male'), loadGltf('Wizard'), loadFbx('Velociraptor'),
     loadGltf('Knight_Male'), loadGltf('Knight_Golden_Male'), loadGltf('Elf'), loadFbx('Horse'),
     loadGltf('Pirate_Barbarossa'), loadGltf('Pirate_Mako'), loadGltf('Pirate_Henry'),
     loadGltf('Pirate_Anne'), loadGltf('Pirate_Cannon'), loadGltf('Pirate_Rifle'),
+    loadGltf('Shooter_Soldier'), loadGltf('Shooter_Enemy'), loadGltf('Shooter_Hazmat'),
+    loadGltf('Shooter_AK'), loadFbx('Quat_Tank'),
   ]);
   // FBX clips arrive prefixed (Armature|Walk); strip to the bare name.
   const clipMap = (animations) => new Map(animations.map((c) => [c.name.split('|').pop(), c]));
@@ -108,6 +117,7 @@ export async function fetchQuatCast(fetchFn = fetch, base = 'assets/quat/') {
   };
   tameFbx(raptor, ROLE_SPEC.dino.lift);
   tameFbx(horse, ROLE_SPEC.knight.lift);
+  tameFbx(tank, 1);
   const goblinH = measureHeight(goblin.scene);
   const knightH = measureHeight(knight.scene);
   return {
@@ -131,6 +141,13 @@ export async function fetchQuatCast(fetchFn = fetch, base = 'assets/quat/') {
     cannon: { object: cannon.scene, clips: clipMap(cannon.animations || []), scale: ROLE_SPEC.cannon.targetH / measureHeight(cannon.scene), height: ROLE_SPEC.cannon.targetH, spec: ROLE_SPEC.cannon },
     // the rifle is a hand prop cloned onto the musketeer's firing hand.
     rifleProp: { object: rifle.scene, clips: clipMap(rifle.animations || []), scale: 1, height: ROLE_SPEC.rifle.targetH, spec: ROLE_SPEC.rifle },
+    meleeinf: pack('meleeinf', soldier),
+    infantry: pack('infantry', enemy),
+    commander: pack('commander', hazmat),
+    // the tank is a vehicle, not a fighter: scaled body, drive clips only.
+    tank: { object: tank, clips: clipMap(tank.animations), scale: ROLE_SPEC.tank.targetH / measureHeight(tank), height: ROLE_SPEC.tank.targetH, spec: ROLE_SPEC.tank },
+    // the AK is a hand prop cloned onto modern firing hands.
+    akProp: { object: ak.scene, clips: clipMap(ak.animations || []), scale: 1, height: ROLE_SPEC.ak.targetH, spec: ROLE_SPEC.ak },
   };
 }
 
@@ -166,9 +183,10 @@ export function ensureQuatLoaded() {
   loadQuatCastOnce();
 }
 // Stone age 0 uses QUAT_ROLES, castle age 1 CASTLE_ROLES, renaissance
-// age 2 RENAISSANCE_ROLES.
+// age 2 RENAISSANCE_ROLES, modern age 3 MODERN_ROLES.
 export function quatRoleFor(entity, ageIndex = 0) {
-  const roles = ageIndex === 2 ? RENAISSANCE_ROLES : ageIndex === 1 ? CASTLE_ROLES : QUAT_ROLES;
+const AGE_ROLES = { 1: CASTLE_ROLES, 2: RENAISSANCE_ROLES, 3: MODERN_ROLES };
+  const roles = AGE_ROLES[ageIndex] || QUAT_ROLES;
   if (entity.isHero) return roles.hero;
   return roles[entity.type] || roles.melee;
 }
@@ -253,12 +271,12 @@ export function QuatUnitMesh(entity, role, templates) {
       if (dropped) dropped.visible = false;
     }
   }
-  // the musketeer's file has no gun: hang the rifle prop off the firing
-  // hand (a finger joint the clip articulates). It inherits body scale.
-  if (tpl.spec.rifle && templates.rifleProp) {
+  // roles with a gun file hang the prop off the firing hand (a finger
+  // joint the clip articulates). It inherits body scale.
+  if (tpl.spec.rifle && templates[tpl.spec.rifle]) {
     const hand = body.getObjectByName('Middle1R');
-    const gun = templates.rifleProp.object.clone();
-    gun.name = 'rifle';
+    const gun = templates[tpl.spec.rifle].object.clone();
+    gun.name = tpl.spec.gunName || 'rifle';
     gun.rotation.z = Math.PI / 2;
     (hand || body).add(gun);
   }
