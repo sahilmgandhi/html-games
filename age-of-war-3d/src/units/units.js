@@ -469,6 +469,15 @@ function fieldGun(barrelLen, barrelR) {
   barrel.rotation.z = -Math.PI / 2 + 0.18;
   barrel.position.set(0.35, 0.62, 0);
   g.add(barrel);
+  // reinforce bands seated on the barrel taper, ring planes square to the bore.
+  const boreDir = new THREE.Vector3(Math.cos(0.18), Math.sin(0.18), 0);
+  for (const bx of [0.05, 0.45]) {
+    const band = new THREE.Mesh(new THREE.TorusGeometry(barrelR * 0.96 - bx * 0.06, 0.025, 6, 14),
+      pbr(STEEL_DK, 0.5, 0.65));
+    band.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), boreDir);
+    band.position.set(bx, 0.62 + (bx - 0.35) * 0.18, 0);
+    g.add(band);
+  }
   for (const s of [-1, 1]) {
     const trailBeam = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.09, 0.09), wheelM);
     trailBeam.position.set(-0.45, 0.3, s * 0.2);
@@ -489,11 +498,24 @@ function buildDueler(accent) {
   chest.position.y = 0.32; torso.add(chest);
   const sash = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.09, 10), pbr(GOLD, 0.6, 0.7));
   sash.position.y = -0.1; sash.rotation.x = 0.35; torso.add(sash);
+  // baldric: diagonal sword-belt across the doublet.
+  const baldric = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.72, 0.12), pbr(LEATHER, 0.9));
+  baldric.position.set(0.26, 0.32, 0); baldric.rotation.z = -0.5; torso.add(baldric);
   b.add(torso);
+  // rapier with a cup hilt; puffed sleeves cap both shoulders.
+  const rapier = sword(0.7);
+  const cup = new THREE.Mesh(
+    new THREE.SphereGeometry(0.1, 10, 6, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2),
+    pbr(STEEL_DK, 0.5, 0.7));
+  cup.position.y = -0.08; rapier.add(cup);
   const buckler = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.06, 12), pbr(STEEL, 0.4, 0.8));
   buckler.rotation.x = Math.PI / 2;
   const armL = arm(0.085, 0.58, cream, buckler); armL.position.set(0, 1.5, 0.34);
-  const armR = arm(0.085, 0.58, cream, sword(0.7)); armR.position.set(0, 1.5, -0.34);
+  const armR = arm(0.085, 0.58, cream, rapier); armR.position.set(0, 1.5, -0.34);
+  for (const a of [armL, armR]) {
+    const puff = new THREE.Mesh(new THREE.SphereGeometry(0.13, 10, 8), cream);
+    a.add(puff);
+  }
   b.add(armL, armR);
   const head = new THREE.Group(); head.position.y = 1.84;
   head.add(new THREE.Mesh(new THREE.SphereGeometry(0.21, 14, 12), pbr(SKIN, 0.75)));
@@ -518,9 +540,18 @@ function buildMusketeer(accent) {
   chest.position.y = 0.32; torso.add(chest);
   const bandolier = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.7, 0.12), pbr('#d8c8a8', 0.85));
   bandolier.position.set(0.27, 0.32, 0); bandolier.rotation.z = 0.5; torso.add(bandolier);
+  // second strap crosses into an X; cartridge block rides the hip.
+  const crossbelt = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.7, 0.12), pbr(LEATHER, 0.9));
+  crossbelt.position.set(0.27, 0.32, 0); crossbelt.rotation.z = -0.5; torso.add(crossbelt);
+  const cartBox = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.16, 0.2), pbr(WOOD_DK, 0.9));
+  cartBox.position.set(-0.28, -0.05, -0.2); torso.add(cartBox);
   b.add(torso);
   const armL = arm(0.09, 0.6, coat); armL.position.set(0, 1.52, 0.35);
   const armR = arm(0.09, 0.6, coat, musket()); armR.position.set(0, 1.52, -0.35);
+  for (const a of [armL, armR]) {
+    const cuff = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.11, 0.12, 10), pbr('#d8c8a8', 0.85));
+    cuff.position.y = -0.5; a.add(cuff);
+  }
   b.add(armL, armR);
   const head = new THREE.Group(); head.position.y = 1.86;
   head.add(new THREE.Mesh(new THREE.SphereGeometry(0.22, 14, 12), pbr(SKIN, 0.75)));
