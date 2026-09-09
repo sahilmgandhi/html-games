@@ -3,10 +3,11 @@
 // (UnitMesh/TurretMesh update()), so this layer only creates, updates and
 // disposes them, plus combat FX, camera follow and base HP.
 //
-// Contract: attachBattleView(game, sim, fx) -> { dispose() }
-// Registers ONE game.onUpdate that steps the sim first, then syncs.
-// Owns age transitions: on age:evolve it re-moods the shared world to the
-// player's age, rebuilds the evolved side's base, and switches the music.
+// Contract: attachBattleView(game, sim, fx, { lockCamera }) -> { dispose() }
+// Registers ONE game.onUpdate (unsubscribed on dispose) that steps the sim
+// first, then syncs. Owns age transitions: on age:evolve it re-moods the
+// shared world to the player's age, rebuilds the evolved side's base, and
+// switches the music. lockCamera leaves a ?camera= debug preset untouched.
 
 import * as THREE from 'three';
 import { CONFIG, toMeters } from '../simulation/config.js';
@@ -17,38 +18,17 @@ import { TurretMesh } from '../turrets/turrets.js';
 import { BuildingMesh } from '../buildings/buildings.js';
 import { ProjectileMesh } from '../projectiles/projectiles.js';
 
+export { applyBattleAction } from './actions.js';
+
 const PROJ_HEIGHT = 1.1;
 
 function projHeight(p) {
   return (CONFIG.GROUND_Y - p.y) * 0.01 + PROJ_HEIGHT;
 }
 
-// Maps HUD actions onto a BattleSim. Ignores economy/pace actions while
-// paused or over (pause toggle and restart always go through).
-export function applyBattleAction(sim, action) {
-  if (!sim || !action) return;
-  const live = !sim.gameOver && !sim.paused;
-  switch (action.type) {
-    case 'spawn-unit': if (live) sim.spawnUnit(action.index); break;
-    case 'upgrade-unit': if (live) sim.upgradeUnit(action.index); break;
-    case 'spawn-hero': if (live) sim.spawnHero('player'); break;
-    case 'evolve': if (live) sim.evolve(); break;
-    case 'special': if (live) sim.useSpecial(); break;
-    case 'buy-slot': if (live) sim.buySlot(); break;
-    case 'spawn-turret': if (live) sim.spawnTurret(action.index); break;
-    case 'sell-turret': if (live) sim.sellTurret(action.index); break;
-    case 'buy-building': if (live) sim.buyBuilding(action.index); break;
-    case 'set-speed': sim.gameSpeed = [1, 2, 3].includes(action.speed) ? action.speed : 1; break;
-    case 'cycle-speed': sim.gameSpeed = sim.gameSpeed >= 3 ? 1 : sim.gameSpeed + 1; break;
-    case 'cycle-formation': if (live) sim.formationMode = (sim.formationMode + 1) % 3; break;
-    case 'toggle-pause': if (!sim.gameOver) sim.paused = !sim.paused; break;
-    case 'restart': sim.restart(); break;
-    default: break;
-  }
-}
-
-export function attachBattleView(game, sim, fx) {
+export function attachBattleView(game, sim, fx, opts = {}) {
   const scene = game.scene;
+  // lockCamera (?camera= debug preset): leave the camera alone entirely.
   const units = new Map();
   const turrets = new Map();
   const buildings = new Map();
@@ -113,14 +93,20 @@ export function attachBattleView(game, sim, fx) {
   }
 
   function burstAt(px, z, color, count, label, labelColor) {
+    if (!fx || !fx.burst) return;
     const mx = toMeters(px);
     fx.burst(mx, 1.2, z || 0, { color, count });
-    if (label !== undefined) fx.damageNumber(mx, 2.4, z || 0, String(label), labelColor || '#ffd34d');
+    if (label !== undefined && fx.damageNumber) {
+      fx.damageNumber(mx, 2.4, z || 0, String(label), labelColor || '#ffd34d');
+    }
   }
 
   // Sim emits with single-payload convention; EventBus passes it through.
   const bus = sim.events;
   const unsubs = [];
+  // Pending special-attack FX timers; cleared on restart/dispose so FX never
+  // leaks into the next game or a removed scene.
+  const specialTimers = [];
   if (bus && bus.on) {
     unsubs.push(bus.on('projectile:fire', (src) => {
       if (src && src.turretIndex !== undefined) {
@@ -129,17 +115,24 @@ export function attachBattleView(game, sim, fx) {
       }
     }));
     unsubs.push(bus.on('projectile:hit', (hit) => {
-      if (hit && hit.entity) {
-        focusX = hit.entity.x;
-        focusTtl = Math.max(focusTtl, 1.2);
-      }
-      if (!hit || !hit.entity) return;
-      const e = hit.entity;
+      if (!hit) return;
       if (hit.melee) {
-        // Melee clash: pale sparks instead of the side-colored ranged burst.
-        burstAt(e.x, e.z || 0, '#ffe9a8', 6);
+        // Melee clash: pale sparks at the attacker (entity is null for melee).
+        const a = hit.attacker;
+        if (a) {
+          focusX = a.x;
+          focusTtl = Math.max(focusTtl, 1.2);
+          burstAt(a.x, a.z || 0, '#ffe9a8', 6);
+        }
         return;
       }
+      if (hit.entity) {
+        focusX = hit.entity.x;
+        focusTtl = Math.max(focusTtl, 1.2);
+      } else {
+        return;
+      }
+      const e = hit.entity;
       const color = e.side === 'player' ? '#5aa0ff' : '#ff6a5a';
       burstAt(e.x, e.z || 0, hit.special ? '#ff8800' : color, hit.special ? 30 : 10, hit.damage);
     }));
@@ -161,22 +154,25 @@ export function attachBattleView(game, sim, fx) {
       1: { n: 14, count: 16, colors: ['#fff2c0', '#ffd34d'], stagger: 120 }, // Arrow Volley
       0: { n: 10, count: 26, colors: ['#ff8800', '#ffcc66'], stagger: 130 }, // Meteor Shower
     };
-    unsubs.push(bus.on('special:activate', ({ side, ageIndex }) => {
-      const fx = SPECIAL_FX[ageIndex] || SPECIAL_FX[0];
+    unsubs.push(bus.on('special:activate', (evt = {}) => {
+      const { side, ageIndex } = evt;
+      const sfx = SPECIAL_FX[ageIndex] || SPECIAL_FX[0];
       shake(0.45, 0.7);
       const enemyHalf = side === 'player';
-      for (let i = 0; i < fx.n; i++) {
+      for (let i = 0; i < sfx.n; i++) {
         const px = enemyHalf
           ? CONFIG.WORLD.WIDTH * (0.55 + Math.random() * 0.4)
           : CONFIG.WORLD.WIDTH * (0.05 + Math.random() * 0.4);
-        setTimeout(() => {
+        specialTimers.push(setTimeout(() => {
           const pz = (Math.random() * 2 - 1) * 1.6;
-          burstAt(px, pz, i % 2 ? fx.colors[0] : fx.colors[1], fx.count);
+          burstAt(px, pz, i % 2 ? sfx.colors[0] : sfx.colors[1], sfx.count);
           scorchAt(px, pz);
-        }, i * fx.stagger);
+        }, i * sfx.stagger));
       }
     }));
-    unsubs.push(bus.on('age:evolve', ({ side, ageIndex }) => {
+    unsubs.push(bus.on('age:evolve', (evt = {}) => {
+      const { side, ageIndex } = evt;
+      if (!side) return;
       // World mood follows the player; each side's base rebuilds for its age.
       if (side === 'player') {
         const world = window.__world;
@@ -186,6 +182,32 @@ export function attachBattleView(game, sim, fx) {
         try { sim.audio?.updateMusicAge?.(ageIndex); } catch { /* cosmetic */ }
       }
       rebuildBase(side);
+    }));
+    unsubs.push(bus.on('game:restart', () => {
+      // Drop pending special FX, clear combat camera/decal state, rebuild
+      // both bases for the reset ages, and restore the opening world mood.
+      for (const id of specialTimers) clearTimeout(id);
+      specialTimers.length = 0;
+      focusX = CONFIG.WORLD.WIDTH / 2;
+      focusTtl = 0;
+      shakeT = 0;
+      shakeAmp = 0;
+      for (const sc of scorches) { sc.ttl = 0; sc.mesh.visible = false; }
+      rebuildBase('player');
+      rebuildBase('enemy');
+      const world = window.__world;
+      world?.terrain?.setAge?.(sim.currentAge);
+      world?.lighting?.setAge?.(sim.currentAge);
+      world?.environment?.setAge?.(sim.currentAge);
+    }));
+    unsubs.push(bus.on('game:over', (evt = {}) => {
+      // Losing base becomes the camera focus with a final thump.
+      const loserBase = evt.winner === 'player' ? sim.enemyBase : sim.playerBase;
+      if (loserBase) {
+        focusX = loserBase.x;
+        focusTtl = 4;
+        shake(0.5, 0.9);
+      }
     }));
   }
 
@@ -251,7 +273,7 @@ export function attachBattleView(game, sim, fx) {
         projectiles.set(p.id, w);
         scene.add(w.mesh);
       }
-      w.mesh.position.set(toMeters(p.x), projHeight(p), 0);
+      w.mesh.position.set(toMeters(p.x), projHeight(p), p.z || 0);
       w.update(dt);
     }
     for (const [id, w] of projectiles) {
@@ -313,7 +335,9 @@ export function attachBattleView(game, sim, fx) {
     );
     lookGoal.set(THREE.MathUtils.clamp(midM, 5, 19), 1.5, 0);
     const cam = game.camera;
-    if (!camInit) {
+    if (opts.lockCamera) {
+      if (!camInit) { cam.lookAt(lookGoal); camInit = true; }
+    } else if (!camInit) {
       cam.position.copy(camGoal);
       cam.lookAt(lookGoal);
       camInit = true;
@@ -346,16 +370,19 @@ export function attachBattleView(game, sim, fx) {
     }
   }
 
-  game.onUpdate(update);
+  const offUpdate = game.onUpdate(update);
 
   return {
     dispose() {
+      offUpdate?.();
       for (const u of unsubs) u();
+      for (const id of specialTimers) clearTimeout(id);
+      specialTimers.length = 0;
       for (const [, w] of units) { scene.remove(w.mesh); w.dispose(); }
       for (const [, w] of turrets) { scene.remove(w.mesh); w.dispose(); }
       for (const [, w] of buildings) { scene.remove(w.mesh); w.dispose(); }
       for (const [, w] of projectiles) { scene.remove(w.mesh); w.dispose(); }
-      for (const sc of scorches) scene.remove(sc.mesh);
+      for (const sc of scorches) { scene.remove(sc.mesh); sc.mesh.material.dispose(); }
       scorchGeo.dispose();
       scene.remove(playerBase.mesh);
       scene.remove(enemyBase.mesh);

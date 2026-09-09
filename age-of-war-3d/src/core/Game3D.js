@@ -8,11 +8,26 @@ export class Game3D {
     this.renderer = new Renderer3D(canvas);
     this.running = false;
     this._updateFns = [];
+    this._updateErrs = new Map();
     this._renderFns = [];
   }
 
-  onUpdate(fn) { this._updateFns.push(fn); }
-  onRender(fn) { this._renderFns.push(fn); }
+  onUpdate(fn) {
+    this._updateFns.push(fn);
+    this._updateErrs.set(fn, 0);
+    return () => {
+      const i = this._updateFns.indexOf(fn);
+      if (i >= 0) this._updateFns.splice(i, 1);
+      this._updateErrs.delete(fn);
+    };
+  }
+  onRender(fn) {
+    this._renderFns.push(fn);
+    return () => {
+      const i = this._renderFns.indexOf(fn);
+      if (i >= 0) this._renderFns.splice(i, 1);
+    };
+  }
 
   setCameraPreset(name) {
     const presets = {
@@ -41,11 +56,22 @@ export class Game3D {
     const dt = Math.min(this.renderer.clock.getDelta(), 0.05);
 
     for (let i = this._updateFns.length - 1; i >= 0; i--) {
+      const fn = this._updateFns[i];
       try {
-        this._updateFns[i](dt);
+        fn(dt);
+        this._updateErrs.set(fn, 0);
       } catch (err) {
-        this._updateFns.splice(i, 1);
+        // Tolerate a few transient failures (e.g. one malformed state push),
+        // then drop the offender so a permanently broken fn cannot spam the
+        // error log every frame.
+        const n = (this._updateErrs.get(fn) || 0) + 1;
+        this._updateErrs.set(fn, n);
         window.__errors?.push(`update: ${err.message}`);
+        if (n > 10) {
+          this._updateFns.splice(i, 1);
+          this._updateErrs.delete(fn);
+          window.__errors?.push('update: dropping repeatedly failing fn');
+        }
       }
     }
     this.renderer.render();

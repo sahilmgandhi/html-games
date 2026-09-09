@@ -51,7 +51,7 @@ if (!showcase) {
     autoAI: true,
     autoPlayer: false,
   });
-  attachBattleView(game, sim, particles);
+  attachBattleView(game, sim, particles, { lockCamera: !!params.get('camera') });
   hud.on((action) => applyBattleAction(sim, action));
   window.__battle = sim;
 }

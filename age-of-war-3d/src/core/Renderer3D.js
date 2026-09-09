@@ -33,7 +33,8 @@ export class Renderer3D {
 
     this.clock = new THREE.Clock();
 
-    window.addEventListener('resize', () => this._onResize());
+    this._onResizeBound = () => this._onResize();
+    window.addEventListener('resize', this._onResizeBound);
 
     this._stats = { drawCalls: 0, fps: 0, triangles: 0 };
     this._frameCount = 0;
@@ -70,6 +71,7 @@ export class Renderer3D {
   }
 
   dispose() {
+    window.removeEventListener('resize', this._onResizeBound);
     this.renderer.dispose();
   }
 }

@@ -6,8 +6,11 @@
 //   | { type: 'spawn-hero' } | { type: 'evolve' } | { type: 'special' }
 //   | { type: 'buy-slot' } | { type: 'spawn-turret', index }
 //   | { type: 'sell-turret', index } | { type: 'buy-building', index }
-//   | { type: 'set-speed', speed } | { type: 'cycle-formation' }
+//   | { type: 'set-speed', speed } | { type: 'cycle-speed' }
+//   | { type: 'cycle-formation' }
 //   | { type: 'toggle-pause' } | { type: 'restart' }
+// Hotkeys: 1-4 spawn (guarded by the current age's unit count) · H hero ·
+// E evolve · Q/Space special · B/N shops · T cycle speed · F formation · P pause
 export class HUD {
   constructor(root, game) {
     this.game = game;
@@ -76,17 +79,41 @@ export class HUD {
 
     this._onKey = (e) => {
       if (e.repeat) return;
+      // Never steal keys from text inputs; Space on a focused button would
+      // otherwise fire both the native click and our hotkey (double action).
+      const tag = e.target?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || e.target?.isContentEditable) return;
+      if (e.key === ' ') e.preventDefault();
       const k = e.key.toLowerCase();
-      if (k >= '1' && k <= '4') this._emit({ type: 'spawn-unit', index: Number(k) - 1 });
+      if (k >= '1' && k <= '4') {
+        const index = Number(k) - 1;
+        if (index < this._unitBtns.length) {
+          this._emit({ type: 'spawn-unit', index });
+        } else {
+          this._flashHint(`No unit ${k} in this age`);
+        }
+      }
       else if (k === 'h') this._emit({ type: 'spawn-hero' });
       else if (k === 'e') this._emit({ type: 'evolve' });
       else if (k === 'q' || k === ' ') this._emit({ type: 'special' });
       else if (k === 'b') this._emit({ type: 'buy-building', index: 0 });
       else if (k === 'n') this._emit({ type: 'buy-building', index: 1 });
       else if (k === 't') this._emit({ type: 'cycle-speed' });
+      else if (k === 'f') this._emit({ type: 'cycle-formation' });
       else if (k === 'p' || k === 'escape') this._emit({ type: 'toggle-pause' });
     };
     window.addEventListener('keydown', this._onKey);
+  }
+
+  // Transient feedback for rejected hotkeys; the next update() restores the
+  // last state-driven hint, plus a timer covers a paused sim.
+  _flashHint(msg) {
+    if (!this._f.hint) return;
+    this._f.hint.textContent = msg;
+    clearTimeout(this._hintTimer);
+    this._hintTimer = setTimeout(() => {
+      if (this._f.hint) this._f.hint.textContent = this._lastHint ?? '';
+    }, 1200);
   }
 
   on(fn) {
@@ -130,10 +157,14 @@ export class HUD {
   }
 
   _buildRow2(state) {
-    const sig = [state.ageIndex, state.sell.length, state.turrets.length, state.buildings.length].join('|');
+    const sell = state.sell || [];
+    const turrets = state.turrets || [];
+    const buildings = state.buildings || [];
+    const sig = [state.ageIndex, sell.length, turrets.length, buildings.length].join('|');
     if (sig === this._lastRow2Sig) return;
     this._lastRow2Sig = sig;
     const row = this._f.row2;
+    if (!row) return;
     row.innerHTML = '';
     const mk = (cls, attrs, html) => {
       const b = document.createElement('button');
@@ -144,15 +175,15 @@ export class HUD {
       return b;
     };
     this._slotBtn = mk('aow-btn aow-small', { act: 'buy-slot' }, '');
-    this._turretBtns = state.turrets.map((t, i) => mk(
+    this._turretBtns = turrets.map((t, i) => mk(
       'aow-btn aow-small', { turret: String(i) },
       `<span class="aow-card-name">${t.name}</span><span class="aow-card-cost">🪙${t.cost}</span>`,
     ));
-    this._buildingBtns = state.buildings.map((b, i) => mk(
+    this._buildingBtns = buildings.map((b, i) => mk(
       'aow-btn aow-small', { building: String(i) },
       `<span class="aow-card-key">${i === 0 ? 'B' : 'N'}</span><span class="aow-card-name">${b.name}</span><span class="aow-card-cost">🪙${b.cost}</span>`,
     ));
-    this._sellBtns = state.sell.map((s, i) => mk(
+    this._sellBtns = sell.map((s, i) => mk(
       'aow-btn aow-small aow-sell', { sell: String(i) },
       `<span class="aow-card-name">Sell ${s.name}</span><span class="aow-card-cost">+${s.refund}g</span>`,
     ));
@@ -167,13 +198,20 @@ export class HUD {
     this._setText(this._f.gold, Math.floor(state.gold ?? 0));
     this._setText(this._f.xp, Math.floor(state.xp ?? 0));
     this._setText(this._f.age, state.ageName ?? '');
-    if (state.hint !== undefined) this._setText(this._f.hint, state.hint);
+    if (state.hint !== undefined) {
+      this._lastHint = state.hint;
+      this._setText(this._f.hint, state.hint);
+    }
+
+    // Buttons mirror the action live-guard: no silent drops while paused/over.
+    // Speed stays usable while paused (view pacing); pause dies on game-over.
+    const interactive = !state.paused && !state.over;
 
     if (state.ageIndex !== this._lastAge && state.units) this._buildUnits(state);
     if (state.units) {
       state.units.forEach((u, i) => {
         if (this._unitBtns[i]) {
-          this._unitBtns[i].disabled = !u.affordable;
+          this._unitBtns[i].disabled = !interactive || !u.affordable;
           this._unitBtns[i].title = u.tooltip || u.name;
           const pips = this._unitBtns[i].querySelector('.aow-pips');
           if (pips) {
@@ -186,7 +224,7 @@ export class HUD {
           const maxed = u.upgCost === null;
           up.innerHTML = maxed ? '★' : `↑<small>🪙${u.upgCost}</small>`;
           up.title = maxed ? 'Max tier' : `Upgrade to tier ${u.tier + 1} (🪙${u.upgCost})`;
-          up.disabled = maxed || !u.upgAffordable;
+          up.disabled = !interactive || maxed || !u.upgAffordable;
         }
       });
     }
@@ -197,7 +235,7 @@ export class HUD {
       heroBtn.innerHTML = `<span class="aow-card-key">${state.hero.hotkey || 'H'}</span>
         <span class="aow-card-name">${state.hero.name}</span>
         <span class="aow-card-cost">${cd}</span>`;
-      heroBtn.disabled = !state.hero.affordable;
+      heroBtn.disabled = !interactive || !state.hero.affordable;
       heroBtn.style.display = '';
     } else {
       heroBtn.style.display = 'none';
@@ -208,7 +246,7 @@ export class HUD {
       evoBtn.innerHTML = `<span class="aow-card-key">E</span>
         <span class="aow-card-name">${state.evolve.label}</span>
         <span class="aow-card-cost">✨${state.evolve.cost}</span>`;
-      evoBtn.disabled = !state.evolve.affordable;
+      evoBtn.disabled = !interactive || !state.evolve.affordable;
       evoBtn.style.display = '';
     } else {
       evoBtn.style.display = 'none';
@@ -219,8 +257,9 @@ export class HUD {
       spBtn.innerHTML = `<span class="aow-card-key">Q</span>
         <span class="aow-card-name">${state.special.name}</span>
         <span class="aow-card-cost">${state.special.ready ? 'READY' : state.special.status}</span>`;
-      spBtn.disabled = !state.special.ready;
+      spBtn.disabled = !interactive || !state.special.ready;
       spBtn.classList.toggle('aow-ready', !!state.special.ready);
+      spBtn.style.display = '';
     } else {
       spBtn.style.display = 'none';
     }
@@ -228,15 +267,23 @@ export class HUD {
     if (state.slots) {
       this._buildRow2(state);
       const s = state.slots;
-      this._slotBtn.innerHTML = `<span class="aow-card-name">Slot ${s.bought}/${s.max}</span>
-        <span class="aow-card-cost">${s.full ? 'FULL' : `🪙${s.cost}`}</span>`;
-      this._slotBtn.disabled = !s.affordable;
-      state.turrets.forEach((t, i) => { if (this._turretBtns[i]) this._turretBtns[i].disabled = !t.placeable; });
-      state.buildings.forEach((b, i) => { if (this._buildingBtns[i]) this._buildingBtns[i].disabled = !b.affordable; });
+      if (this._slotBtn) {
+        this._slotBtn.innerHTML = `<span class="aow-card-name">Slot ${s.bought}/${s.max}</span>
+          <span class="aow-card-cost">${s.full ? 'FULL' : `🪙${s.cost}`}</span>`;
+        this._slotBtn.disabled = !interactive || !s.affordable;
+      }
+      (state.turrets || []).forEach((t, i) => { if (this._turretBtns[i]) this._turretBtns[i].disabled = !interactive || !t.placeable; });
+      (state.buildings || []).forEach((b, i) => { if (this._buildingBtns[i]) this._buildingBtns[i].disabled = !interactive || !b.affordable; });
       (state.speeds || []).forEach((sp, i) => {
-        if (this._speedBtns[i]) this._speedBtns[i].classList.toggle('aow-active', !!sp.active);
+        if (this._speedBtns[i]) {
+          this._speedBtns[i].classList.toggle('aow-active', !!sp.active);
+          this._speedBtns[i].disabled = !!state.over;
+        }
       });
-      if (this._formBtn) this._formBtn.innerHTML = `<span class="aow-card-name">${state.formation || ''}</span><span class="aow-card-key">T</span>`;
+      if (this._formBtn) {
+        this._formBtn.innerHTML = `<span class="aow-card-name">${state.formation || ''}</span><span class="aow-card-key">F</span>`;
+        this._formBtn.disabled = !interactive;
+      }
     }
 
     const ov = this._f.overlay;
@@ -247,7 +294,7 @@ export class HUD {
         ov.style.display = 'flex';
         ov.innerHTML = `<div class="aow-panel">
           <h1 class="${state.over.winner === 'player' ? 'aow-win' : 'aow-lose'}">${state.over.title}</h1>
-          ${state.over.stats.map((s) => `<div class="aow-stat">${s}</div>`).join('')}
+          ${(state.over.stats || []).map((s) => `<div class="aow-stat">${s}</div>`).join('')}
           <button class="aow-btn" data-act="restart">↻ Restart (click)</button>
         </div>`;
       } else if (state.paused) {
@@ -262,11 +309,15 @@ export class HUD {
       }
     }
     const pauseBtn = this.el.querySelector('[data-act="pause"]');
-    if (pauseBtn) pauseBtn.textContent = state.paused ? 'RESUME' : 'PAUSE';
+    if (pauseBtn) {
+      pauseBtn.textContent = state.paused ? 'RESUME' : 'PAUSE';
+      pauseBtn.disabled = !!state.over;
+    }
   }
 
   dispose() {
     window.removeEventListener('keydown', this._onKey);
+    clearTimeout(this._hintTimer);
     this.el.remove();
     this._handlers.clear();
   }
