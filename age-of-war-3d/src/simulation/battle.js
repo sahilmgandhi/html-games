@@ -12,11 +12,20 @@ import {
 } from './entities.js';
 import { AI } from './ai.js';
 import { mulberry32 } from './rng.js';
+import { BalanceTracker } from './balance.js';
+
+// Per-age special durations, identical to the original.
+const SPECIAL_DURATIONS = [2.0, 1.5, 2.0, 2.5, 1.5];
+// Distinct stream for lane jitter/AI so seeded gameplay randomness and AI
+// decisions do not share one sequence.
+const AI_SEED_XOR = 0x9e3779b9;
 
 export class BattleSim {
   constructor(opts = {}) {
     this.difficulty = opts.difficulty ?? 0;
-    this.rng = opts.rng || mulberry32(opts.seed ?? 1);
+    this.seed = opts.seed ?? 1;
+    this.rng = opts.rng || mulberry32(this.seed);
+    this.aiRng = opts.aiRng || mulberry32((this.seed ^ AI_SEED_XOR) >>> 0);
     this.events = opts.events || null; // EventBus-like { emit(name, payload) }
     this.audio = opts.audio || null; // { play(name) }, optional
     this.autoAI = opts.autoAI ?? true; // enemy AI driver
@@ -28,7 +37,8 @@ export class BattleSim {
     this.enemyTurretSlotPositions = this.computeSlotPositions(
       CONFIG.WORLD.WIDTH - CONFIG.BASE_X_OFFSET, -1,
     );
-    this.ai = new AI(this, this.rng);
+    this.ai = new AI(this, this.aiRng);
+    this.balance = new BalanceTracker();
 
     this.resetState();
   }
@@ -70,16 +80,23 @@ export class BattleSim {
     this.totalGoldSpent = 0;
     this.playerLowestHp = CONFIG.BASE_HP;
     this._demoTimer = 0;
+    this.balance?.reset();
   }
 
   restart() {
     const difficulty = this.difficulty;
-    const rng = this.rng;
     this.resetState();
     this.difficulty = difficulty;
-    this.rng = rng;
-    this.ai = new AI(this, this.rng);
-    this._sound('evolve');
+    // Reseed both streams so a seeded match replays identically.
+    this.rng = mulberry32(this.seed);
+    this.aiRng = mulberry32((this.seed ^ AI_SEED_XOR) >>> 0);
+    this.ai = new AI(this, this.aiRng);
+    // Same music restart as the original; no evolve jingle.
+    try { this.audio?.setSuspended?.(false); } catch { /* audio is cosmetic */ }
+    try { this.audio?.stopMusic?.(); } catch { /* audio is cosmetic */ }
+    try { this.audio?.startMusic?.(this.currentAge); } catch { /* audio is cosmetic */ }
+    // Lets the render layer drop pending FX and rebuild age meshes.
+    this.emit('game:restart', { seed: this.seed });
   }
 
   emit(name, payload) {
@@ -158,6 +175,7 @@ export class BattleSim {
     if (isPlayer) {
       this.totalSpawned++;
       this._sound('spawn');
+      this._sound('ui_click');
     }
     this.emit('entity:spawn', u);
     return u;
@@ -287,6 +305,7 @@ export class BattleSim {
       this.currentAge++;
       this.playerBase.healFraction(CONFIG.EVOLVE_HEAL);
       this._sound('evolve');
+      try { this.audio?.updateMusicAge?.(this.currentAge); } catch { /* audio is cosmetic */ }
     } else {
       this.enemyXp -= cost;
       this.enemyAge++;
@@ -316,7 +335,12 @@ export class BattleSim {
       this.enemySpecialCooldown = CONFIG.SPECIAL_COOLDOWN;
     }
     this._sound('special');
-    this.specialAnim = { ageIndex, side, timer: 0, duration: 2.0, damageDealt: false };
+    this.specialAnim = {
+      ageIndex, side, timer: 0,
+      duration: SPECIAL_DURATIONS[ageIndex],
+      damageDealt: false,
+      particles: this.generateSpecialParticles(ageIndex),
+    };
     this.emit('special:activate', { side, ageIndex });
     return true;
   }
@@ -338,15 +362,177 @@ export class BattleSim {
     }
   }
 
+  // Particle payloads mirror the original's generateSpecialParticles so
+  // renderers can draw each special's trajectory. All randomness comes from
+  // the seeded gameplay stream. Impact bursts and screen shake stay in the
+  // view layer (the headless sim has neither particles nor renderer).
+  generateSpecialParticles(ageIndex) {
+    const particles = [];
+    const W = CONFIG.WORLD.WIDTH;
+    const r = () => this.rng();
+    switch (ageIndex) {
+      case 0: // Meteor Shower
+        for (let i = 0; i < 6; i++) {
+          particles.push({
+            x: 200 + r() * (W - 400),
+            y: -50 - r() * 100,
+            vy: 3 + r() * 2,
+            vx: (r() - 0.5) * 0.5,
+            size: 6 + r() * 6,
+            trail: [],
+          });
+        }
+        break;
+      case 1: // Arrow Volley
+        for (let i = 0; i < 12; i++) {
+          particles.push({
+            x: 300 + r() * (W - 600),
+            y: -30 - r() * 60,
+            vy: 4 + r() * 1.5,
+            vx: -0.5 + r() * -1,
+            size: 8,
+            angle: 0,
+          });
+        }
+        break;
+      case 2: // Artillery Strike
+        for (let i = 0; i < 4; i++) {
+          particles.push({
+            x: 300 + r() * (W - 600),
+            y: -40,
+            vy: 3.5 + r(),
+            vx: (r() - 0.5) * 0.3,
+            size: 5,
+            exploded: false,
+            explosionRadius: 0,
+          });
+        }
+        break;
+      case 3: // Airstrike
+        for (let i = 0; i < 3; i++) {
+          particles.push({
+            x: -100 - i * 200,
+            y: 60 + i * 30,
+            vx: 5 + r(),
+            vy: 0,
+            size: 1,
+            dropped: false,
+            bombs: [],
+          });
+        }
+        break;
+      case 4: // Orbital Laser
+        particles.push({
+          x: W / 2,
+          sweepX: 0,
+          width: 3,
+          charging: true,
+          chargeTimer: 0,
+          chargeDuration: 0.6,
+        });
+        break;
+    }
+    return particles;
+  }
+
   updateSpecialAnim(dt) {
     if (!this.specialAnim) return;
     const anim = this.specialAnim;
     anim.timer += dt;
-    if (anim.timer / anim.duration > 0.7 && !anim.damageDealt) {
-      anim.damageDealt = true;
-      this.dealSpecialDamage();
+    const progress = anim.timer / anim.duration;
+
+    switch (anim.ageIndex) {
+      case 0: // Meteor Shower
+        for (const p of anim.particles) {
+          p.trail.push({ x: p.x, y: p.y });
+          if (p.trail.length > 6) p.trail.shift();
+          p.x += p.vx * dt * 60;
+          p.y += p.vy * dt * 60;
+          p.vy += 4 * dt; // gravity
+        }
+        if (progress > 0.7 && !anim.damageDealt) {
+          anim.damageDealt = true;
+          this.dealSpecialDamage();
+        }
+        break;
+
+      case 1: // Arrow Volley
+        for (const p of anim.particles) {
+          p.x += p.vx * dt * 60;
+          p.y += p.vy * dt * 60;
+          p.angle = Math.atan2(p.vy, p.vx);
+        }
+        if (progress > 0.5 && !anim.damageDealt) {
+          anim.damageDealt = true;
+          this.dealSpecialDamage();
+        }
+        break;
+
+      case 2: // Artillery Strike
+        for (const p of anim.particles) {
+          if (!p.exploded) {
+            p.x += p.vx * dt * 60;
+            p.y += p.vy * dt * 60;
+            p.vy += 2 * dt;
+            if (p.y >= CONFIG.GROUND_Y) p.exploded = true;
+          } else {
+            p.explosionRadius = Math.min(p.explosionRadius + dt * 200, 50);
+          }
+        }
+        if (progress > 0.6 && !anim.damageDealt) {
+          anim.damageDealt = true;
+          this.dealSpecialDamage();
+        }
+        break;
+
+      case 3: // Airstrike
+        for (const plane of anim.particles) {
+          plane.x += plane.vx * dt * 60;
+          if (!plane.dropped
+            && plane.x > CONFIG.WORLD.WIDTH * 0.3 + this.rng() * CONFIG.WORLD.WIDTH * 0.4) {
+            plane.dropped = true;
+            plane.bombs.push({
+              x: plane.x, y: plane.y,
+              vy: 0, exploded: false, explosionRadius: 0,
+            });
+          }
+          for (const bomb of plane.bombs) {
+            if (!bomb.exploded) {
+              bomb.y += bomb.vy * dt * 60;
+              bomb.vy += 5 * dt;
+              if (bomb.y >= CONFIG.GROUND_Y) bomb.exploded = true;
+            } else {
+              bomb.explosionRadius = Math.min(bomb.explosionRadius + dt * 180, 40);
+            }
+          }
+        }
+        if (progress > 0.7 && !anim.damageDealt) {
+          anim.damageDealt = true;
+          this.dealSpecialDamage();
+        }
+        break;
+
+      case 4: { // Orbital Laser: charge, then sweep; damage lands after the sweep
+        const laser = anim.particles[0];
+        if (laser.charging) {
+          laser.chargeTimer += dt;
+          if (laser.chargeTimer >= laser.chargeDuration) {
+            laser.charging = false;
+            laser.sweepX = 0;
+          }
+        } else {
+          laser.sweepX += dt * 3000;
+          laser.width = 3 + Math.sin(anim.timer * 20) * 2;
+          if (laser.sweepX > CONFIG.WORLD.WIDTH && !anim.damageDealt) {
+            anim.damageDealt = true;
+            this.dealSpecialDamage();
+          }
+        }
+        break;
+      }
     }
-    if (anim.timer >= anim.duration) {
+
+    if (progress >= 1.0) {
       if (!anim.damageDealt) this.dealSpecialDamage();
       this.specialAnim = null;
     }
@@ -395,6 +581,7 @@ export class BattleSim {
     this.totalGoldSpent += cost;
     this.unitUpgrades[unitIndex] = tier + 1;
     this._sound('evolve');
+    this._sound('ui_click');
     return true;
   }
 
@@ -483,6 +670,7 @@ export class BattleSim {
             this.emit('xp:change', this.xp);
           }
           this._sound('death');
+          this._sound('gold');
           this.emit('entity:death', u);
         } else {
           this.units[write++] = u;
@@ -523,6 +711,14 @@ export class BattleSim {
       this.winner = 'player';
       this.emit('game:over', { winner: 'player' });
     }
+
+    this.playerBase.displayHp += (this.playerBase.hp - this.playerBase.displayHp)
+      * Math.min(1, dt * 8);
+    this.enemyBase.displayHp += (this.enemyBase.hp - this.enemyBase.displayHp)
+      * Math.min(1, dt * 8);
+    if (this.playerBase.hp < this.playerLowestHp) this.playerLowestHp = this.playerBase.hp;
+
+    this.balance.update(this);
   }
 
   // Scripted player for demo mode: opens with turret + mine, then keeps a

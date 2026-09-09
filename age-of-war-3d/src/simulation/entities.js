@@ -281,7 +281,8 @@ export class Unit {
         this.damage,
         this.side,
         this.splashRadius,
-        kind
+        kind,
+        this.z
       );
     } else {
       target.takeDamage(this.damage);
@@ -363,7 +364,8 @@ export class Turret {
         this.damage,
         this.side,
         this.splashRadius,
-        kind
+        kind,
+        this.z
       );
       this.attackCooldown = this.attackSpeed;
     }
@@ -428,6 +430,7 @@ export class Projectile {
     this.id = allocId();
     this.x = 0;
     this.y = 0;
+    this.z = 0;
     this.damage = 0;
     this.side = '';
     this.splashRadius = 0;
@@ -437,10 +440,11 @@ export class Projectile {
     this.vy = 0;
   }
 
-  init(x, y, tx, ty, speed, damage, side, splashRadius, kind = 'rock') {
+  init(x, y, tx, ty, speed, damage, side, splashRadius, kind = 'rock', z = 0) {
     this.id = allocId();
     this.x = x;
     this.y = y;
+    this.z = z;
     this.damage = damage;
     this.side = side;
     this.splashRadius = splashRadius || 0;
@@ -509,14 +513,14 @@ export class ProjectilePool {
     }
   }
 
-  acquire(x, y, tx, ty, speed, damage, side, splashRadius, kind = 'rock') {
+  acquire(x, y, tx, ty, speed, damage, side, splashRadius, kind = 'rock', z = 0) {
     let p;
     if (this.pool.length > 0) {
       p = this.pool.pop();
     } else {
       p = new Projectile();
     }
-    p.init(x, y, tx, ty, speed, damage, side, splashRadius, kind);
+    p.init(x, y, tx, ty, speed, damage, side, splashRadius, kind, z);
     this.active.push(p);
     return p;
   }
