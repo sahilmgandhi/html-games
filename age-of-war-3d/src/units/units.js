@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { toMeters } from '../simulation/config.js';
 import {
-  pbr, basic, glowMat, solidify, cloneMats, makeHpBar, teamRing, emblemTexture, disposeDeep, SIDE_ACCENT, skinMat,
+  pbr, basic, glowMat, solidify, cloneMats, makeHpBar, teamRing, emblemTexture, disposeDeep, SIDE_ACCENT, skinMat, clothMat, furMat,
 } from '../core/pbr.js';
 
 // Procedural units, Clash-Royale chunky style, one builder set per age
@@ -23,7 +23,7 @@ const BONE = '#e8dcc0';
 
 function leg(r, len, mat) {
   const g = new THREE.Group();
-  const m = new THREE.Mesh(new THREE.CylinderGeometry(r * 0.8, r, len, 8), mat);
+  const m = new THREE.Mesh(new THREE.CylinderGeometry(r * 0.8, r, len, 12), mat);
   m.position.y = -len / 2;
   g.add(m);
   // boot: dark leather heel + forward toe box instead of a bare fur slab.
@@ -38,7 +38,7 @@ function leg(r, len, mat) {
 
 function arm(r, len, mat, hand) {
   const g = new THREE.Group();
-  const m = new THREE.Mesh(new THREE.CylinderGeometry(r * 0.75, r, len, 8), mat);
+  const m = new THREE.Mesh(new THREE.CylinderGeometry(r * 0.75, r, len, 12), mat);
   m.position.y = -len / 2;
   g.add(m);
   if (hand) {
@@ -136,7 +136,7 @@ function buildClubman(accent) {
   const torso = new THREE.Group(); torso.position.y = 1.0;
   const chest = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.3, 0.62, 10), skin);
   chest.position.y = 0.32; torso.add(chest);
-  const tunic = new THREE.Mesh(new THREE.CylinderGeometry(0.31, 0.36, 0.3, 10), pbr(FUR, 0.95));
+  const tunic = new THREE.Mesh(new THREE.CylinderGeometry(0.31, 0.36, 0.3, 10), furMat(FUR));
   tunic.position.y = 0.02; torso.add(tunic);
   warPaint(torso, accent);
   b.add(torso);
@@ -148,7 +148,7 @@ function buildClubman(accent) {
   head.add(skull);
   const jaw = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.1, 0.24), pbr(SKIN_DK, 0.8));
   jaw.position.set(0.1, -0.15, 0); head.add(jaw);
-  const hair = new THREE.Mesh(new THREE.ConeGeometry(0.24, 0.3, 10), pbr('#2e2018', 0.95));
+  const hair = new THREE.Mesh(new THREE.ConeGeometry(0.24, 0.3, 10), furMat('#2e2018'));
   hair.position.y = 0.26; head.add(hair);
   eyes(head, 0.04, 0.2);
   headband(head, 0.12, accent);
@@ -167,7 +167,7 @@ function buildSlinger(accent) {
   chest.position.y = 0.3; torso.add(chest);
   const strap = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.09, 0.12), pbr(accent, 0.7));
   strap.position.set(0, 0.36, 0); strap.rotation.x = 0.5; torso.add(strap);
-  const skirt = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.3, 0.24, 10), pbr(FUR, 0.95));
+  const skirt = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.3, 0.24, 10), furMat(FUR));
   skirt.position.y = -0.02; torso.add(skirt);
   b.add(torso);
   const sling = new THREE.Group();
@@ -180,7 +180,7 @@ function buildSlinger(accent) {
   b.add(armL, armR);
   const head = new THREE.Group(); head.position.y = 1.74;
   head.add(new THREE.Mesh(new THREE.SphereGeometry(0.22, 14, 12), skin));
-  const mop = new THREE.Mesh(new THREE.SphereGeometry(0.2, 10, 8), pbr('#3a2a1a', 0.95));
+  const mop = new THREE.Mesh(new THREE.SphereGeometry(0.2, 10, 8), furMat('#3a2a1a'));
   mop.position.set(-0.05, 0.18, 0); mop.scale.set(1, 0.7, 1.05); head.add(mop);
   eyes(head, 0.02, 0.17, 0.11);
   headband(head, 0.1, accent);
@@ -263,7 +263,7 @@ function buildDinoRider(accent) {
 function buildShaman(accent) {
   const b = new THREE.Group();
   const skin = skinMat();
-  const robe = new THREE.Mesh(new THREE.ConeGeometry(0.5, 1.5, 12), pbr('#5a3a6a', 0.85));
+  const robe = new THREE.Mesh(new THREE.ConeGeometry(0.5, 1.5, 12), clothMat('#5a3a6a', 0.85));
   robe.position.y = 0.75; b.add(robe);
   const trim = new THREE.Mesh(new THREE.TorusGeometry(0.48, 0.045, 8, 16), pbr(accent, 0.6));
   trim.rotation.x = Math.PI / 2; trim.position.y = 0.12; b.add(trim);
@@ -285,7 +285,7 @@ function buildShaman(accent) {
   head.add(new THREE.Mesh(new THREE.SphereGeometry(0.22, 14, 12), skin));
   eyes(head, 0.03, 0.17, 0.11);
   for (let i = -1; i <= 1; i++) {
-    const f = new THREE.Mesh(new THREE.ConeGeometry(0.07, 0.42, 6), pbr(accent, 0.7));
+    const f = new THREE.Mesh(new THREE.ConeGeometry(0.07, 0.42, 6), furMat(accent));
     f.position.set(-0.08, 0.32, i * 0.13); f.rotation.z = 0.25;
     head.add(f);
   }
@@ -326,7 +326,7 @@ function helm(head, accent, plumeColor) {
   brim.position.y = 0.06; head.add(brim);
   const nasal = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.22, 0.05), pbr(STEEL_DK, 0.6, 0.6));
   nasal.position.set(0.25, -0.06, 0); head.add(nasal);
-  const plume = new THREE.Mesh(new THREE.ConeGeometry(0.07, 0.34, 6), pbr(plumeColor || PLUME, 0.7));
+  const plume = new THREE.Mesh(new THREE.ConeGeometry(0.07, 0.34, 6), furMat(plumeColor || PLUME, 0.7));
   plume.position.set(-0.05, 0.36, 0); plume.rotation.z = 0.3; head.add(plume);
   const band = new THREE.Mesh(new THREE.CylinderGeometry(0.265, 0.265, 0.07, 14), pbr(accent, 0.6));
   band.position.y = 0.1; head.add(band);
@@ -341,7 +341,7 @@ function buildSwordsman(accent) {
   const torso = new THREE.Group(); torso.position.y = 1.0;
   const chest = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.3, 0.6, 10), steel);
   chest.position.y = 0.32; torso.add(chest);
-  const surcoat = new THREE.Mesh(new THREE.CylinderGeometry(0.31, 0.37, 0.42, 10), pbr(accent, 0.8));
+  const surcoat = new THREE.Mesh(new THREE.CylinderGeometry(0.31, 0.37, 0.42, 10), clothMat(accent, 0.8));
   surcoat.position.y = 0.02; torso.add(surcoat);
   const belt = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.08, 10), pbr(LEATHER, 0.9));
   belt.position.y = -0.14; torso.add(belt);
@@ -369,7 +369,7 @@ function buildSwordsman(accent) {
 
 function buildArcher(accent) {
   const b = new THREE.Group();
-  const cloth = pbr('#4a5a3a', 0.9);
+  const cloth = clothMat('#4a5a3a');
   const legL = leg(0.09, 0.8, pbr(LEATHER, 0.9)); legL.position.set(0, 0.9, 0.14);
   const legR = leg(0.09, 0.8, pbr(LEATHER, 0.9)); legR.position.set(0, 0.9, -0.14);
   b.add(legL, legR);
@@ -409,7 +409,7 @@ function buildKnight(accent) {
   const horse = pbr('#4a3428', 0.9);
   const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.46, 1.5, 10), horse);
   barrel.rotation.z = Math.PI / 2; barrel.position.y = 1.25; b.add(barrel);
-  const caparison = new THREE.Mesh(new THREE.CylinderGeometry(0.47, 0.51, 0.8, 10), pbr(accent, 0.85));
+  const caparison = new THREE.Mesh(new THREE.CylinderGeometry(0.47, 0.51, 0.8, 10), clothMat(accent, 0.85));
   caparison.rotation.z = Math.PI / 2; caparison.position.set(-0.25, 1.25, 0); b.add(caparison);
   const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.26, 0.7, 8), horse);
   neck.position.set(0.85, 1.6, 0); neck.rotation.z = -0.6; b.add(neck);
@@ -417,9 +417,9 @@ function buildKnight(accent) {
   horseHead.position.set(1.15, 1.9, 0); b.add(horseHead);
   const chamfron = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.2, 0.26), pbr(STEEL_DK, 0.6, 0.6));
   chamfron.position.set(1.2, 1.92, 0); b.add(chamfron);
-  const crest = new THREE.Mesh(new THREE.ConeGeometry(0.07, 0.4, 6), pbr(PLUME, 0.7));
+  const crest = new THREE.Mesh(new THREE.ConeGeometry(0.07, 0.4, 6), furMat(PLUME, 0.7));
   crest.position.set(1.05, 2.2, 0); crest.rotation.z = -0.4; b.add(crest);
-  const tailM = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.7, 7), pbr('#2e2018', 0.95));
+  const tailM = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.7, 7), furMat('#2e2018'));
   tailM.position.set(-0.95, 1.3, 0); tailM.rotation.z = 2.6; b.add(tailM);
   // near-side legs trot (rig); far-side pair is static dressing
   const legL = leg(0.09, 1.0, horse); legL.position.set(0.55, 1.0, 0.2);
@@ -466,7 +466,7 @@ function buildPaladin(accent) {
   chest.position.y = 0.34; torso.add(chest);
   const trim = new THREE.Mesh(new THREE.TorusGeometry(0.3, 0.04, 8, 18), pbr(GOLD, 0.5, 0.7));
   trim.rotation.x = Math.PI / 2; trim.position.y = 0.6; torso.add(trim);
-  const cape = new THREE.Mesh(new THREE.BoxGeometry(0.06, 1.1, 0.62), pbr('#7a1f1f', 0.9));
+  const cape = new THREE.Mesh(new THREE.BoxGeometry(0.06, 1.1, 0.62), clothMat('#7a1f1f'));
   cape.position.set(-0.32, 0.1, 0); cape.rotation.z = 0.12; torso.add(cape);
   b.add(torso);
   const armL = arm(0.1, 0.65, steel); armL.position.set(0, 1.62, 0.38);

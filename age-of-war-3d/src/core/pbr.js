@@ -92,6 +92,74 @@ export function skinMat(roughness = 0.55) {
   });
 }
 
+// Woven-cloth albedo (near-white thread grid) multiplied by material color,
+// so one 128 canvas textures every tunic/robe/cape/surcoat with zero extra
+// draw calls. Fresh material per call (caller owns disposal).
+let _weaveTex = null;
+export function weaveTexture() {
+  if (_weaveTex) return _weaveTex;
+  _weaveTex = canvasTexture(128, 128, (g, w, h) => {
+    const rng = mulberry32(777);
+    g.fillStyle = '#f4f2ee';
+    g.fillRect(0, 0, w, h);
+    for (let y = 0; y < h; y += 2) {
+      g.fillStyle = 'rgba(60,50,44,0.14)';
+      g.fillRect(0, y, w, 1);
+    }
+    for (let x = 0; x < w; x += 2) {
+      g.fillStyle = 'rgba(255,255,255,0.10)';
+      g.fillRect(x, 0, 1, h);
+    }
+    for (let i = 0; i < 700; i++) {
+      g.fillStyle = `rgba(70,58,48,${0.04 + rng() * 0.08})`;
+      g.fillRect(rng() * w, rng() * h, 1 + rng() * 2, 1);
+    }
+  });
+  _weaveTex.wrapS = THREE.RepeatWrapping;
+  _weaveTex.wrapT = THREE.RepeatWrapping;
+  _weaveTex.anisotropy = 4;
+  return _weaveTex;
+}
+
+export function clothMat(color, roughness = 0.9) {
+  return new THREE.MeshStandardMaterial({
+    color, map: weaveTexture(), roughness, metalness: 0.0,
+  });
+}
+
+// Hair/fur strand albedo (near-white vertical streaks) multiplied by
+// material color: one 128 canvas for hair masses, plumes, fur garments.
+let _strandTex = null;
+export function strandTexture() {
+  if (_strandTex) return _strandTex;
+  _strandTex = canvasTexture(128, 128, (g, w, h) => {
+    const rng = mulberry32(4243);
+    g.fillStyle = '#f4f2ee';
+    g.fillRect(0, 0, w, h);
+    for (let i = 0; i < 130; i++) {
+      const x = rng() * w;
+      g.strokeStyle = `rgba(50,40,34,${0.10 + rng() * 0.16})`;
+      g.lineWidth = 0.8 + rng() * 1.4;
+      g.beginPath(); g.moveTo(x, 0);
+      g.lineTo(x + (rng() - 0.5) * 14, h); g.stroke();
+    }
+    for (let i = 0; i < 400; i++) {
+      g.fillStyle = `rgba(255,255,255,${0.05 + rng() * 0.08})`;
+      g.fillRect(rng() * w, rng() * h, 1 + rng() * 2, 1 + rng() * 3);
+    }
+  });
+  _strandTex.wrapS = THREE.RepeatWrapping;
+  _strandTex.wrapT = THREE.RepeatWrapping;
+  _strandTex.anisotropy = 4;
+  return _strandTex;
+}
+
+export function furMat(color, roughness = 0.95) {
+  return new THREE.MeshStandardMaterial({
+    color, map: strandTexture(), roughness, metalness: 0.0,
+  });
+}
+
 export function pbr(color, roughness = 0.85, metalness = 0.0) {
   const key = `${color}|${roughness}|${metalness}`;
   let m = _cache.get(key);
