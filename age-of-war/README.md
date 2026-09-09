@@ -1,77 +1,53 @@
 # Age of War
 
-A strategy game inspired by the classic Flash "Age of War" by Max Games/Louissi. Built entirely in HTML5 Canvas with no external dependencies.
+This is a 2D strategy game. You defend your base. You destroy the enemy base. You win when it falls.
 
-## How to Run
+## Start
 
-From the repo root:
+Do these steps from the repo root:
 
 ```bash
 npm run serve
 ```
 
-Open http://localhost:8081/age-of-war/ in your browser.
+Then open `http://localhost:8081/age-of-war/` in your browser. Pick a difficulty on the title screen. Click to start.
 
-## Tests
+## Play
 
-```bash
-npm test          # from this directory, or `npm test -w age-of-war` from the root
-```
+- Spawn units from the bottom bar. You can also press `1` to `9`.
+- Upgrade a unit with the small `↑` button. Each unit has two tiers.
+- Press Evolve to enter the next age. Evolve costs XP. It heals your base.
+- Use Special Attack to hit all enemy units. It costs XP. It has a cooldown.
+- Buy turrets to guard your base. You can sell them back.
+- Buy buildings for gold and healing. Gold Mine gives gold. Barracks heals units.
+- Spawn your hero with `H`. Each age has one hero.
 
-Runs the headless harness (`test-runner.js`), which loads the real game files listed in
-`index.html` and drives simulated frames — no browser required.
-
-## Docs
-
-- [`docs/balance.md`](docs/balance.md) — every stat in the game, generated from `js/config.js`.
-  Run `npm run docs` after any balance change; a test fails if it is stale.
-- [`docs/game-design.md`](docs/game-design.md) — mechanics and design intent.
-- [`docs/architecture.md`](docs/architecture.md) — module layout and invariants.
-
-## How to Play
-
-Pick a difficulty on the title screen, then click anywhere to start.
-
-- **Spawn units** by clicking their buttons in the bottom HUD (or press `1`–`9`)
-- **Upgrade a unit type** with the small `↑` button beside its spawn button — two tiers, each
-  raising HP, damage, and speed
-- **Evolve** to the next age with the Evolve button (costs XP, heals your base 25%)
-- **Special attack** damages every enemy *unit* on the map. It costs XP *and* has a 40s
-  cooldown; turrets and buildings are immune.
-- **Turrets** are placed into slots beside your base. You start with one slot and can buy up to
-  four. Turrets have HP, can be destroyed by the enemy, and can be sold back for half cost.
-- **Buildings** (up to four): a Gold Mine trickles gold, a Barracks heals nearby friendly units.
-  They also have HP and can be destroyed.
-- **Heroes** are a single powerful unit on a 60s cooldown, unique per age.
-- **Destroy the enemy base** to win
+You earn gold from kills and buildings. You spend gold on units and defense. You earn XP from kills. You spend XP on Evolve and Special Attack.
 
 ## Controls
 
 | Input | Action |
 |---|---|
-| Mouse edge / `A` / `D` / `←` `→` | Scroll camera |
-| Click minimap strip (top of screen) | Jump camera |
-| `1`–`9` | Spawn unit |
-| Click Evolve / `E` | Advance to next age |
-| Click Special / `Space` | Use age-specific AoE attack |
+| `A` / `D` or arrows | Move camera |
+| Click top strip | Jump camera |
+| `1` to `9` | Spawn unit |
+| `E` | Evolve |
+| `Space` | Special Attack |
 | `H` | Spawn hero |
-| `B` / `N` | Buy Gold Mine / Barracks |
-| `T` or the 1x/2x/3x buttons | Cycle game speed |
-| `F5` / `F8` | Save / load |
-| `ESC` / `P` | Pause menu (music, SFX, restart) |
+| `B` / `N` | Buy mine / barracks |
+| `T` | Change game speed |
+| `P` or `ESC` | Pause |
 
-The world is two screens wide and one screen tall, so only horizontal scrolling does anything.
+## Test
 
-## Difficulty and Ages
+```bash
+npm test  # from this folder
+```
 
-Three difficulties scale the enemy's HP, damage, gold income, and AI reaction speed; the player is
-never scaled. Five ages each bring three units, a hero, three turret tiers, and a special attack.
+Or from the root, use `npm test -w age-of-war`. Tests run in Node. No browser is needed.
 
-Full numbers — every unit, turret, hero, cost, and multiplier — are in
-[`docs/balance.md`](docs/balance.md).
+## Docs
 
-## Resources
-
-- **Gold** — Earned from kills, a passive per-age trickle, and the Gold Mine building. Spends on
-  units, turrets, turret slots, buildings, heroes, and unit upgrades.
-- **XP** — Earned from kills. Spends on evolving to the next age and on special attacks.
+- [`docs/game-design.md`](docs/game-design.md) describes the game rules.
+- [`docs/architecture.md`](docs/architecture.md) describes the code layout.
+- [`docs/balance.md`](docs/balance.md) lists all unit numbers. It is made from `js/config.js`. Run `npm run docs` after each change.
