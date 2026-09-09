@@ -90,6 +90,19 @@ function buildSlingshot(accent) {
   axle.rotation.x = Math.PI / 2;
   axle.position.y = 3.0;
   head.add(axle);
+  // rope lashings where the beam pivot rides the axle.
+  for (const s of [-1, 1]) {
+    const wrap = new THREE.Mesh(new THREE.TorusGeometry(0.13, 0.035, 6, 12), pbr(WOOD_DK, 0.95));
+    wrap.position.set(0, 3.0, s * 0.25);
+    head.add(wrap);
+  }
+  // tie-beams between the front and back leg pairs so the fork reads built.
+  for (const s of [-1, 1]) {
+    const tie = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.7, 7), frameMat);
+    tie.rotation.z = Math.PI / 2;
+    tie.position.set(0, 0.7, s * 0.7);
+    head.add(tie);
+  }
   const arm = new THREE.Group();
   arm.position.y = 3.0;
   const beam = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.12, 2.6, 8), frameMat);
@@ -99,7 +112,9 @@ function buildSlingshot(accent) {
   const pouch = new THREE.Mesh(new THREE.SphereGeometry(0.22, 8, 6), pbr(FUR, 0.95));
   pouch.position.set(1.5, 0.65, 0);
   arm.add(pouch);
-  const stone = new THREE.Mesh(new THREE.SphereGeometry(0.2, 8, 6), pbr(STONE, 0.85));
+  const stoneGeo = new THREE.SphereGeometry(0.2, 8, 6);
+  jitterGeo(stoneGeo, 0.03, 3.0, 7);
+  const stone = new THREE.Mesh(stoneGeo, pbr(STONE, 0.85));
   stone.position.set(1.5, 0.85, 0);
   arm.add(stone);
   head.add(arm);
@@ -108,6 +123,8 @@ function buildSlingshot(accent) {
   band.position.y = 0.35;
   head.add(band);
   root.add(head);
+  // spare sling-stones piled against the platform.
+  shotPile(root, 2.2, 0.9, pbr(STONE, 0.9), 0.2, 3);
   const muzzle = new THREE.Object3D();
   muzzle.position.set(1.5, 3.65, 0);
   arm.add(muzzle);
@@ -128,6 +145,12 @@ function buildEgg(accent) {
   nest.position.y = 0.9;
   nest.scale.z = 0.7;
   head.add(nest);
+  // trampled straw lining inside the nest bowl.
+  const straw = new THREE.Mesh(new THREE.TorusGeometry(0.55, 0.2, 8, 14), pbr('#a08a5a', 0.98));
+  straw.rotation.x = Math.PI / 2;
+  straw.position.y = 0.8;
+  straw.scale.z = 0.55;
+  head.add(straw);
   // egg stack
   for (let i = 0; i < 4; i++) {
     const egg = new THREE.Mesh(new THREE.SphereGeometry(0.26, 10, 8), pbr('#efe6d0', 0.5));
@@ -140,6 +163,11 @@ function buildEgg(accent) {
   const post = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.16, 2.2, 8), pbr(WOOD, 0.9));
   post.position.y = 1.8;
   head.add(post);
+  // owner-color war band lashed around the post.
+  const postBand = new THREE.Mesh(new THREE.TorusGeometry(0.15, 0.04, 6, 12), pbr(accent, 0.65));
+  postBand.rotation.x = Math.PI / 2;
+  postBand.position.y = 2.4;
+  head.add(postBand);
   const arm = new THREE.Group();
   arm.position.y = 2.9;
   const cradle = new THREE.Mesh(new THREE.TorusGeometry(0.3, 0.08, 8, 12, Math.PI * 1.4), pbr(WOOD_DK, 0.9));
@@ -155,6 +183,8 @@ function buildEgg(accent) {
   arm.add(feathers);
   head.add(arm);
   root.add(head);
+  // spare eggs cached at the foot of the nest.
+  shotPile(root, -1.9, 1.0, pbr('#efe6d0', 0.5), 0.26, 3);
   const muzzle = new THREE.Object3D();
   muzzle.position.set(0.9, 3.1, 0);
   arm.add(muzzle);
@@ -181,11 +211,24 @@ function buildCatapult(accent) {
       legC.rotation.z = ex * 0.3;
       head.add(legC);
     }
+    // St Andrew's cross between the splayed legs: both diagonals.
+    for (const dir of [-1, 1]) {
+      const diag = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 2.33, 6), frameMat);
+      diag.position.set(0, 0.65, s * 0.55);
+      diag.rotation.z = dir * 1.126;
+      head.add(diag);
+    }
   }
   const axle = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 1.6, 8), pbr(WOOD_DK, 0.9));
   axle.rotation.x = Math.PI / 2;
   axle.position.set(-0.4, 1.5, 0);
   head.add(axle);
+  // rope lashings binding beam pivot to the cheeks.
+  for (const s of [-1, 1]) {
+    const wrap = new THREE.Mesh(new THREE.TorusGeometry(0.16, 0.035, 6, 12), pbr('#a08a5a', 0.95));
+    wrap.position.set(-0.4, 1.5, s * 0.55);
+    head.add(wrap);
+  }
   const arm = new THREE.Group();
   arm.position.set(-0.4, 1.5, 0);
   const beam = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.14, 3.4, 8), frameMat);
@@ -196,7 +239,9 @@ function buildCatapult(accent) {
   bucket.material.side = THREE.DoubleSide;
   bucket.position.y = 3.1;
   arm.add(bucket);
-  const boulder = new THREE.Mesh(new THREE.SphereGeometry(0.34, 9, 7), pbr('#6a6a72', 0.9));
+  const boulderGeo = new THREE.SphereGeometry(0.34, 9, 7);
+  jitterGeo(boulderGeo, 0.04, 2.6, 31);
+  const boulder = new THREE.Mesh(boulderGeo, pbr('#6a6a72', 0.9));
   boulder.position.y = 3.3;
   arm.add(boulder);
   const rope = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 1.2, 6), pbr('#a08a5a', 0.95));
@@ -209,6 +254,8 @@ function buildCatapult(accent) {
   paint.position.set(0, 1.2, 0.7);
   head.add(paint);
   root.add(head);
+  // spare boulders stacked by the frame.
+  shotPile(root, 2.7, -0.9, pbr('#6a6a72', 0.9), 0.34, 3);
   const muzzle = new THREE.Object3D();
   muzzle.position.set(0, 4.6, 0);
   head.add(muzzle);
