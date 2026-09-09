@@ -1,43 +1,49 @@
 # html-games
 
-Games that are purely html — no build step, no runtime dependencies, no framework. Open the folder
-in a browser and it runs.
+This repo holds small browser games. Players need only a browser.
 
 ## Games
 
 | Game | Directory | Status | Play | Test |
 |---|---|---|---|---|
 | Age of War | [`age-of-war/`](age-of-war/) | Complete | `localhost:8081/age-of-war/` | `npm test -w age-of-war` |
+| Age of War 3D | [`age-of-war-3d/`](age-of-war-3d/) | Complete | `localhost:8081/age-of-war-3d/` | `npm test -w age-of-war-3d` |
 
-## Running
+## Start
+
+Do these steps from the root:
 
 ```bash
-npm install          # once, hoists dev dependencies for every game
-npm run serve        # serves the repo root on :8081
-npm test             # runs every game's suite
+npm install    # install once, links all games
+npm run serve  # serves the root on port 8081
 ```
 
-## Conventions
+Then open a game in your browser. Use `localhost:8081/age-of-war/`. Use `localhost:8081/age-of-war-3d/` for the 3D game.
 
-Every game in this repo follows the same shape, so what you learn in one transfers to the next:
+## Test
 
-- **No build step.** Plain `<script>` tags with globals, listed in `index.html` in dependency
-  order. No ES modules, no bundler, no transpile.
-- **No runtime dependencies.** Dev dependencies (sprite generation, tooling) are fine; anything
-  the browser needs at runtime is checked in.
-- **All tunable numbers in one `CONFIG` object** (`js/config.js`). Balance changes never require
-  touching game logic, and docs can be generated from it.
-- **Procedural canvas sprites with a PNG cache.** Art is drawn in code, then baked to `sprites/`
-  so the game doesn't redraw it every frame.
-- **Headless Node test harness.** `test-runner.js` stubs the DOM, loads the real game files listed
-  in `index.html`, and drives real game frames — no browser, no test framework dependency.
+```bash
+npm test  # runs tests for all games
+```
 
-## Adding a game
+To test one game only, use `npm test -w age-of-war`. Use `npm test -w age-of-war-3d` for the 3D game.
+
+## Rules
+
+Each game follows the same rules. These rules keep games simple.
+
+- No build step for 2D games. The browser loads plain scripts.
+- No runtime libraries for 2D games. All code is checked in.
+- All game numbers live in one `CONFIG` object.
+- Art is drawn in code where possible.
+- Tests run in Node with no browser. Tests load real game files.
+
+Age of War 3D is different. It uses Three.js for 3D views. It vendors Three.js in the repo. It can use Vite for local work.
+
+## Add a Game
 
 ```bash
 npm run new-game <slug> "<Display Name>"
 ```
 
-Copies `template/` — a runnable title-screen-to-win-loop skeleton with tests — substitutes the
-name, and registers the slug as an npm workspace. Then add a row to the table above and run
-`npm install`.
+This command copies `template/`. It registers the new game. Then add a row to the Games table. Then run `npm install`.
