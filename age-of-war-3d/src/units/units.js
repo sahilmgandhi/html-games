@@ -555,7 +555,8 @@ function buildCannoneer(accent) {
   const gun = fieldGun(1.1, 0.14);
   gun.position.set(0.75, 0, 0);
   b.add(gun);
-  return { body: b, legL, legR, armL, armR, head, height: 2.2 };
+  // ramrod work: the strike anim drives the arm forward, never overhead.
+  return { body: b, legL, legR, armL, armR, head, height: 2.2, thrust: true };
 }
 
 function buildWarEngineer(accent) {
@@ -587,7 +588,8 @@ function buildWarEngineer(accent) {
   );
   aura.rotation.x = Math.PI / 2; aura.position.y = 0.08;
   b.add(aura);
-  return { body: b, legL, legR, armL, armR, head, height: 2.6, aura };
+  // leveled musket: the strike anim holds aim and kicks back, never overhead.
+  return { body: b, legL, legR, armL, armR, head, height: 2.6, aura, thrust: true };
 }
 
 // Modern: olive-drab great-war infantry, riflemen, a tracked tank and an
@@ -640,7 +642,8 @@ function buildMeleeInfantry(accent) {
   eyes(head, 0.0, 0.17, 0.1);
   const helm = helmet(accent); helm.position.y = 0.1; head.add(helm);
   b.add(head);
-  return { body: b, legL, legR, armL, armR, head, height: 2.15 };
+  // bayonet jab: the strike anim drives the rifle forward, never overhead.
+  return { body: b, legL, legR, armL, armR, head, height: 2.15, thrust: true };
 }
 
 function buildInfantry(accent) {
@@ -666,7 +669,8 @@ function buildInfantry(accent) {
   eyes(head, 0.0, 0.17, 0.1);
   const helm = helmet(accent); helm.position.y = 0.1; head.add(helm);
   b.add(head);
-  return { body: b, legL, legR, armL, armR, head, height: 2.15 };
+  // aimed volley: the strike anim holds the level and kicks back, never overhead.
+  return { body: b, legL, legR, armL, armR, head, height: 2.15, thrust: true };
 }
 
 function buildTank(accent) {
@@ -811,7 +815,8 @@ function buildBlasterUnit(accent) {
   head.add(new THREE.Mesh(new THREE.SphereGeometry(0.21, 14, 12), pbr(FUT_DARK, 0.6, 0.4)));
   visor(head);
   b.add(head);
-  return { body: b, legL, legR, armL, armR, head, height: 2.15 };
+  // aimed burst: the strike anim holds the level and kicks back, never overhead.
+  return { body: b, legL, legR, armL, armR, head, height: 2.15, thrust: true };
 }
 
 function buildWarMachine(accent) {
@@ -910,7 +915,8 @@ function buildTitan(accent) {
   );
   aura.rotation.x = Math.PI / 2; aura.position.y = 0.08;
   b.add(aura);
-  return { body: b, legL, legR, armL, armR, head, height: 3.0, aura };
+  // arm cannon: the strike anim braces and fires forward, never overhead.
+  return { body: b, legL, legR, armL, armR, head, height: 3.0, aura, thrust: true };
 }
 
 const BUILDERS = {

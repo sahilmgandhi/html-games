@@ -427,6 +427,7 @@ function buildRenaissancePalazzo(accent, mirror) {
   // lit arcade windows facing the field (+x), out below 33%
   const windows = [];
   const winM = new THREE.MeshBasicMaterial({ color: '#ffca6a' });
+  const shutterM = pbr(WOOD_DK, 0.9);
   for (const wy of [2.4, 3.4]) {
     for (const off of [-1.1, 0, 1.1]) {
       const w = new THREE.Mesh(new THREE.PlaneGeometry(0.45, 0.7), winM);
@@ -434,7 +435,28 @@ function buildRenaissancePalazzo(accent, mirror) {
       w.rotation.y = mirror > 0 ? Math.PI / 2 : -Math.PI / 2;
       mesh.add(w);
       windows.push(w);
+      // stone architrave: lintel + sill so windows sit in the wall, not on it.
+      for (const ly of [wy + 0.41, wy - 0.41]) {
+        const lin = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.12, 0.68), trim);
+        lin.position.set(1.92 * mirror, ly, off);
+        mesh.add(lin);
+      }
+      // folded wooden shutters flanking each window.
+      for (const s of [-1, 1]) {
+        const sh = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.7, 0.3), shutterM);
+        sh.position.set(1.92 * mirror, wy, off + s * 0.39);
+        mesh.add(sh);
+      }
     }
+  }
+  // string course over the rusticated base + corner lesene on the piano nobile.
+  const course = new THREE.Mesh(new THREE.BoxGeometry(4.0, 0.18, 4.0), trim);
+  course.position.y = 1.68;
+  mesh.add(course);
+  for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
+    const les = new THREE.Mesh(new THREE.BoxGeometry(0.2, 2.6, 0.2), trim);
+    les.position.set(sx * 1.9 * mirror, 2.9, sz * 1.9);
+    mesh.add(les);
   }
   // arched gate with torches
   const opening = new THREE.Mesh(new THREE.PlaneGeometry(1.4, 1.5),
