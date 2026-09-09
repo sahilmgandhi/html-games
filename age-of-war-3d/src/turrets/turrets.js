@@ -617,17 +617,32 @@ function buildExplosiveCannon(accent) {
 // steel pivot. The gun group is the recoil arm (armAxis 'throw', rest 0).
 function gunPit(accent) {
   const root = new THREE.Group();
-  const pad = new THREE.Mesh(new THREE.CylinderGeometry(1.9, 2.1, 0.5, 14), pbr('#6a6a62', 0.95));
+  const padGeo = new THREE.CylinderGeometry(1.9, 2.1, 0.5, 14);
+  jitterGeo(padGeo, 0.03, 2.0, 7);
+  mottleGeo(padGeo, 0.1, 7);
+  const pad = new THREE.Mesh(padGeo, rockMat('#6a6a62', 0.95));
   pad.position.y = 0.25;
   root.add(pad);
+  const bagM = pbr('#8a7a5a', 1.0);
   for (let i = 0; i < 7; i++) {
     const a = Math.PI * (0.15 + 0.7 * (i / 6));
-    const bag = new THREE.Mesh(new THREE.SphereGeometry(0.34, 8, 6), pbr('#8a7a5a', 1.0));
+    const wob = Math.sin(i * 12.9) * 0.5 + Math.sin(i * 5.3) * 0.5;
+    const bag = new THREE.Mesh(new THREE.SphereGeometry(0.34 * (1 + wob * 0.08), 8, 6), bagM);
     bag.scale.set(1.25, 0.55, 0.8);
-    bag.position.set(Math.cos(a) * 1.9, 0.68, Math.sin(a) * 1.9);
-    bag.rotation.y = -a;
+    bag.position.set(Math.cos(a) * 1.9, 0.68 + wob * 0.02, Math.sin(a) * 1.9);
+    bag.rotation.set(wob * 0.1, -a + wob * 0.2, wob * 0.08);
     root.add(bag);
   }
+  // ammo crate + spare shell staged on the pad.
+  const crate = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.35, 0.4), pbr(WOOD, 0.9));
+  crate.position.set(-1.2, 0.68, 1.1);
+  crate.rotation.y = 0.3;
+  root.add(crate);
+  const shell = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 0.7, 8), pbr('#2c3036', 0.4, 0.8));
+  shell.rotation.z = Math.PI / 2;
+  shell.position.set(-1.1, 0.92, 1.05);
+  shell.rotation.y = 0.3;
+  root.add(shell);
   const head = new THREE.Group();
   head.position.y = 0.5;
   const pivot = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.5, 0.7, 10), pbr('#3a3f46', 0.6));
@@ -650,10 +665,29 @@ function buildSingleTurret(accent) {
   const shield = new THREE.Mesh(new THREE.BoxGeometry(0.18, 1.0, 1.4), pbr('#4a4f56', 0.55));
   shield.position.set(0.35, 0.35, 0);
   arm.add(shield);
+  // bolt heads around the shield rim + owner-color stripe.
+  const boltM = pbr('#1c1e22', 0.5, 0.7);
+  for (const [by, bz] of [[0.75, 0.6], [0.75, -0.6], [-0.05, 0.6], [-0.05, -0.6]]) {
+    const bolt = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.22, 6), boltM);
+    bolt.rotation.z = Math.PI / 2;
+    bolt.position.set(0.35, by, bz);
+    arm.add(bolt);
+  }
   const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.11, 2.2, 12), pbr('#2c3036', 0.4, 0.8));
   barrel.rotation.z = -Math.PI / 2 + 0.08;
   barrel.position.set(1.2, 0.4, 0);
   arm.add(barrel);
+  // thermal sleeve rings + muzzle brake at the barrel tip.
+  for (const sx of [1.35, 1.75]) {
+    const sleeve = new THREE.Mesh(new THREE.TorusGeometry(0.105, 0.022, 6, 12), pbr('#3a3f46', 0.5, 0.6));
+    sleeve.rotation.y = Math.PI / 2;
+    sleeve.position.set(sx, 0.4 + (sx - 1.2) * 0.08, 0);
+    arm.add(sleeve);
+  }
+  const brake = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.13, 0.22, 10), pbr('#1c1e22', 0.5, 0.7));
+  brake.rotation.z = -Math.PI / 2 + 0.08;
+  brake.position.set(2.2, 0.48, 0);
+  arm.add(brake);
   const muzzle = new THREE.Object3D();
   muzzle.position.set(2.35, 0.5, 0);
   arm.add(muzzle);
@@ -669,6 +703,15 @@ function buildRocketTurret(accent) {
   const rack = new THREE.Group();
   rack.position.set(0, 0.35, 0);
   rack.rotation.z = 0.5; // fixed skyward tilt; the head still yaws to track
+  // frame rails + backplate tie the six tubes into one launch rack.
+  for (const fy of [-0.3, 0.3]) {
+    const rail = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.07, 0.72), pbr('#2c3036', 0.5, 0.6));
+    rail.position.set(0.3, fy, 0);
+    rack.add(rail);
+  }
+  const backplate = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.7, 0.72), pbr('#4a4f56', 0.55));
+  backplate.position.set(-0.48, 0, 0);
+  rack.add(backplate);
   for (const dy of [-0.16, 0.16]) {
     for (const dz of [-0.28, 0, 0.28]) {
       const tube = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.11, 1.5, 8), pbr('#3d4436', 0.6, 0.3));
@@ -684,7 +727,7 @@ function buildRocketTurret(accent) {
   }
   arm.add(rack);
   const muzzle = new THREE.Object3D();
-  muzzle.position.set(1.3, 1.15, 0);
+  muzzle.position.set(1.0, 0.95, 0);
   arm.add(muzzle);
   const flash = flashSprite(1.6);
   flash.position.copy(muzzle.position);
@@ -705,13 +748,17 @@ function buildDoubleTurret(accent) {
     barrel.position.set(1.3, 0.6, s * 0.3);
     arm.add(barrel);
   }
+  // twin discharge: one flash sprite per barrel tip (see flash2 handling).
   const muzzle = new THREE.Object3D();
-  muzzle.position.set(1.3, 0.75, 0);
+  muzzle.position.set(2.5, 0.72, 0);
   arm.add(muzzle);
   const flash = flashSprite(1.5);
-  flash.position.copy(muzzle.position);
+  flash.position.set(2.5, 0.72, 0.3);
   arm.add(flash);
-  return { root, head, arm, muzzle, flash, height: 3.6, restArmZ: 0, armAxis: 'throw' };
+  const flash2 = flashSprite(1.5);
+  flash2.position.set(2.5, 0.72, -0.3);
+  arm.add(flash2);
+  return { root, head, arm, muzzle, flash, flash2, height: 3.6, restArmZ: 0, armAxis: 'throw' };
 }
 
 // shared Future mount: dark hex pad, glowing rim ring, pivot pylon
@@ -889,6 +936,10 @@ export function TurretMesh(turret, ageIndex) {
       rig.flash.visible = true;
       const s = 1.1 + Math.random() * 0.5;
       rig.flash.scale.set(s, s, 1);
+      if (rig.flash2) {
+        rig.flash2.visible = true;
+        rig.flash2.scale.set(s, s, 1);
+      }
     },
     update(dt) {
       mesh.position.set(toMeters(turret.x) + slotOff(turret), 0, turret.z || 0);
@@ -920,6 +971,10 @@ export function TurretMesh(turret, ageIndex) {
         flashT -= dt;
         rig.flash.material.opacity = Math.max(0, flashT / 0.12) * 0.95;
         if (flashT <= 0) rig.flash.visible = false;
+        if (rig.flash2) {
+          rig.flash2.material.opacity = Math.max(0, flashT / 0.12) * 0.95;
+          if (flashT <= 0) rig.flash2.visible = false;
+        }
       }
       setFlash(turret.hitFlash > 0);
       const frac = turret.hp / turret.maxHp;
