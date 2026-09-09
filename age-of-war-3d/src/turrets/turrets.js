@@ -492,7 +492,25 @@ function buildOilTower(accent) {
 // Renaissance gun redoubt shared by all three cannon turrets: stone
 // platform, low parapet ring, wheeled barrel aimed skyward. The barrel group
 // is the recoil arm (armAxis 'throw', rest 0) so fire() kicks it upward.
-function gunRedoubt(accent, barrelLen, barrelR, elevation) {
+// Spoked artillery wheel: iron tire, wooden spokes + hub. Reads as a real
+// gun carriage instead of a wooden disc.
+function spokedWheel(r, w) {
+  const g = new THREE.Group();
+  g.add(new THREE.Mesh(new THREE.TorusGeometry(r - 0.02, 0.035, 8, 18), pbr('#1a1a20', 0.5, 0.7)));
+  const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, w + 0.04, 10), pbr(WOOD_DK, 0.9));
+  hub.rotation.x = Math.PI / 2;
+  g.add(hub);
+  const spokeM = pbr(WOOD, 0.85);
+  for (let i = 0; i < 6; i++) {
+    const sp = new THREE.Mesh(new THREE.BoxGeometry(r - 0.08, 0.055, 0.055), spokeM);
+    sp.position.set(Math.cos(i * Math.PI / 3) * (r / 2), Math.sin(i * Math.PI / 3) * (r / 2), 0);
+    sp.rotation.z = i * Math.PI / 3;
+    g.add(sp);
+  }
+  return g;
+}
+
+function gunRedoubt(accent, barrelLen, barrelR, elevation, flashScale) {
   const root = new THREE.Group();
   root.add(stonePlatform(1.8));
   const head = new THREE.Group();
@@ -510,70 +528,88 @@ function gunRedoubt(accent, barrelLen, barrelR, elevation) {
   head.add(trim);
   const arm = new THREE.Group();
   arm.position.set(-0.3, 1.3, 0);
-  const wheelM = pbr(WOOD_DK, 0.9);
   for (const s of [-1, 1]) {
-    const wheel = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 0.12, 12), wheelM);
-    wheel.rotation.x = Math.PI / 2;
+    const wheel = spokedWheel(0.42, 0.12);
     wheel.position.set(0, -0.45, s * 0.42);
     arm.add(wheel);
   }
+  // tube group: breech at local origin, bore along +X, so rings, bands and
+  // the muzzle anchor all sit exactly on the barrel at any elevation.
+  const tube = new THREE.Group();
+  tube.position.set(0, -0.1, 0);
+  tube.rotation.z = elevation;
+  arm.add(tube);
   const barrel = new THREE.Mesh(new THREE.CylinderGeometry(barrelR * 0.8, barrelR, barrelLen, 12),
     pbr(IRON, 0.45, 0.75));
-  barrel.rotation.z = -Math.PI / 2 + elevation;
-  barrel.position.set(Math.cos(elevation) * barrelLen / 2, Math.sin(elevation) * barrelLen / 2 - 0.1, 0);
-  arm.add(barrel);
+  barrel.rotation.z = -Math.PI / 2;
+  barrel.position.x = barrelLen / 2;
+  tube.add(barrel);
+  // muzzle swell + cascabel knob: the classic cannon silhouette.
+  const swell = new THREE.Mesh(new THREE.TorusGeometry(barrelR * 0.8 + 0.015, 0.032, 8, 14),
+    pbr(IRON, 0.4, 0.8));
+  swell.rotation.y = Math.PI / 2;
+  swell.position.x = barrelLen - 0.05;
+  tube.add(swell);
+  const cascabel = new THREE.Mesh(new THREE.SphereGeometry(barrelR * 0.9, 10, 8),
+    pbr(IRON, 0.4, 0.8));
+  cascabel.position.x = -0.1;
+  tube.add(cascabel);
+  const muzzle = new THREE.Object3D();
+  muzzle.position.set(barrelLen, 0, 0);
+  tube.add(muzzle);
+  const flash = flashSprite(flashScale);
+  flash.position.copy(muzzle.position);
+  tube.add(flash);
   head.add(arm);
   root.add(head);
-  return { root, head, arm };
+  return { root, head, arm, tube, muzzle, flash };
 }
 
 // 0 — Small Cannon (Renaissance)
 function buildSmallCannon(accent) {
-  const { root, head, arm } = gunRedoubt(accent, 1.6, 0.16, 0.22);
+  const { root, head, arm, tube, muzzle, flash } = gunRedoubt(accent, 1.6, 0.16, 0.22, 1.2);
+  for (const bx of [0.55, 1.1]) {
+    const band = new THREE.Mesh(new THREE.TorusGeometry(0.15, 0.03, 8, 14), pbr('#1a1a20', 0.5, 0.7));
+    band.rotation.y = Math.PI / 2;
+    band.position.x = bx;
+    tube.add(band);
+  }
   shotPile(head, -1.2, 0.9, pbr(IRON, 0.45, 0.75), 0.22, 3);
-  const muzzle = new THREE.Object3D();
-  muzzle.position.set(1.35, 1.75, 0);
-  arm.add(muzzle);
-  const flash = flashSprite(1.2);
-  flash.position.copy(muzzle.position);
-  arm.add(flash);
   return { root, head, arm, muzzle, flash, height: 4.6, restArmZ: 0, armAxis: 'throw' };
 }
 
 // 1 — Large Cannon (Renaissance): longer banded barrel, heavier shot
 function buildLargeCannon(accent) {
-  const { root, head, arm } = gunRedoubt(accent, 2.4, 0.22, 0.2);
-  for (const bx of [-0.5, 0.3]) {
-    const band = new THREE.Mesh(new THREE.TorusGeometry(0.24, 0.045, 8, 14), pbr('#1a1a20', 0.5, 0.7));
+  const { root, head, arm, tube, muzzle, flash } = gunRedoubt(accent, 2.4, 0.22, 0.2, 1.5);
+  for (const bx of [0.8, 1.7]) {
+    const band = new THREE.Mesh(new THREE.TorusGeometry(0.2, 0.04, 8, 14), pbr('#1a1a20', 0.5, 0.7));
     band.rotation.y = Math.PI / 2;
-    band.position.set(bx, 0.35, 0);
-    arm.add(band);
+    band.position.x = bx;
+    tube.add(band);
   }
   shotPile(head, -1.2, 0.9, pbr(IRON, 0.45, 0.75), 0.28, 3);
-  const muzzle = new THREE.Object3D();
-  muzzle.position.set(1.85, 1.85, 0);
-  arm.add(muzzle);
-  const flash = flashSprite(1.5);
-  flash.position.copy(muzzle.position);
-  arm.add(flash);
   return { root, head, arm, muzzle, flash, height: 4.8, restArmZ: 0, armAxis: 'throw' };
 }
 
 // 2 — Explosive Cannon (Renaissance): squat mortar, powder kegs, shell pile
 function buildExplosiveCannon(accent) {
-  const { root, head, arm } = gunRedoubt(accent, 1.0, 0.32, 0.55);
+  const { root, head, arm, tube, muzzle, flash } = gunRedoubt(accent, 1.0, 0.32, 0.55, 1.7);
+  const reinforce = new THREE.Mesh(new THREE.TorusGeometry(0.29, 0.035, 8, 14), pbr('#1a1a20', 0.5, 0.7));
+  reinforce.rotation.y = Math.PI / 2;
+  reinforce.position.x = 0.5;
+  tube.add(reinforce);
   for (const [kx, kz] of [[-1.2, -0.8], [-1.2, 0.9]]) {
     const keg = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 0.5, 10), pbr(WOOD, 0.9));
     keg.position.set(kx, 1.15, kz);
     head.add(keg);
+    for (const hy of [-0.12, 0.12]) {
+      const hoop = new THREE.Mesh(new THREE.TorusGeometry(0.225, 0.025, 6, 14), pbr('#1a1a20', 0.5, 0.7));
+      hoop.rotation.x = Math.PI / 2;
+      hoop.position.set(kx, 1.15 + hy, kz);
+      head.add(hoop);
+    }
   }
   shotPile(head, -0.4, 1.1, pbr('#3a3028', 0.5), 0.26, 3);
-  const muzzle = new THREE.Object3D();
-  muzzle.position.set(0.75, 2.1, 0);
-  arm.add(muzzle);
-  const flash = flashSprite(1.7);
-  flash.position.copy(muzzle.position);
-  arm.add(flash);
   return { root, head, arm, muzzle, flash, height: 4.8, restArmZ: 0, armAxis: 'throw' };
 }
 
