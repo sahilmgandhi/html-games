@@ -340,15 +340,22 @@ export class Turret {
     if (this.hitFlash > 0) this.hitFlash -= dt;
 
     let closest = null;
-    let closestDist = Infinity;
+    let bestScore = Infinity;
 
     const nearby = spatialHash.query(this.x, this.y, this.range, this.side);
     for (let i = 0; i < nearby.length; i++) {
       const u = nearby[i];
       if (u instanceof Unit) {
         const d = dist(this.x, this.y, u.x, u.y);
-        if (d < closestDist && d <= this.range) {
-          closestDist = d;
+        if (d > this.range) continue;
+        // Prefer high-value targets: heroes, then siege/armor, then elites.
+        // Score discounts beat raw distance so turrets don't plink at chaff
+        // while a knight rides past.
+        const score = d - (u.isHero ? 80 : 0)
+          - (u.type === 'siege' || u.type === 'armored' ? 50 : 0)
+          - (u.type === 'elite' ? 30 : 0);
+        if (score < bestScore) {
+          bestScore = score;
           closest = u;
         }
       }

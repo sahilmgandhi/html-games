@@ -6,6 +6,8 @@
 // these per frame, and each one allocates fresh AudioNodes.
 export const SFX_MIN_INTERVAL = {
   hit: 0.06,
+  clang: 0.06,
+  thud: 0.15,
   fire: 0.05,
   death: 0.08,
   gold: 0.08,
@@ -620,6 +622,66 @@ export class AudioManager {
           noiseGain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
           noise.start(now);
           noise.stop(now + 0.1);
+          break;
+        }
+
+        case 'clang': {
+          // Metallic impact: detuned high squares + a bright noise snap.
+          for (const freq of [2093, 2794]) {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(freq, now);
+            osc.frequency.exponentialRampToValueAtTime(freq * 0.5, now + 0.12);
+            gain.gain.setValueAtTime(0.05, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
+            osc.start(now);
+            osc.stop(now + 0.12);
+          }
+          const noise = this.createNoise(0.05);
+          const noiseGain = this.ctx.createGain();
+          const noiseFilter = this.ctx.createBiquadFilter();
+          noiseFilter.type = 'highpass';
+          noiseFilter.frequency.setValueAtTime(5000, now);
+          noise.connect(noiseFilter);
+          noiseFilter.connect(noiseGain);
+          noiseGain.connect(this.ctx.destination);
+          noiseGain.gain.setValueAtTime(0.12, now);
+          noiseGain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
+          noise.start(now);
+          noise.stop(now + 0.05);
+          break;
+        }
+
+        case 'thud': {
+          // Heavy collapse: low sine drop + a lowpassed noise boom.
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(95, now);
+          osc.frequency.exponentialRampToValueAtTime(28, now + 0.3);
+          gain.gain.setValueAtTime(0.22, now);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+          osc.start(now);
+          osc.stop(now + 0.3);
+
+          const noise = this.createNoise(0.25);
+          const noiseGain = this.ctx.createGain();
+          const noiseFilter = this.ctx.createBiquadFilter();
+          noiseFilter.type = 'lowpass';
+          noiseFilter.frequency.setValueAtTime(400, now);
+          noiseFilter.frequency.exponentialRampToValueAtTime(80, now + 0.25);
+          noise.connect(noiseFilter);
+          noiseFilter.connect(noiseGain);
+          noiseGain.connect(this.ctx.destination);
+          noiseGain.gain.setValueAtTime(0.16, now);
+          noiseGain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+          noise.start(now);
+          noise.stop(now + 0.25);
           break;
         }
 

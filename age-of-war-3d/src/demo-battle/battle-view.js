@@ -150,6 +150,17 @@ export function attachBattleView(game, sim, fx, opts = {}) {
       const e = hit.entity;
       const color = e.side === 'player' ? '#5aa0ff' : '#ff6a5a';
       burstAt(e.x, e.z || 0, hit.special ? '#ff8800' : color, hit.special ? 30 : 10, hit.damage);
+      if (e instanceof Unit) {
+        // Flesh reads wet, armor reads bright: blood mist on soft targets,
+        // a white-hot spark snap on plate, siege and heroes.
+        const plated = e.isHero || e.type === 'armored' || e.type === 'siege' || e.type === 'elite';
+        if (plated) burstAt(e.x, (e.z || 0) + 0.3, '#fff2c8', 12);
+        else burstAt(e.x, (e.z || 0) + 0.2, '#a02323', 8);
+      } else {
+        // Structures take chunks: gray debris + a dust kick at the base.
+        burstAt(e.x, e.z || 0, '#8a8378', 8);
+        burstAt(e.x, e.z || 0, '#5a5148', 5);
+      }
       if (hit.special || (hit.damage !== undefined && hit.damage >= 80)) {
         hitStop = Math.max(hitStop, 0.06);
       }

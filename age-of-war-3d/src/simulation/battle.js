@@ -640,7 +640,11 @@ export class BattleSim {
       p.update(dt);
       const hits = p.checkHit([this.playerBase, this.enemyBase], this.spatialHash);
       if (hits.length > 0) {
-        this._sound('hit');
+        // Plate and stone ring: anything armored or structural clangs.
+        const clang = hits.some((h) => h.entity && (!(h.entity instanceof Unit) ||
+          h.entity.isHero || h.entity.type === 'armored' ||
+          h.entity.type === 'siege' || h.entity.type === 'elite'));
+        this._sound(clang ? 'clang' : 'hit');
         for (const hit of hits) this.emit('projectile:hit', hit);
       }
     }
@@ -669,7 +673,7 @@ export class BattleSim {
             this.xp += u.xpReward;
             this.emit('xp:change', this.xp);
           }
-          this._sound('death');
+          this._sound(u.maxHp >= 1200 ? 'thud' : 'death');
           this._sound('gold');
           this.emit('entity:death', u);
         } else {
@@ -684,7 +688,7 @@ export class BattleSim {
       for (let i = 0; i < this.turrets.length; i++) {
         const t = this.turrets[i];
         if (!t.alive) {
-          this._sound('death');
+          this._sound('thud'); // structural collapse, not a body drop
           this.emit('entity:death', t);
         } else {
           this.turrets[write++] = t;
