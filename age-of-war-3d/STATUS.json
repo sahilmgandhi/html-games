@@ -133,7 +133,22 @@
     "phase1_env": "84332b1: craggier mesas (jitter 0.1/0.08->0.16/0.14, 3 strata bands), jittered araucaria/cypress tiers + darker under-tier",
     "phase2_units": "d728ac8: bigger signature weapons (sword 0.85->1.0, musket/rifle/blaster +15%), eye catchlight glints, dark shield rim ring; verified swordsman sigil+blade, archer quiver+bow, 60.3fps",
     "surface_pass": "263cec4: rockMat fresh flatShading+vertexColors + mottleGeo seeded per-vertex jitter on mesas/volcano/boulders, jitterGeo 2nd high-freq octave + y wobble, canopy tint jitter \u00b18pct on araucaria/cypress/broadleaf; faceted mesas + varied pines verified, 156+36 tests green",
-    "hud_styles": "11cc9d8: CSS-only HUD restyle \u2014 uppercase gold age pill, bottom dark scrim, affordable-card golden lift vs muted disabled, 16px outlined damage numbers; verified live battle 0 errors, 156+36 tests green"
+    "hud_styles": "11cc9d8: CSS-only HUD restyle \u2014 uppercase gold age pill, bottom dark scrim, affordable-card golden lift vs muted disabled, 16px outlined damage numbers; verified live battle 0 errors, 156+36 tests green",
+    "aaa1_grit_juice": "dd9f0dc: shared seeded grit albedo on all pbr() mats; attack windup+snap+lunge, hit squash pop, eased death settle; turret yaw ease + spring recoil + flash pop; hit-stop, melee dust, muzzle smoke, siege smoke",
+    "aaa2_keep_thrust": "934e598: knight lance thrust + musketeer level-fire (no overhead swings); keep quoins, curtain merlons + arrow slits, jittered mound, dirt skirt",
+    "aaa3_oil_crane": "9a13267: oil tower battered base, course bands, pilasters, yoke posts, crane (king post/jib/brace/chains/ember oil); catapult X-braces, pivot ropes, jittered shot",
+    "aaa4_stone_turrets": "feb9808: slingshot tie-beams + axle lashings + stone pile; egg nest straw lining + spare pile; prim. catapult X-braces + boulder pile",
+    "aaa5_combat_depth": "b1ceec5: turret target priority (heroes/siege over chaff); flesh blood-mist vs armor spark vs structure debris hit FX; clang/thud impact audio",
+    "aaa6_ren_cannons": "ef8ba49: spoked wheels, tube-group barrels with swell+cascabel, true muzzle anchors (fixed floating bands + high flashes), keg hoops",
+    "aaa7_thrust_palazzo": "0a5528a: thrust anim for 6 gun/polearm rigs; palazzo architraves, shutters, string course, lesene",
+    "aaa8_bunker_citadel": "9b9ed46: bunker sandbag courses, wing walls, vault clutter; citadel spire collars, corner guards, pad ring, annex ribs",
+    "aaa9_turrets_mod_fut": "c993e11/cd3f8d3: modern pit variance, muzzle brake, rack frame, twin flashes; future pad studs, rail insulators, lazer cell, ion halo, steady recoil",
+    "aaa10_ren_infantry": "ad6fb65: dueler baldric/cup-hilt/puffs; musketeer crossbelts/cuffs/cartridges; field-gun reinforce bands",
+    "aaa11_modern_units": "418cfa9: infantry webbing kits; tank skirts/lamp/antenna; commander crossbelt/ribbons/visor",
+    "aaa12_future_units": "9f9b727: pauldron + power-pack helpers across all 5 future builders; war-machine skirts/lamp/antenna; titan charge cell",
+    "aaa13_heroes": "f6fb477: heroes 1.18x scale, gold command ring, raised HP bar",
+    "aaa14_buildings": "03415f8: mine mottled rock, adit lantern + bracing, cart tires; barracks tent guy-ropes + stakes",
+    "aaa15_projectiles": "9965b41: mottled rock/boulder shot, 3-vane arrows, shell fuse spark"
   },
   "playthroughs": {
     "castle": "PASS: evolve->1, Swordsman/Archer/Knight/Paladin, Catapult/Fire/Oil (slots), mine+barracks, Arrow Volley fired; 0 errors",
