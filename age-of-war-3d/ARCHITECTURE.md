@@ -42,7 +42,8 @@ Each gameplay module owns only its folder and exposes one factory or class:
 - `environment.createEnvironment(scene, ageIndex)` → `{ group, setAge(i), dispose() }`
 - `units.UnitMesh(entity, ageIndex)` → `{ mesh, update(dt, entity), dispose() }`
 - `bases.BaseMesh(side, ageIndex)` → `{ mesh, setHp(frac), update(dt), dispose() }`
-- `turrets.TurretMesh(turret, ageIndex)` → `{ mesh, aimAt(x,y,z), dispose() }`
+- `turrets.TurretMesh(turret, ageIndex)` → `{ mesh, aimAt(x,y,z), dispose() }` (downsized ~0.55x, mounts onto shared side tower; see below)
+- `turrets.TowerMesh(side, ageIndex)` → `{ mesh, mount(i), dispose() }` (one shared tower per side with 4 mounts on top; turrets seat on mounts, never free-standing in lane)
 - `buildings.BuildingMesh(building)` → `{ mesh, dispose() }` (age-agnostic: mine/barracks look identical in every age, matching the original)
 - `projectiles.ProjectileMesh(kind)` → `{ mesh, update(dt), dispose() }`
 - `particles.ParticleSystem3D(scene)` → `{ damageNumber(), goldNumber(), burst(), update(dt) }`
@@ -79,6 +80,8 @@ Simulation holds all state as plain objects (`units[]`, `turrets[]`, `buildings[
 
 Entity fields: `id, x, z, side ('player'|'enemy'), type, ageIndex, hp, maxHp, damage, speed, range, attackSpeed, attackCooldown, alive, dying, walkPhase, hitFlash`.
 
+Movement rule: units advance toward their target but clamp at firing-range edge (stop-only, no overshoot past `range`). Formations removed: single fixed spawn point, no `formationMode`.
+
 ## Events (via `game.events`)
 
 `entity:spawn`, `entity:death`, `projectile:fire`, `projectile:hit`, `gold:change`, `xp:change`, `age:evolve`, `special:activate`, `game:over`. Payload is the entity or a small state object.
@@ -91,9 +94,9 @@ Seeded PRNG (`simulation/rng.js`, mulberry32) for AI and gameplay. No `Math.rand
 
 ≥50 fps at 1080p on a mid-range GPU. ≤1500 draw calls. Projectile/particle meshes pooled. Shadows: one 2048px PCF-soft directional map, main entities only.
 
-## Asset policy
+## Asset policy (photoreal target: GTA/COD/Witcher at 10/10)
 
-Procedural Three.js geometry + `MeshStandardMaterial` (metallic-roughness PBR) only. No external model files. Runtime Canvas2D textures allowed for ground detail and face decals.
+External glTF + 4K PBR textures allowed alongside procedural fallback. Procedural-only rule lifted per user approval. Reference frames named per critic shot (character close-up first, then wide battlefield).
 
 ## Failure isolation
 
