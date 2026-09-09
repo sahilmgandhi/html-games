@@ -771,6 +771,17 @@ function techPad(accent) {
   rim.rotation.x = Math.PI / 2;
   rim.position.y = 0.5;
   root.add(rim);
+  // recessed inner deck + hex bolt studs around the pad vertices.
+  const deck = new THREE.Mesh(new THREE.CylinderGeometry(1.45, 1.45, 0.08, 6), pbr('#131c2c', 0.7, 0.4));
+  deck.position.y = 0.5;
+  root.add(deck);
+  const studM = pbr('#2a3648', 0.5, 0.7);
+  for (let i = 0; i < 6; i++) {
+    const a = (i / 6) * Math.PI * 2;
+    const stud = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.11, 0.14, 6), studM);
+    stud.position.set(Math.sin(a) * 1.68, 0.53, Math.cos(a) * 1.68);
+    root.add(stud);
+  }
   const head = new THREE.Group();
   head.position.y = 0.5;
   const pivot = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.45, 0.8, 6), pbr('#1c2940', 0.6, 0.6));
@@ -794,6 +805,18 @@ function buildTitaniumShooter(accent) {
     const rail = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.12, 0.14), pbr('#2a3648', 0.5, 0.7));
     rail.position.set(1.0, 0.5, s * 0.22);
     arm.add(rail);
+    // rail tip shoe: tapered cap so the rails end in a point, not a cut.
+    const shoe = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.1, 0.22, 4), pbr('#1c2940', 0.6, 0.6));
+    shoe.rotation.z = -Math.PI / 2;
+    shoe.position.set(2.1, 0.5, s * 0.22);
+    arm.add(shoe);
+  }
+  // ceramic insulators bridge the rails + glowing strip feeds between them.
+  const insulM = pbr('#0d1522', 0.7, 0.3);
+  for (const ix of [0.4, 1.0, 1.6]) {
+    const insul = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.34, 0.58), insulM);
+    insul.position.set(ix, 0.5, 0);
+    arm.add(insul);
   }
   const strip = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.06, 0.1), glowMat('#00e5ff', 0.95));
   strip.position.set(1.0, 0.32, 0);
@@ -801,13 +824,18 @@ function buildTitaniumShooter(accent) {
   const breech = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.6, 0.6), pbr('#1c2940', 0.6, 0.6));
   breech.position.set(-0.2, 0.4, 0);
   arm.add(breech);
+  // capacitor cell on the breech flank: the gun reads as powered, not hollow.
+  const cell = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.3, 10), glowMat('#00e5ff', 1));
+  cell.rotation.x = Math.PI / 2;
+  cell.position.set(-0.2, 0.4, 0.38);
+  arm.add(cell);
   const muzzle = new THREE.Object3D();
   muzzle.position.set(2.1, 0.5, 0);
   arm.add(muzzle);
   const flash = flashSprite(1.3);
   flash.position.copy(muzzle.position);
   arm.add(flash);
-  return { root, head, arm, muzzle, flash, height: 3.6, restArmZ: 0, armAxis: 'throw' };
+  return { root, head, arm, muzzle, flash, height: 3.6, restArmZ: 0, armAxis: 'steady' };
 }
 
 // 1 — Lazer Cannon (Future): lensed emitter housing
@@ -817,21 +845,43 @@ function buildLazerCannon(accent) {
   housing.rotation.z = -Math.PI / 2;
   housing.position.set(0.5, 0.45, 0);
   arm.add(housing);
+  // reinforce rings seated on the housing taper (0.70 rear -> 0.55 muzzle).
+  for (const [rx, rr] of [[0.3, 0.65], [0.8, 0.60]]) {
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(rr, 0.03, 6, 16), pbr('#2a3648', 0.5, 0.7));
+    ring.rotation.y = Math.PI / 2;
+    ring.position.set(rx, 0.45, 0);
+    arm.add(ring);
+  }
+  // power cell behind the housing in a cage frame: the emitter reads charged.
+  const cellM = glowMat('#00e5ff', 1);
+  const cell = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.4, 10), cellM);
+  cell.rotation.z = -Math.PI / 2;
+  cell.position.set(-0.45, 0.45, 0);
+  arm.add(cell);
+  for (const s of [-1, 1]) {
+    const cage = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.06, 0.06), pbr('#2a3648', 0.5, 0.7));
+    cage.position.set(-0.45, 0.45, s * 0.24);
+    arm.add(cage);
+  }
   const lens = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 0.1, 12), glowMat('#00e5ff', 1));
   lens.rotation.z = -Math.PI / 2;
   lens.position.set(1.22, 0.45, 0);
   arm.add(lens);
-  const coil = new THREE.Mesh(new THREE.TorusGeometry(0.55, 0.07, 8, 14), pbr('#2a3648', 0.5, 0.7));
+  const coil = new THREE.Mesh(new THREE.TorusGeometry(0.72, 0.07, 8, 14), pbr('#2a3648', 0.5, 0.7));
   coil.rotation.y = Math.PI / 2;
   coil.position.set(0.1, 0.45, 0);
   arm.add(coil);
+  // saddle block ties the floating housing down to the arm pivot.
+  const saddle = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.4, 0.5), pbr('#1c2940', 0.6, 0.6));
+  saddle.position.set(0.5, 0.0, 0);
+  arm.add(saddle);
   const muzzle = new THREE.Object3D();
   muzzle.position.set(1.35, 0.45, 0);
   arm.add(muzzle);
   const flash = flashSprite(1.7);
   flash.position.copy(muzzle.position);
   arm.add(flash);
-  return { root, head, arm, muzzle, flash, height: 4.0, restArmZ: 0, armAxis: 'throw' };
+  return { root, head, arm, muzzle, flash, height: 4.0, restArmZ: 0, armAxis: 'steady' };
 }
 
 // 2 — Ion Ray (Future): coil tower crowned with a plasma orb
@@ -849,13 +899,26 @@ function buildIonRay(accent) {
   const orb = new THREE.Mesh(new THREE.SphereGeometry(0.32, 12, 10), glowMat('#ff5ad0', 1));
   orb.position.y = 2.6;
   arm.add(orb);
+  // halo crown around the orb + guy-struts tying the mast to the arm base.
+  const halo = new THREE.Mesh(new THREE.TorusGeometry(0.5, 0.045, 8, 20), glowMat('#ff5ad0', 0.9));
+  halo.rotation.x = Math.PI / 2;
+  halo.position.y = 2.6;
+  arm.add(halo);
+  for (let i = 0; i < 3; i++) {
+    const a = (i / 3) * Math.PI * 2;
+    const strut = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 1.15, 6), pbr('#2a3648', 0.5, 0.7));
+    strut.position.set(Math.cos(a) * 0.28, 0.55, Math.sin(a) * 0.28);
+    strut.rotation.set(-Math.sin(a) * 0.3, 0, Math.cos(a) * 0.3);
+    arm.add(strut);
+  }
   const muzzle = new THREE.Object3D();
   muzzle.position.set(0.4, 2.6, 0);
   arm.add(muzzle);
   const flash = flashSprite(1.8);
   flash.position.set(0, 2.6, 0);
   arm.add(flash);
-  return { root, head, arm, muzzle, flash, height: 4.6, restArmZ: 0, armAxis: 'throw' };
+  // beam mast: holds aim on fire (steady recoil), never whips the mast.
+  return { root, head, arm, muzzle, flash, height: 4.6, restArmZ: 0, armAxis: 'steady' };
 }
 
 const BUILDERS = {
@@ -957,7 +1020,8 @@ export function TurretMesh(turret, ageIndex) {
         if (rig.arm) {
           if (rig.armAxis === 'throw') rig.arm.rotation.z = rig.restArmZ + k * 1.1;
           else if (rig.spin) rig.arm.rotation.y = (rig.arm.rotation.y || 0) + dt * 2;
-          else rig.arm.rotation.z = k * -0.7;
+          // 'steady' beam rigs hold aim; the head kick below carries the shot.
+          else if (rig.armAxis !== 'steady') rig.arm.rotation.z = k * -0.7;
         }
         rig.head.position.x = -k * 0.28;
       } else {
