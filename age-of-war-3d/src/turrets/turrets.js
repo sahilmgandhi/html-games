@@ -276,6 +276,13 @@ function buildMilCatapult(accent) {
       band.position.set(bx, 1.3, s * 0.6);
       head.add(band);
     }
+    // St Andrew's cross-brace between the legs so the frame reads as built.
+    for (const bs of [-1, 1]) {
+      const braceB = new THREE.Mesh(new THREE.BoxGeometry(0.12, 2.3, 0.12), frameMat);
+      braceB.position.set(0, 0.55, s * 0.6);
+      braceB.rotation.z = bs * 1.07;
+      head.add(braceB);
+    }
   }
   // torsion bundle
   const bundle = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 1.5, 10), pbr('#a08a5a', 0.95));
@@ -287,12 +294,21 @@ function buildMilCatapult(accent) {
   const beam = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.15, 3.6, 8), frameMat);
   beam.position.y = 1.5;
   arm.add(beam);
+  // rope wraps lashing the beam to its pivot axle.
+  for (const ry of [0.12, 0.3, 0.48]) {
+    const wrap = new THREE.Mesh(new THREE.TorusGeometry(0.18, 0.05, 6, 12), pbr('#a08a5a', 0.95));
+    wrap.rotation.x = Math.PI / 2;
+    wrap.position.y = ry;
+    arm.add(wrap);
+  }
   const bucket = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.32, 0.42, 10, 1, true), pbr(IRON, 0.5, 0.7));
   bucket.material = bucket.material.clone();
   bucket.material.side = THREE.DoubleSide;
   bucket.position.y = 3.3;
   arm.add(bucket);
-  const ball = new THREE.Mesh(new THREE.SphereGeometry(0.36, 9, 7), pbr(STONE_T, 0.9));
+  const ballGeo = new THREE.SphereGeometry(0.36, 9, 7);
+  jitterGeo(ballGeo, 0.035, 3.0, 77);
+  const ball = new THREE.Mesh(ballGeo, pbr(STONE_T, 0.9));
   ball.position.y = 3.5;
   arm.add(ball);
   arm.rotation.z = -0.9;
@@ -342,18 +358,45 @@ function buildOilTower(accent) {
   const head = new THREE.Group();
   head.position.y = 1.0;
   const towerMat = pbr(STONE_T, 0.95);
+  const towerDk = pbr('#6e6e76', 0.95);
+  // battered base flare so the tower sits into the platform.
+  const flare = new THREE.Mesh(new THREE.CylinderGeometry(1.25, 1.55, 0.8, 12), towerDk);
+  flare.position.y = 0.3;
+  head.add(flare);
   const tower = new THREE.Mesh(new THREE.CylinderGeometry(1.0, 1.25, 3.2, 12), towerMat);
   tower.position.y = 1.6;
   head.add(tower);
+  // stone course bands + corner pilasters: laid masonry, not a plain tube.
+  for (const [by, br] of [[0.9, 1.3], [2.3, 1.19]]) {
+    const band = new THREE.Mesh(new THREE.CylinderGeometry(br, br + 0.06, 0.22, 12), towerDk);
+    band.position.y = by;
+    head.add(band);
+  }
+  for (let pi = 0; pi < 4; pi++) {
+    const pa = pi * Math.PI / 2 + Math.PI / 4;
+    const pil = new THREE.Mesh(new THREE.BoxGeometry(0.26, 3.0, 0.26), (pi % 2 ? towerMat : towerDk));
+    pil.position.set(Math.cos(pa) * 1.08, 1.6, Math.sin(pa) * 1.08);
+    pil.rotation.y = -pa;
+    head.add(pil);
+  }
   crenelRing(head, 1.0, 3.4, towerMat);
   const roofTrim = new THREE.Mesh(new THREE.TorusGeometry(1.0, 0.09, 8, 16), pbr(accent, 0.6));
   roofTrim.rotation.x = Math.PI / 2;
   roofTrim.position.y = 3.1;
   head.add(roofTrim);
+  // timber posts carry the yoke axle so the cauldron rig reads as built.
+  for (const s of [-1, 1]) {
+    const post = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.11, 1.3, 8), pbr(WOOD_DK, 0.9));
+    post.position.set(0, 2.75, s * 1.15);
+    head.add(post);
+    const seat = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.14, 0.24), pbr(WOOD, 0.9));
+    seat.position.set(0, 3.42, s * 1.15);
+    head.add(seat);
+  }
   // cauldron arm: tips forward to pour on fire()
   const arm = new THREE.Group();
   arm.position.set(0, 3.3, 0);
-  const yoke = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 2.0, 8), pbr(WOOD_DK, 0.9));
+  const yoke = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 2.4, 8), pbr(WOOD_DK, 0.9));
   yoke.rotation.x = Math.PI / 2;
   arm.add(yoke);
   const potM = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.36, 0.6, 12, 1, true), pbr(IRON, 0.5, 0.7));
@@ -365,6 +408,29 @@ function buildOilTower(accent) {
   oilM.rotation.x = -Math.PI / 2;
   oilM.position.set(0.9, 0.32, 0);
   arm.add(oilM);
+  // crane timbers swing the pot out past the parapet: king post, jib,
+  // diagonal brace, hanger stick, then chains down to the pot rim.
+  const craneMat = pbr(WOOD, 0.9);
+  const king = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.08, 0.72, 7), craneMat);
+  king.position.set(0, 0.36, 0);
+  arm.add(king);
+  const jib = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.95, 7), craneMat);
+  jib.rotation.z = Math.PI / 2;
+  jib.position.set(0.45, 0.72, 0);
+  arm.add(jib);
+  const braceLen = Math.hypot(0.9, 0.72);
+  const brace = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, braceLen, 6), pbr(WOOD_DK, 0.9));
+  brace.position.set(0.45, 0.36, 0);
+  brace.rotation.z = -Math.atan2(0.9, 0.72);
+  arm.add(brace);
+  for (const s of [-1, 1]) {
+    const chain = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.34, 5), pbr(IRON, 0.5, 0.7));
+    chain.position.set(0.9, 0.55, s * 0.3);
+    arm.add(chain);
+  }
+  const oilGlow = glowSprite(FIRE, 0.45, 1.1);
+  oilGlow.position.set(0.9, 0.55, 0);
+  arm.add(oilGlow);
   head.add(arm);
   root.add(head);
   const muzzle = new THREE.Object3D();
