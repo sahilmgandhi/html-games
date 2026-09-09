@@ -827,6 +827,25 @@ function visor(head) {
   head.add(v);
 }
 
+// Shoulder shell over an arm joint, and a backpack power unit with a glow
+// cell on its rear face. Shared across the Future infantry rigs.
+function pauldron(parent, mat, x, y, z, r = 0.16) {
+  const p = new THREE.Mesh(new THREE.SphereGeometry(r, 10, 8), mat);
+  p.position.set(x, y, z);
+  parent.add(p);
+}
+
+function powerPack(parent, x, y, s = 1) {
+  const g = new THREE.Group();
+  const box = new THREE.Mesh(new THREE.BoxGeometry(0.18 * s, 0.42 * s, 0.3 * s), pbr(FUT_DARK, 0.7, 0.25));
+  g.add(box);
+  const cell = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.2 * s, 0.12 * s), glowMat(FUT_GLOW, 0.9));
+  cell.position.x = -0.11 * s;
+  g.add(cell);
+  g.position.set(x, y, 0);
+  parent.add(g);
+}
+
 function blaster() {
   const g = new THREE.Group();
   const body = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.12, 0.12), pbr(FUT_DARK, 0.6, 0.4));
@@ -856,10 +875,16 @@ function buildGodsBlade(accent) {
   chest.position.y = 0.36; torso.add(chest);
   const trim = new THREE.Mesh(new THREE.TorusGeometry(0.31, 0.035, 8, 18), pbr(accent, 0.5));
   trim.rotation.x = Math.PI / 2; trim.position.y = 0.6; torso.add(trim);
+  const waist = new THREE.Mesh(new THREE.TorusGeometry(0.34, 0.025, 8, 18), glowMat(FUT_GLOW, 0.9));
+  waist.rotation.x = Math.PI / 2; waist.position.y = 0.03; torso.add(waist);
   b.add(torso);
   const armL = arm(0.1, 0.62, armor); armL.position.set(0, 1.6, 0.38);
   const armR = arm(0.1, 0.62, armor, energyBlade(0.85)); armR.position.set(0, 1.6, -0.38);
   b.add(armL, armR);
+  // pauldrons, waist power-seam and a backpack cell: elite-guard read.
+  pauldron(b, armor, 0, 1.66, 0.42);
+  pauldron(b, armor, 0, 1.66, -0.42);
+  powerPack(b, -0.36, 1.4);
   const head = new THREE.Group(); head.position.y = 1.98;
   head.add(new THREE.Mesh(new THREE.SphereGeometry(0.22, 14, 12), pbr(FUT_DARK, 0.6, 0.4)));
   visor(head);
@@ -880,12 +905,18 @@ function buildBlasterUnit(accent) {
   cell.position.set(0.2, 0.35, 0.12); torso.add(cell);
   const sigil = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.16, 0.2), pbr(accent, 0.6));
   sigil.position.set(-0.2, 0.4, 0); torso.add(sigil);
+  const waist = new THREE.Mesh(new THREE.TorusGeometry(0.31, 0.025, 8, 18), glowMat(FUT_GLOW, 0.9));
+  waist.rotation.x = Math.PI / 2; waist.position.y = 0.03; torso.add(waist);
   b.add(torso);
   const armL = arm(0.095, 0.6, suit); armL.position.set(0, 1.52, 0.36);
   const aim = new THREE.Group();
   const gun = blaster(); gun.position.set(0.35, -0.55, 0); aim.add(gun);
   const armR = arm(0.095, 0.6, suit, aim); armR.position.set(0, 1.52, -0.36);
   b.add(armL, armR);
+  // pauldrons, waist power-seam and a slim backpack cell.
+  pauldron(b, suit, 0, 1.58, 0.4, 0.15);
+  pauldron(b, suit, 0, 1.58, -0.4, 0.15);
+  powerPack(b, -0.33, 1.32, 0.85);
   const head = new THREE.Group(); head.position.y = 1.88;
   head.add(new THREE.Mesh(new THREE.SphereGeometry(0.21, 14, 12), pbr(FUT_DARK, 0.6, 0.4)));
   visor(head);
@@ -914,6 +945,14 @@ function buildWarMachine(accent) {
   stripe.position.y = 1.0; b.add(stripe);
   const trim = new THREE.Mesh(new THREE.BoxGeometry(2.22, 0.1, 1.07), pbr(accent, 0.5));
   trim.position.y = 0.78; b.add(trim);
+  // track skirts over the road wheels, a glow bow-lamp and a turret antenna.
+  for (const s of [-1, 1]) {
+    const skirt = new THREE.Mesh(new THREE.BoxGeometry(2.5, 0.3, 0.06), hullM);
+    skirt.position.set(0, 0.55, s * 0.99);
+    b.add(skirt);
+  }
+  const lamp = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.1, 0.3), glowMat(FUT_GLOW, 0.95));
+  lamp.position.set(1.12, 1.0, 0); b.add(lamp);
   // twin cannon turret doubles as the rig head
   const turret = new THREE.Group(); turret.position.set(-0.2, 1.4, 0);
   const dome = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.55, 0.42, 12), hullM);
@@ -926,6 +965,8 @@ function buildWarMachine(accent) {
   }
   const eye = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.12, 0.5), glowMat(FUT_GLOW, 0.95));
   eye.position.set(0.42, 0.05, 0); turret.add(eye);
+  const antenna = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.02, 0.9, 6), pbr('#1c1c20', 0.8));
+  antenna.position.set(-0.3, 0.55, -0.25); turret.add(antenna);
   b.add(turret);
   return { body: b, head: turret, height: 2.6 };
 }
@@ -951,9 +992,15 @@ function buildSuperSoldier(accent) {
   const armL = arm(0.12, 0.72, armor); armL.position.set(0, 1.82, 0.5);
   const armR = arm(0.12, 0.72, armor, energyBlade(1.0)); armR.position.set(0, 1.82, -0.5);
   b.add(armL, armR);
+  // heavy pauldrons, a large backpack cell and a helm crest: elite read.
+  pauldron(b, armor, 0, 1.9, 0.54, 0.2);
+  pauldron(b, armor, 0, 1.9, -0.54, 0.2);
+  powerPack(b, -0.46, 1.58, 1.2);
   const head = new THREE.Group(); head.position.y = 2.24;
   head.add(new THREE.Mesh(new THREE.SphereGeometry(0.24, 14, 12), pbr(FUT_DARK, 0.6, 0.4)));
   visor(head);
+  const crest = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.12, 0.06), pbr(accent, 0.6));
+  crest.position.y = 0.27; head.add(crest);
   b.add(head);
   return { body: b, legL, legR, armL, armR, head, height: 2.8 };
 }
@@ -977,9 +1024,14 @@ function buildTitan(accent) {
   tube.rotation.z = Math.PI / 2 - 0.1; tube.position.set(0.3, -0.6, 0); cannon.add(tube);
   const muzzle = new THREE.Mesh(new THREE.SphereGeometry(0.1, 8, 6), glowMat(FUT_GLOW, 0.95));
   muzzle.position.set(0.72, -0.65, 0); cannon.add(muzzle);
+  const charge = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.14, 0.14), glowMat(FUT_GLOW, 0.9));
+  charge.position.set(0.05, -0.55, 0); cannon.add(charge);
   const armL = arm(0.13, 0.75, armor); armL.position.set(0, 1.9, 0.52);
   const armR = arm(0.13, 0.75, armor, cannon); armR.position.set(0, 1.9, -0.52);
   b.add(armL, armR);
+  // siege pauldrons over the arm joints.
+  pauldron(b, armor, 0, 1.98, 0.56, 0.2);
+  pauldron(b, armor, 0, 1.98, -0.56, 0.2);
   const head = new THREE.Group(); head.position.y = 2.36;
   head.add(new THREE.Mesh(new THREE.SphereGeometry(0.25, 14, 12), pbr(FUT_DARK, 0.6, 0.4)));
   visor(head);
