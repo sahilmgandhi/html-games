@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { toMeters } from '../simulation/config.js';
 import {
-  pbr, glowMat, solidify, cloneMats, makeHpBar, disposeDeep, SIDE_ACCENT,
+  pbr, glowMat, mottleGeo, rockMat, solidify, cloneMats, makeHpBar, disposeDeep, SIDE_ACCENT,
 } from '../core/pbr.js';
 
 // Economy structures (by buildingIndex):
@@ -35,12 +35,17 @@ function rockGeo(r, squash = 1, seed = 1) {
 function buildMine(accent) {
   const root = new THREE.Group();
   // mound sits back; the works face the camera (+x/+z)
-  const mound = new THREE.Mesh(rockGeo(1.8, 0.7, 1), pbr('#6a6055', 0.95));
+  const moundGeo = rockGeo(1.8, 0.7, 1);
+  mottleGeo(moundGeo, 0.14, 7);
+  const mound = new THREE.Mesh(moundGeo, rockMat('#6a6055', 0.95));
   mound.position.set(-0.4, 0.7, -0.6);
   mound.scale.x = 1.2;
   root.add(mound);
+  const boulderMat = rockMat(ROCK, 0.95);
   for (let i = 0; i < 5; i++) {
-    const b = new THREE.Mesh(rockGeo(0.4 + (i % 3) * 0.2, 0.8, 2 + i), pbr(ROCK, 0.95));
+    const bg = rockGeo(0.4 + (i % 3) * 0.2, 0.8, 2 + i);
+    mottleGeo(bg, 0.14, 20 + i);
+    const b = new THREE.Mesh(bg, boulderMat);
     b.position.set(Math.cos(i * 2.2) * 2.4 - 0.4, 0.3, Math.sin(i * 2.2) * 1.7 - 0.4);
     root.add(b);
   }
@@ -60,6 +65,22 @@ function buildMine(accent) {
   lintel.rotation.z = Math.PI / 2;
   lintel.position.y = 2.0;
   mouth.add(lintel);
+  // corner struts stiffen the timber set; a chained lantern lights the adit.
+  for (const s of [-1, 1]) {
+    const strut = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.09, 0.95, 7), pbr(WOOD_DK, 0.9));
+    strut.position.set(s * 0.58, 1.6, 0.1);
+    strut.rotation.z = s * 0.7;
+    mouth.add(strut);
+  }
+  const chain = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.3, 5), pbr('#3a3a42', 0.6, 0.6));
+  chain.position.set(0, 1.82, 0.1);
+  mouth.add(chain);
+  const lampCap = new THREE.Mesh(new THREE.ConeGeometry(0.14, 0.12, 8), pbr('#3a3a42', 0.6, 0.6));
+  lampCap.position.set(0, 1.62, 0.1);
+  mouth.add(lampCap);
+  const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.1, 10, 8), glowMat('#ffb84a', 0.95));
+  lamp.position.set(0, 1.5, 0.1);
+  mouth.add(lamp);
   root.add(mouth);
   // gold seam in the rock + nugget pile
   const seam = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.16, 0.2),
@@ -85,11 +106,16 @@ function buildMine(accent) {
   load.scale.set(1.2, 0.5, 0.9);
   load.position.y = 0.85;
   cart.add(load);
+  const wheelMat = pbr('#3a2a1a', 0.9);
+  const tireMat = pbr('#2a2a30', 0.55, 0.6);
   for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
-    const wheel = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 0.08, 10), pbr('#3a2a1a', 0.9));
+    const wheel = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 0.08, 10), wheelMat);
     wheel.rotation.x = Math.PI / 2;
     wheel.position.set(sx * 0.35, 0.22, sz * 0.42);
     cart.add(wheel);
+    const tire = new THREE.Mesh(new THREE.TorusGeometry(0.22, 0.035, 6, 14), tireMat);
+    tire.position.copy(wheel.position);
+    cart.add(tire);
   }
   root.add(cart);
   // pickaxe stuck in the mound crown, stump alongside as a chopping block
@@ -120,6 +146,22 @@ function buildMine(accent) {
 
 function buildBarracks(accent) {
   const root = new THREE.Group();
+  const _up = new THREE.Vector3(0, 1, 0);
+  // guy-wire from a tent tip to a ground stake.
+  function guyWire(fx, fy, fz, tx, tz) {
+    const from = new THREE.Vector3(fx, fy, fz);
+    const to = new THREE.Vector3(tx, 0.05, tz);
+    const dir = new THREE.Vector3().subVectors(to, from);
+    const rope = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.02, 0.02, dir.length(), 5), pbr(HIDE_DK, 0.9));
+    rope.position.copy(from).addScaledVector(dir, 0.5);
+    rope.quaternion.setFromUnitVectors(_up, dir.normalize());
+    root.add(rope);
+    const stake = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.5, 0.09), pbr(WOOD_DK, 0.9));
+    stake.position.set(tx, 0.2, tz);
+    stake.rotation.z = 0.25;
+    root.add(stake);
+  }
   // two hide tents
   for (const [tx, tz, s] of [[-1.5, -1.2, 1], [1.4, -1.6, 0.85]]) {
     const tent = new THREE.Mesh(new THREE.ConeGeometry(1.5 * s, 2.6 * s, 9), pbr(HIDE, 0.9));
@@ -132,6 +174,9 @@ function buildBarracks(accent) {
     seamT.position.set(tx + 0.75 * s, 1.1 * s, tz + 0.75 * s);
     seamT.rotation.y = Math.PI / 4;
     root.add(seamT);
+    for (const a of [0.5, 2.6, 4.7]) {
+      guyWire(tx, 2.4 * s, tz, tx + Math.cos(a) * 2.3 * s, tz + Math.sin(a) * 2.3 * s);
+    }
   }
   // campfire
   const fire = new THREE.Group();
