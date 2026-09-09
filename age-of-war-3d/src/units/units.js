@@ -1064,8 +1064,11 @@ export function UnitMesh(entity, ageIndex) {
 
   const mesh = new THREE.Group();
   mesh.add(rig.body);
+  // heroes stand taller than line troops and carry a gold ring so they read
+  // as heroes at lane distance; heroS rides every body-scale write below.
+  const heroS = entity.isHero ? 1.18 : 1;
   const bar = makeHpBar(entity.isHero ? 1.8 : 1.3);
-  bar.sprite.position.y = rig.height + 0.35;
+  bar.sprite.position.y = rig.height * heroS + 0.35;
   bar.sprite.visible = false;
   mesh.add(bar.sprite);
   solidify(mesh);
@@ -1073,7 +1076,9 @@ export function UnitMesh(entity, ageIndex) {
   for (const m of mats) {
     if ('emissive' in m) { m.emissive = new THREE.Color('#000000'); m.transparent = true; }
   }
-  mesh.add(teamRing(THREE.MathUtils.clamp(rig.height * 0.35, 0.5, 1.5), accent));
+  const ringR = THREE.MathUtils.clamp(rig.height * 0.35, 0.5, 1.5);
+  mesh.add(teamRing(ringR * heroS, accent));
+  if (entity.isHero) mesh.add(teamRing(ringR * heroS * 1.3, '#ffd23a', 0.9));
 
   let facing = entity.side === 'player' ? 0 : Math.PI;
   mesh.rotation.y = facing;
@@ -1136,9 +1141,9 @@ export function UnitMesh(entity, ageIndex) {
       // hit pop: brief squash on the 0.1s hitFlash so impacts land visually.
       if (e.hitFlash > 0) {
         const pop = Math.min(1, e.hitFlash / 0.1);
-        rig.body.scale.set(1 + pop * 0.05, 1 - pop * 0.05, 1 + pop * 0.05);
+        rig.body.scale.set(heroS * (1 + pop * 0.05), heroS * (1 - pop * 0.05), heroS * (1 + pop * 0.05));
       } else {
-        rig.body.scale.set(1, 1, 1);
+        rig.body.scale.set(heroS, heroS, heroS);
       }
       if (rig.aura) {
         const s = 1 + Math.sin(performance.now() * 0.004) * 0.07;
@@ -1157,7 +1162,7 @@ export function UnitMesh(entity, ageIndex) {
         rig.body.position.y = -p * 0.15;
         rig.body.position.x = 0;
         if (rig.thrust && rig.armR && armRx !== null) rig.armR.position.x = armRx;
-        rig.body.scale.set(1, 1 - p * 0.22, 1);
+        rig.body.scale.set(heroS, heroS * (1 - p * 0.22), heroS);
         for (const m of mats) m.opacity = 1 - raw * 0.45;
         bar.sprite.visible = false;
       } else {
