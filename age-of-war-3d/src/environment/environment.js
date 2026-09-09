@@ -22,11 +22,12 @@ const KEEP_STONE_DK = '#46464f';
 const KEEP_ROOF = '#33415e';
 const LEAF = ['#2e5b2e', '#3a6b34', '#274d28'];
 
-// Canopy tint jitter: ±8% lightness around a base green, quantized through the
-// shared pbr() cache so variants dedupe instead of spawning materials.
+// Canopy tint jitter: lightness quantized to 5 steps so the shared pbr()
+// cache stays tiny across rebuilds (a continuous range would add dozens of
+// unique materials per setAge that the cache retains forever).
 function canopyTint(base, rng) {
   const c = new THREE.Color(base);
-  c.offsetHSL(0, (rng() - 0.5) * 0.04, (rng() - 0.5) * 0.08);
+  c.offsetHSL(0, 0, Math.round((rng() - 0.5) * 4) * 0.02);
   return pbr(`#${c.getHexString()}`, 0.9);
 }
 
@@ -46,7 +47,7 @@ function araucaria(rng) {
     cone.position.y = h * 0.55 + i * 0.85;
     g.add(cone);
   }
-  const top = new THREE.Mesh(new THREE.ConeGeometry(0.5, 1.2, 8), pbr(PINE, 0.9));
+  const top = new THREE.Mesh(new THREE.ConeGeometry(0.5, 1.2, 8), canopyTint(PINE, rng));
   top.position.y = h * 0.55 + tiers * 0.85;
   g.add(top);
   return g;
