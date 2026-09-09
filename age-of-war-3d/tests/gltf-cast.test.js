@@ -7,6 +7,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { fetchQuatCast, setQuatTemplates, QuatUnitMesh, QUAT_ROLES } from '../src/units/gltf-cast.js';
 import { UnitMesh } from '../src/units/units.js';
+import * as THREE from 'three';
 
 const ROOT = path.dirname(fileURLToPath(import.meta.url));
 const QUAT = path.join(ROOT, '..', 'assets', 'quat');
@@ -116,6 +117,41 @@ export default [
       t.assert('other ages stay procedural', castle.currentClip === undefined, '');
       castle.dispose();
       setQuatTemplates(null);
+    },
+  },
+  {
+    name: 'dino rider sits on the back, not sunk into the body',
+    async run(t) {
+      const tpl = await loadTemplates();
+      const inst = QuatUnitMesh(fakeEntity({ type: 'fast' }), QUAT_ROLES.fast, tpl);
+      const body = inst.mesh.children[0];
+      const rider = inst.mesh.children[1];
+      t.assert('rider present', !!rider && rider.isGroup, inst.mesh.children.length);
+      const bb = new THREE.Box3().setFromObject(body);
+      const rb = new THREE.Box3().setFromObject(rider);
+      const len = bb.max.x - bb.min.x;
+      const cx = (rb.min.x + rb.max.x) / 2;
+      const frac = (cx - bb.min.x) / len;
+      t.assert('rider centered on mid-back', frac > 0.4 && frac < 0.65, frac.toFixed(2));
+      t.assert('rider feet near the back line', rb.min.y >= bb.max.y * 0.85, `${rb.min.y.toFixed(2)} vs top ${bb.max.y.toFixed(2)}`);
+      inst.dispose();
+    },
+  },
+  {
+    name: 'fbx specular wash neutralized (ghost-pale raptor)',
+    async run(t) {
+      const tpl = await loadTemplates();
+      const inst = QuatUnitMesh(fakeEntity({ type: 'fast' }), QUAT_ROLES.fast, tpl);
+      const specs = [];
+      inst.mesh.traverse((o) => {
+        if (o.isMesh) {
+          const ms = Array.isArray(o.material) ? o.material : [o.material];
+          for (const m of ms) if ('specular' in m) specs.push(m.specular.getHex());
+        }
+      });
+      t.assert('dino has phong materials', specs.length > 0, specs.length);
+      t.assert('no white specular wash', specs.every((s) => s < 0x808080), specs.map((s) => s.toString(16)).join(','));
+      inst.dispose();
     },
   },
 ];

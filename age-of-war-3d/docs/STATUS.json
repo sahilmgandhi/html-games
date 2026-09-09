@@ -111,8 +111,12 @@
         "fixed": [
           "showcase units staged before async cast load stayed procedural: added quatSwap to units showcase (mirrors battle-view)",
           "raptor multi-material broke cloneMats mid-swap (o.material.clone is not a function): array support + tests/clone-mats.test.js",
-          "browser heuristic cache hid the fix behind stale modules: verify with cache-ignoring reload"
-        ]
+          "browser heuristic cache hid the fix behind stale modules: verify with cache-ignoring reload",
+          "rider sunk into spine (beige blob): mid-back seat, feet on back line (rider test)",
+          "ghost-pale raptor: FBX white phong specular washed dark paint; specular tied to diffuse (spec test)",
+          "silhouette-black raptor: authored browns lifted 5x at template prep, stripes stay black"
+        ],
+        "tests": "179/179"
       },
       "fixed": [
         "castle demo 1583 -> 1384 draw calls via solidify() skipping sub-0.22m casters (tests/shadow-budget.test.js, 2 asserts)",

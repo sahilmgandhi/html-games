@@ -55,6 +55,18 @@ export async function fetchQuatCast(fetchFn = fetch, base = 'assets/quat/') {
   };
   const dinoSpec = ROLE_SPEC.dino;
   const dinoClips = clipMap(raptor.animations);
+  // the raptor's authored browns are near-black and read as silhouette;
+  // lift them ~5x and tie the phong specular to the diffuse so facets keep
+  // shape without the white-spec wash. Stripes stay near-black: contrast.
+  raptor.traverse((o) => {
+    if (o.isMesh) {
+      const ms = Array.isArray(o.material) ? o.material : [o.material];
+      for (const m of ms) {
+        if (m.color) m.color.multiplyScalar(5.0);
+        if (m.specular && m.color) m.specular.copy(m.color).multiplyScalar(0.5);
+      }
+    }
+  });
   const goblinH = measureHeight(goblin.scene);
   return {
     clubman: pack('clubman', viking),
@@ -143,10 +155,14 @@ export function QuatUnitMesh(entity, role, templates) {
     const rider = SkeletonUtils.clone(templates.rider.object);
     rider.rotation.y = Math.PI / 2;
     rider.scale.setScalar(templates.rider.scale);
-    // seat on the raptor's back: behind center, above the spine.
+    // seat on the raptor's back: mid-back, feet resting on the back line
+    // (not sunk into the spine like the old rear-third 0.82-depth seat).
     const box = new THREE.Box3().setFromObject(body);
-    rider.position.set(box.min.x + (box.max.x - box.min.x) * 0.35, box.max.y * 0.82, 0);
+    rider.position.set(box.min.x + (box.max.x - box.min.x) * 0.5, 0, 0);
     mesh.add(rider);
+    mesh.updateMatrixWorld(true);
+    const rb = new THREE.Box3().setFromObject(rider);
+    rider.position.y += box.max.y * 0.92 - rb.min.y - 0.18;
     riderHolder = { mixer: new THREE.AnimationMixer(rider), actions: new Map(), clips: templates.rider.clips, current: null, currentName: null };
   }
 
