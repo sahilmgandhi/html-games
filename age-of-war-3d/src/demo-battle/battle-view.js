@@ -64,9 +64,13 @@ export function attachBattleView(game, sim, fx, opts = {}) {
   // action; decays back to the unit-midpoint fallback when combat goes quiet.
   let focusX = CONFIG.WORLD.WIDTH / 2;
   let focusTtl = 0;
-  // Screen shake + scorch decals: render-only combat feel.
+  // Screen shake + hit-stop + scorch decals: render-only combat feel.
+  // hitStop freezes sim time for milliseconds on heavy impacts (impact frame).
   let shakeT = 0, shakeDur = 1, shakeAmp = 0;
   function shake(amp, dur) { shakeAmp = amp; shakeT = shakeDur = dur; }
+  let hitStop = 0;
+  let siegeT = 0;
+  const _muzzle = new THREE.Vector3();
   const scorchGeo = new THREE.CircleGeometry(1.1, 14);
   const scorches = [];
   for (let i = 0; i < 12; i++) {
@@ -111,18 +115,29 @@ export function attachBattleView(game, sim, fx, opts = {}) {
     unsubs.push(bus.on('projectile:fire', (src) => {
       if (src && src.turretIndex !== undefined) {
         const tm = turrets.get(src.id);
-        if (tm) tm.fire();
+        if (tm) {
+          tm.fire();
+          // muzzle smoke + flash sparks at the barrel tip (world meters).
+          try {
+            tm.tm?.muzzle?.getWorldPosition(_muzzle);
+            if (fx?.burst) {
+              fx.burst(_muzzle.x, _muzzle.y, _muzzle.z, { color: 0xffd98a, count: 8, speed: 3, life: 0.35 });
+              fx.burst(_muzzle.x, _muzzle.y, _muzzle.z, { color: 0x8a8a8a, count: 5, speed: 1.2, life: 0.9, up: 1.2 });
+            }
+          } catch { /* cosmetic */ }
+        }
       }
     }));
     unsubs.push(bus.on('projectile:hit', (hit) => {
       if (!hit) return;
       if (hit.melee) {
-        // Melee clash: pale sparks at the attacker (entity is null for melee).
+        // Melee clash: spark snap + dust kick at the attacker.
         const a = hit.attacker;
         if (a) {
           focusX = a.x;
           focusTtl = Math.max(focusTtl, 1.2);
-          burstAt(a.x, a.z || 0, '#ffe9a8', 6);
+          burstAt(a.x, a.z || 0, '#ffe9a8', 10);
+          burstAt(a.x, a.z || 0, '#9a8a72', 5);
         }
         return;
       }
@@ -135,12 +150,15 @@ export function attachBattleView(game, sim, fx, opts = {}) {
       const e = hit.entity;
       const color = e.side === 'player' ? '#5aa0ff' : '#ff6a5a';
       burstAt(e.x, e.z || 0, hit.special ? '#ff8800' : color, hit.special ? 30 : 10, hit.damage);
+      if (hit.special || (hit.damage !== undefined && hit.damage >= 80)) {
+        hitStop = Math.max(hitStop, 0.06);
+      }
     }));
     unsubs.push(bus.on('entity:death', (e) => {
       if (!e) return;
       focusX = e.x;
       focusTtl = Math.max(focusTtl, 2.5);
-      if (e.maxHp >= 1200) shake(0.22, 0.35); // heavy deaths thump
+      if (e.maxHp >= 1200) { shake(0.22, 0.35); hitStop = Math.max(hitStop, 0.09); } // heavy deaths thump
       const color = e.side === 'player' ? '#4a8af4' : '#f44a4a';
       burstAt(e.x, e.z || 0, color, 22);
       if (e instanceof Unit) burstAt(e.x, (e.z || 0) + 0.3, '#ffe98a', 6, `+${e.goldReward}`, '#ffe98a');
@@ -192,6 +210,7 @@ export function attachBattleView(game, sim, fx, opts = {}) {
       focusTtl = 0;
       shakeT = 0;
       shakeAmp = 0;
+      hitStop = 0;
       for (const sc of scorches) { sc.ttl = 0; sc.mesh.visible = false; }
       rebuildBase('player');
       rebuildBase('enemy');
@@ -233,7 +252,13 @@ export function attachBattleView(game, sim, fx, opts = {}) {
   }
 
   function update(dt) {
-    if (!sim.paused) sim.update(dt * (sim.gameSpeed || 1));
+    // hit-stop: freeze sim briefly while camera/FX keep running on real dt.
+    let simDt = dt * (sim.gameSpeed || 1);
+    if (hitStop > 0) {
+      hitStop = Math.max(0, hitStop - dt);
+      simDt *= 0.12;
+    }
+    if (!sim.paused) sim.update(simDt);
 
     syncMap(units, sim.units, (e) => {
       const um = UnitMesh(e, e.ageIndex);
@@ -292,6 +317,21 @@ export function attachBattleView(game, sim, fx, opts = {}) {
     enemyBase.setHp(sim.enemyBase.hp / sim.enemyBase.maxHp);
     playerBase.update(dt);
     enemyBase.update(dt);
+
+    // Siege smoke: battered bases (<50%) smolder, burning (<33%) trail embers.
+    siegeT -= dt;
+    if (siegeT <= 0) {
+      siegeT = 0.45;
+      for (const b of [sim.playerBase, sim.enemyBase]) {
+        if (!b) continue;
+        const frac = b.hp / b.maxHp;
+        if (frac < 0.5 && fx?.burst) {
+          const mx = toMeters(b.x);
+          fx.burst(mx, 5.5, 0, { color: 0x555555, count: frac < 0.33 ? 6 : 3, speed: 1, life: 1.2, up: 2.2 });
+          if (frac < 0.33) fx.burst(mx, 3.5, 0, { color: 0xff7733, count: 3, speed: 1.5, life: 0.5, up: 2 });
+        }
+      }
+    }
 
     // Camera tracks combat: recent hits/deaths outweigh the unit midpoint,
     // which remains the fallback when combat goes quiet. Clamped to the lane.

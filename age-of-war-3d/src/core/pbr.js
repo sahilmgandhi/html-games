@@ -8,11 +8,56 @@ import { mulberry32 } from '../simulation/rng.js';
 
 const _cache = new Map();
 
+// Shared universal grit albedo: near-white detail (speckle + blotches +
+// faint vertical streaks) multiplied by material color, so one 256 canvas
+// lifts every pbr() surface with zero extra draw calls. Seeded for stable
+// snapshots across reloads.
+let _gritTex = null;
+export function gritTexture() {
+  if (_gritTex) return _gritTex;
+  _gritTex = canvasTexture(256, 256, (g, w, h) => {
+    const rng = mulberry32(1337);
+    g.fillStyle = '#f2f0ec';
+    g.fillRect(0, 0, w, h);
+    // large soft blotches (mottled sun-bleach / grime)
+    for (let i = 0; i < 90; i++) {
+      const r = 8 + rng() * 30;
+      const x = rng() * w, y = rng() * h;
+      const v = 225 + Math.floor(rng() * 30);
+      g.fillStyle = `rgba(${v},${v - 4},${v - 10},0.16)`;
+      g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill();
+    }
+    // fine speckle
+    for (let i = 0; i < 5200; i++) {
+      const v = 170 + Math.floor(rng() * 85);
+      g.fillStyle = rng() > 0.45
+        ? `rgba(${v},${v},${v},0.20)`
+        : `rgba(40,32,26,${0.05 + rng() * 0.10})`;
+      g.fillRect(rng() * w, rng() * h, 1 + rng() * 1.5, 1 + rng() * 1.5);
+    }
+    // faint vertical weather streaks
+    for (let i = 0; i < 46; i++) {
+      const x = rng() * w;
+      const len = 20 + rng() * 90;
+      const y = rng() * h;
+      g.fillStyle = `rgba(60,50,42,${0.03 + rng() * 0.05})`;
+      g.fillRect(x, y, 1 + rng() * 2, len);
+    }
+  });
+  _gritTex.wrapS = THREE.RepeatWrapping;
+  _gritTex.wrapT = THREE.RepeatWrapping;
+  _gritTex.repeat.set(2, 2);
+  _gritTex.anisotropy = 4;
+  return _gritTex;
+}
+
 export function pbr(color, roughness = 0.85, metalness = 0.0) {
   const key = `${color}|${roughness}|${metalness}`;
   let m = _cache.get(key);
   if (!m) {
-    m = new THREE.MeshStandardMaterial({ color, roughness, metalness });
+    m = new THREE.MeshStandardMaterial({
+      color, roughness, metalness, map: gritTexture(),
+    });
     _cache.set(key, m);
   }
   return m;

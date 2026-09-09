@@ -969,15 +969,29 @@ export function UnitMesh(entity, ageIndex) {
       }
       if (rig.tail) rig.tail.rotation.y = Math.sin(t * 0.5) * 0.25;
 
-      // attack swing: cooldown counts attackSpeed -> 0 after each strike
+      // attack swing: short windup (raise) then fast snap, plus a lunge
+      // so strikes read as actions instead of a looping wave.
       let strike = 0;
       if (e.attackSpeed > 0 && e.attackCooldown > 0) {
         const k = 1 - e.attackCooldown / e.attackSpeed;
-        if (k >= 0 && k < 0.4) strike = Math.sin((k / 0.4) * Math.PI);
+        if (k >= 0 && k < 0.45) {
+          strike = k < 0.18
+            ? -0.6 * (k / 0.18)
+            : Math.sin(((k - 0.18) / 0.27) * Math.PI * 0.5);
+        }
       }
       if (rig.armR) rig.armR.rotation.z = -strike * 1.9 + (rig.dino ? -0.3 : 0);
-      if (rig.armL && !rig.dino) rig.armL.rotation.z = swing * 0.3;
+      if (rig.armL && !rig.dino) rig.armL.rotation.z = swing * 0.3 - Math.max(0, -strike) * 0.5;
       if (rig.head && !rig.dino) rig.head.rotation.y = Math.sin(t * 0.25) * 0.12;
+      rig.body.rotation.y = strike * 0.14;
+      rig.body.position.x = strike > 0 ? strike * 0.14 : 0;
+      // hit pop: brief squash on the 0.1s hitFlash so impacts land visually.
+      if (e.hitFlash > 0) {
+        const pop = Math.min(1, e.hitFlash / 0.1);
+        rig.body.scale.set(1 + pop * 0.05, 1 - pop * 0.05, 1 + pop * 0.05);
+      } else {
+        rig.body.scale.set(1, 1, 1);
+      }
       if (rig.aura) {
         const s = 1 + Math.sin(performance.now() * 0.004) * 0.07;
         rig.aura.scale.set(s, s, 1);
@@ -986,10 +1000,15 @@ export function UnitMesh(entity, ageIndex) {
       setFlash(e.hitFlash > 0);
 
       if (e.dying || !e.alive) {
-        const p = Math.min(1, (e.deathTimer || 0) / 0.35);
+        const raw = Math.min(1, (e.deathTimer || 0) / 0.35);
+        // fast fall with a small settle bounce instead of a linear topple.
+        const p = raw < 0.7
+          ? (raw / 0.7) * (raw / 0.7)
+          : 1 - Math.sin((raw - 0.7) / 0.3 * Math.PI) * 0.08;
         rig.body.rotation.x = p * 1.45;
         rig.body.position.y = -p * 0.15;
-        for (const m of mats) m.opacity = 1 - p * 0.45;
+        rig.body.scale.set(1, 1 - p * 0.22, 1);
+        for (const m of mats) m.opacity = 1 - raw * 0.45;
         bar.sprite.visible = false;
       } else {
         rig.body.rotation.x = 0;

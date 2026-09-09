@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import {
-  pbr, basic, glowMat, glowSprite, solidify, cloneMats, makeHpBar, makeCloth, bannerMat, teamRing, disposeDeep, SIDE_ACCENT,
+  pbr, basic, glowMat, glowSprite, jitterGeo, mottleGeo, rockMat, solidify, cloneMats, makeHpBar, makeCloth, bannerMat, teamRing, disposeDeep, SIDE_ACCENT,
 } from '../core/pbr.js';
 
 // Strongholds, one per age: Stone is a great-menhir core ringed by a timber
@@ -19,16 +19,12 @@ const BONE = '#e8dcc0';
 const FUR = '#5a3d26';
 
 function menhir(h, r, mat) {
-  const g = new THREE.CylinderGeometry(r * 0.75, r, h, 7);
-  const pos = g.attributes.position;
-  for (let i = 0; i < pos.count; i++) {
-    const y = pos.getY(i);
-    const wob = 1 + 0.08 * Math.sin(y * 3.1 + r * 7) + 0.05 * Math.cos(y * 5.3);
-    pos.setX(i, pos.getX(i) * wob);
-    pos.setZ(i, pos.getZ(i) * wob);
-  }
-  g.computeVertexNormals();
-  return new THREE.Mesh(g, mat);
+  // Faceted AAA rock: jittered silhouette + seeded per-vertex mottling.
+  const g = new THREE.CylinderGeometry(r * 0.75, r, h, 9);
+  jitterGeo(g, 0.09, 2.2, r * 7 + h);
+  mottleGeo(g, 0.14, (r * 13 + h * 7) | 0);
+  const hex = '#' + mat.color.getHexString();
+  return new THREE.Mesh(g, rockMat(hex, 0.95));
 }
 
 function skullTotem(h) {
@@ -81,15 +77,20 @@ function buildStoneHold(accent, mirror, side) {
   rune.position.y = 5.4;
   mesh.add(rune);
 
-  // palisade arc facing the battlefield
+  // palisade arc facing the battlefield: varied heights, girth, lean and
+  // twist so the wall reads as hand-raised timber, not a picket-fence clone.
   const palMat = pbr(WOOD, 0.9);
   const palMatDk = pbr(WOOD_DK, 0.9);
   for (let i = -3; i <= 3; i++) {
-    const h = 3.2 + (i % 2 === 0 ? 0.35 : 0);
-    const log = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.26, h, 7), (i + 3) % 2 ? palMat : palMatDk);
-    const a = (i / 3) * 0.62;
+    const k = (i * 2.7 + 1.3);
+    const wob = Math.sin(k * 12.9) * 0.5 + Math.sin(k * 5.1) * 0.5;
+    const h = 3.2 + (i % 2 === 0 ? 0.35 : 0) + wob * 0.28;
+    const girth = 0.22 * (1 + wob * 0.12);
+    const log = new THREE.Mesh(new THREE.CylinderGeometry(girth * 0.92, girth * 1.15, h, 7), (i + 3) % 2 ? palMat : palMatDk);
+    const a = (i / 3) * 0.62 + wob * 0.03;
     log.position.set(Math.cos(a) * 3.1 * mirror, h / 2 + 0.4, Math.sin(a) * 3.4);
-    const tip = new THREE.Mesh(new THREE.ConeGeometry(0.22, 0.5, 7), palMatDk);
+    log.rotation.set(wob * 0.04, wob * 0.6, wob * 0.05);
+    const tip = new THREE.Mesh(new THREE.ConeGeometry(girth, 0.5 + wob * 0.12, 7), palMatDk);
     tip.position.y = h / 2 + 0.25;
     log.add(tip);
     mesh.add(log);

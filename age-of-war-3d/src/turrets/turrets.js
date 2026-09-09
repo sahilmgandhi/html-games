@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { toMeters } from '../simulation/config.js';
 import {
-  pbr, basic, glowMat, glowSprite, solidify, cloneMats, makeHpBar, teamRing, disposeDeep, SIDE_ACCENT,
+  pbr, basic, glowMat, glowSprite, jitterGeo, mottleGeo, rockMat, solidify, cloneMats, makeHpBar, teamRing, disposeDeep, SIDE_ACCENT,
 } from '../core/pbr.js';
 
 // Stone Age turrets (by turretIndex):
@@ -47,12 +47,21 @@ const FUR = '#5a3d26';
 
 function platform(r) {
   const g = new THREE.Group();
-  const mound = new THREE.Mesh(new THREE.CylinderGeometry(r, r + 0.7, 0.8, 14), pbr('#5a4a3a', 0.95));
+  const moundGeo = new THREE.CylinderGeometry(r, r + 0.7, 0.8, 14);
+  jitterGeo(moundGeo, 0.07, 2.4, r * 3 + 1);
+  mottleGeo(moundGeo, 0.13, (r * 11) | 0);
+  const mound = new THREE.Mesh(moundGeo, rockMat('#5a4a3a', 0.95));
   mound.position.y = 0.35;
   g.add(mound);
   const deck = new THREE.Mesh(new THREE.CylinderGeometry(r + 0.3, r + 0.3, 0.25, 14), pbr(WOOD, 0.9));
   deck.position.y = 0.8;
   g.add(deck);
+  // deck plank seams: two dark grooves so the top reads as laid timber.
+  for (const z of [-0.5, 0.5]) {
+    const seam = new THREE.Mesh(new THREE.BoxGeometry((r + 0.3) * 2, 0.02, 0.05), pbr(WOOD_DK, 0.95));
+    seam.position.set(0, 0.93, z);
+    g.add(seam);
+  }
   return g;
 }
 
@@ -691,7 +700,10 @@ export function TurretMesh(turret, ageIndex) {
   mesh.rotation.y = turret.side === 'player' ? 0 : Math.PI;
 
   let recoil = 0;
+  let recoilV = 0;
   let flashT = 0;
+  let yaw = 0;
+  let yawInit = false;
   let t = Math.random() * 10;
   const _v = new THREE.Vector3();
 
@@ -710,15 +722,24 @@ export function TurretMesh(turret, ageIndex) {
       rig.muzzle.getWorldPosition(_v);
       _v.set(x - _v.x, 0, z - _v.z);
       if (_v.lengthSq() < 1e-6) return;
-      const yaw = Math.atan2(-_v.z, _v.x);
-      // head group faces +X at rotation 0; compensate outer mirror
-      const mirror = turret.side === 'player' ? 0 : Math.PI;
-      rig.head.rotation.y = yaw - mirror;
+      const target = Math.atan2(-_v.z, _v.x)
+        - (turret.side === 'player' ? 0 : Math.PI);
+      if (!yawInit) { yaw = target; yawInit = true; }
+      else {
+        // shortest-arc ease so barrels swing instead of snapping.
+        let d = target - yaw;
+        while (d > Math.PI) d -= Math.PI * 2;
+        while (d < -Math.PI) d += Math.PI * 2;
+        yaw += d * 0.35;
+      }
+      rig.head.rotation.y = yaw;
     },
     fire() {
-      recoil = 1;
+      recoilV += 7;
       flashT = 0.12;
       rig.flash.visible = true;
+      const s = 1.1 + Math.random() * 0.5;
+      rig.flash.scale.set(s, s, 1);
     },
     update(dt) {
       mesh.position.set(toMeters(turret.x) + slotOff(turret), 0, turret.z || 0);
@@ -728,16 +749,19 @@ export function TurretMesh(turret, ageIndex) {
         rig.flame.scale.set(1 / Math.sqrt(f), f, 1 / Math.sqrt(f));
         if (rig.glow) rig.glow.material.opacity = 0.55 + Math.sin(t * 17) * 0.15;
       }
-      if (recoil > 0) {
-        recoil = Math.max(0, recoil - dt * 4);
-        const k = Math.sin(recoil * Math.PI);
+      // spring recoil: sharp kick then a settled return.
+      recoilV += (-recoil * 90 - recoilV * 12) * dt;
+      recoil = THREE.MathUtils.clamp(recoil + recoilV * dt, -0.2, 1.2);
+      if (Math.abs(recoil) > 0.001 || Math.abs(recoilV) > 0.001) {
+        const k = Math.sin(THREE.MathUtils.clamp(recoil, 0, 1) * Math.PI * 0.5);
         if (rig.arm) {
           if (rig.armAxis === 'throw') rig.arm.rotation.z = rig.restArmZ + k * 1.1;
           else if (rig.spin) rig.arm.rotation.y = (rig.arm.rotation.y || 0) + dt * 2;
           else rig.arm.rotation.z = k * -0.7;
         }
-        rig.head.position.x = -k * 0.18;
+        rig.head.position.x = -k * 0.28;
       } else {
+        recoil = 0;
         rig.head.position.x = 0;
         if (rig.arm && rig.armAxis === 'throw') rig.arm.rotation.z = rig.restArmZ;
         if (rig.arm && !rig.armAxis && !rig.spin) rig.arm.rotation.z = 0;
