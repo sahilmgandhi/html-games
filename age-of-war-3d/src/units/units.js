@@ -653,6 +653,25 @@ function rifle() {
   return g;
 }
 
+// great-war webbing: crossed straps over the chest + a hip canteen, so the
+// olive uniform reads as kitted infantry instead of a bare cylinder.
+function webbing(torso) {
+  const strapM = pbr('#3a3226', 0.95);
+  for (const s of [-1, 1]) {
+    const strap = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.72, 0.11), strapM);
+    strap.position.set(0.28, 0.33, s * 0.1);
+    strap.rotation.x = s * 0.28;
+    strap.rotation.z = 0.12;
+    torso.add(strap);
+  }
+  const belt = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.31, 0.09, 10), strapM);
+  belt.position.y = -0.02; torso.add(belt);
+  const canteen = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 0.16, 10), pbr(OLIVE_DK, 0.9));
+  canteen.position.set(0.05, -0.08, 0.33); torso.add(canteen);
+  const canteenCap = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.05, 8), pbr(WOOD_DK, 0.9));
+  canteenCap.position.set(0.05, 0.03, 0.33); torso.add(canteenCap);
+}
+
 function buildMeleeInfantry(accent) {
   const b = new THREE.Group();
   const uniform = pbr(OLIVE, 0.9);
@@ -664,6 +683,7 @@ function buildMeleeInfantry(accent) {
   chest.position.y = 0.33; torso.add(chest);
   const pack = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.4, 0.35), pbr('#4a3d2a', 0.95));
   pack.position.set(-0.32, 0.35, 0); torso.add(pack);
+  webbing(torso);
   b.add(torso);
   const armL = arm(0.095, 0.6, uniform); armL.position.set(0, 1.52, 0.36);
   const armR = arm(0.095, 0.6, uniform, rifle()); armR.position.set(0, 1.52, -0.36);
@@ -688,6 +708,7 @@ function buildInfantry(accent) {
   chest.position.y = 0.33; torso.add(chest);
   const ammo = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.14, 0.35), pbr('#4a3d2a', 0.95));
   ammo.position.set(0, 0.05, 0); torso.add(ammo);
+  webbing(torso);
   b.add(torso);
   const armL = arm(0.095, 0.6, uniform); armL.position.set(0, 1.52, 0.36);
   // rifleman aims: rifle held level, arm pose baked into the held group
@@ -724,6 +745,16 @@ function buildTank(accent) {
   glacis.position.set(1.2, 0.72, 0); glacis.rotation.z = -0.5; b.add(glacis);
   const stripe = new THREE.Mesh(new THREE.BoxGeometry(2.02, 0.12, 1.02), pbr(accent, 0.7));
   stripe.position.y = 0.85; b.add(stripe);
+  // track skirts, a nose headlight and a turret antenna: silhouette dressing.
+  for (const s of [-1, 1]) {
+    const skirt = new THREE.Mesh(new THREE.BoxGeometry(1.9, 0.28, 0.06), hullM);
+    skirt.position.set(0, 0.62, s * 0.88);
+    b.add(skirt);
+  }
+  const lamp = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.12, 0.18), basic('#ffe9a8'));
+  lamp.position.set(1.45, 0.85, 0.3); b.add(lamp);
+  const lampGuard = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.04, 0.22), pbr(STEEL_DK, 0.6, 0.6));
+  lampGuard.position.set(1.45, 0.93, 0.3); b.add(lampGuard);
   // turret doubles as the rig head so it sways on the march
   const turret = new THREE.Group(); turret.position.set(-0.2, 1.25, 0);
   const dome = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.5, 0.4, 12), hullM);
@@ -734,6 +765,8 @@ function buildTank(accent) {
   turret.add(barrel);
   const hatch = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 0.1, 10), pbr(OLIVE_DK, 0.85));
   hatch.position.y = 0.24; turret.add(hatch);
+  const antenna = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.02, 0.9, 6), pbr('#1c1c20', 0.8));
+  antenna.position.set(-0.3, 0.6, -0.25); turret.add(antenna);
   b.add(turret);
   return { body: b, head: turret, height: 2.4 };
 }
@@ -749,6 +782,15 @@ function buildCommander(accent) {
   chest.position.y = 0.35; torso.add(chest);
   const trim = new THREE.Mesh(new THREE.TorusGeometry(0.3, 0.035, 8, 18), pbr(GOLD, 0.5, 0.7));
   trim.rotation.x = Math.PI / 2; trim.position.y = 0.6; torso.add(trim);
+  // Sam Browne crossbelt, medal ribbons and a cap visor: staff-officer read.
+  const crossbelt = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.72, 0.12), pbr('#d8c8a8', 0.85));
+  crossbelt.position.set(0.29, 0.35, 0); crossbelt.rotation.z = 0.5; torso.add(crossbelt);
+  for (let ri = 0; ri < 3; ri++) {
+    const ribbon = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.05, 0.09),
+      pbr(['#4a8af4', '#c9a13a', '#a83a3a'][ri], 0.6));
+    ribbon.position.set(0.3, 0.48, -0.12 + ri * 0.12);
+    torso.add(ribbon);
+  }
   b.add(torso);
   const baton = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.55, 8), pbr(GOLD, 0.5, 0.7));
   baton.position.y = -0.5;
@@ -762,6 +804,8 @@ function buildCommander(accent) {
   cap.position.y = 0.26; head.add(cap);
   const capBand = new THREE.Mesh(new THREE.CylinderGeometry(0.245, 0.245, 0.05, 12), pbr(GOLD, 0.5, 0.7));
   capBand.position.y = 0.2; head.add(capBand);
+  const visor = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.03, 0.3), pbr('#1c1c20', 0.7));
+  visor.position.set(0.24, 0.16, 0); head.add(visor);
   b.add(head);
   const aura = new THREE.Mesh(
     new THREE.TorusGeometry(1.0, 0.05, 8, 32),
