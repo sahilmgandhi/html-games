@@ -18,6 +18,7 @@ import { TurretMesh } from '../turrets/turrets.js';
 import { TowerMesh } from '../turrets/tower.js';
 import { BuildingMesh } from '../buildings/buildings.js';
 import { ProjectileMesh } from '../projectiles/projectiles.js';
+import { createGoldAggregator } from './gold-agg.js';
 
 export { applyBattleAction } from './actions.js';
 
@@ -82,6 +83,9 @@ export function attachBattleView(game, sim, fx, opts = {}) {
   function shake(amp, dur) { shakeAmp = amp; shakeT = shakeDur = dur; }
   let hitStop = 0;
   let siegeT = 0;
+  // Kill gold aggregates per side over a short window so mass kills flush
+  // one "+N" number instead of a wall of overlapping labels.
+  const goldAgg = createGoldAggregator(0.6);
   const _muzzle = new THREE.Vector3();
   const scorchGeo = new THREE.CircleGeometry(1.1, 14);
   const scorches = [];
@@ -184,7 +188,10 @@ export function attachBattleView(game, sim, fx, opts = {}) {
       if (e.maxHp >= 1200) { shake(0.22, 0.35); hitStop = Math.max(hitStop, 0.09); } // heavy deaths thump
       const color = e.side === 'player' ? '#4a8af4' : '#f44a4a';
       burstAt(e.x, e.z || 0, color, 22);
-      if (e instanceof Unit) burstAt(e.x, (e.z || 0) + 0.3, '#ffe98a', 6, `+${e.goldReward}`, '#ffe98a');
+      if (e instanceof Unit) {
+        burstAt(e.x, (e.z || 0) + 0.3, '#ffe98a', 6);
+        goldAgg.add(e.side, e.goldReward, toMeters(e.x), e.z || 0);
+      }
     }));
     // Special-attack FX per age: { volleys, count, colors, staggerMs }.
     // Future ages add one table row. Rendering-only; Math.random() allowed.
@@ -231,6 +238,7 @@ export function attachBattleView(game, sim, fx, opts = {}) {
       specialTimers.length = 0;
       focusX = CONFIG.WORLD.WIDTH / 2;
       focusTtl = 0;
+      goldAgg.clear();
       shakeT = 0;
       shakeAmp = 0;
       hitStop = 0;
@@ -282,6 +290,10 @@ export function attachBattleView(game, sim, fx, opts = {}) {
       simDt *= 0.12;
     }
     if (!sim.paused) sim.update(simDt);
+    // Aggregated kill-gold: one "+N" number per side per window.
+    for (const f of goldAgg.poll(dt)) {
+      if (fx && fx.goldNumber) fx.goldNumber(f.x, 2.4, f.z, `+${f.amount}`);
+    }
 
     syncMap(units, sim.units, (e) => {
       const um = UnitMesh(e, e.ageIndex);

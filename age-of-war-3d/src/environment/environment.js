@@ -626,13 +626,15 @@ export function createEnvironment(scene, ageIndex) {
       m.position.set(x, 0, z);
       group.add(m);
     }
-    // broadleaf treeline strictly behind the lane
-    for (const [x, z] of scatter(rng, 26, -14, 38, [[-16, -4]], true)) {
+    // broadleaf treeline well behind the lane (10m+): crowns directly behind
+    // the action bury units in foliage from the side camera
+    for (const [x, z] of scatter(rng, 26, -14, 38, [[-24, -10]], true)) {
       const tr = broadleaf(rng);
       const s = 0.9 + rng() * 0.8;
       tr.scale.setScalar(s);
       tr.position.set(x, 0, z);
       tr.rotation.y = rng() * Math.PI * 2;
+      tr.userData.treeline = true;
       group.add(tr);
     }
     addRocks();
@@ -683,11 +685,12 @@ export function createEnvironment(scene, ageIndex) {
         m.position.set(x, 0, z);
         group.add(m);
       }
-      // tilted utility poles strictly behind the lane
-      for (const [x, z] of scatter(rng, 10, -12, 36, [[-14, -5]], true)) {
+      // tilted utility poles well behind the lane (10m+)
+      for (const [x, z] of scatter(rng, 10, -12, 36, [[-22, -10]], true)) {
         const p = utilityPole(rng);
         p.position.set(x, 0, z);
         p.rotation.y = rng() * Math.PI * 2;
+        p.userData.treeline = true;
         group.add(p);
       }
       // sandbag lines guard both lane edges
@@ -712,13 +715,14 @@ export function createEnvironment(scene, ageIndex) {
         m.position.set(x, 0, z);
         group.add(m);
       }
-      // cypress avenue strictly behind the lane
-      for (const [x, z] of scatter(rng, 22, -14, 38, [[-16, -4]], true)) {
+      // cypress avenue well behind the lane (10m+)
+      for (const [x, z] of scatter(rng, 22, -14, 38, [[-24, -10]], true)) {
         const tr = cypress(rng);
         const s = 0.85 + rng() * 0.6;
         tr.scale.setScalar(s);
         tr.position.set(x, 0, z);
         tr.rotation.y = rng() * Math.PI * 2;
+        tr.userData.treeline = true;
         group.add(tr);
       }
       addRocks();
@@ -743,14 +747,16 @@ export function createEnvironment(scene, ageIndex) {
     group.add(v.group);
     animated.smokes.push(...v.smokes);
 
-    // tree line strictly behind the lane: anything between the camera and
-    // the action occludes the battle from the side view
-    for (const [x, z] of scatter(rng, 30, -14, 38, [[-16, -4]], true)) {
+    // tree line well behind the lane (10m+): anything between the camera and
+    // the action occludes the battle from the side view, and crowns directly
+    // behind the action bury units in foliage
+    for (const [x, z] of scatter(rng, 30, -14, 38, [[-24, -10]], true)) {
       const tr = araucaria(rng);
       const s = 0.8 + rng() * 0.7;
       tr.scale.setScalar(s);
       tr.position.set(x, 0, z);
       tr.rotation.y = rng() * Math.PI * 2;
+      tr.userData.treeline = true;
       group.add(tr);
     }
     // boulders: low enough to sit in front of the lane without blocking it

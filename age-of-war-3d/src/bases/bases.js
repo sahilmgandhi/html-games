@@ -27,27 +27,6 @@ function menhir(h, r, mat) {
   return new THREE.Mesh(g, rockMat(hex, 0.95));
 }
 
-function skullTotem(h) {
-  const g = new THREE.Group();
-  const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.09, h, 8), pbr(WOOD_DK, 0.9));
-  pole.position.y = h / 2;
-  g.add(pole);
-  const skull = new THREE.Mesh(new THREE.SphereGeometry(0.2, 10, 8), pbr(BONE, 0.65));
-  skull.position.y = h + 0.12;
-  skull.scale.set(1, 1.15, 0.9);
-  g.add(skull);
-  for (const s of [-1, 1]) {
-    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.05, 6, 6), basic('#140f0c'));
-    eye.position.set(0.15, h + 0.15, s * 0.08);
-    g.add(eye);
-    const horn = new THREE.Mesh(new THREE.ConeGeometry(0.05, 0.3, 6), pbr(BONE, 0.6));
-    horn.position.set(-0.02, h + 0.32, s * 0.16);
-    horn.rotation.x = s * 0.8;
-    g.add(horn);
-  }
-  return g;
-}
-
 function buildStoneHold(accent, mirror, side) {
   const mesh = new THREE.Group();
 
@@ -105,13 +84,6 @@ function buildStoneHold(accent, mirror, side) {
     tusk.position.set(3.1 * mirror, 2.75, i * 1.2);
     tusk.rotation.x = Math.PI;
     mesh.add(tusk);
-  }
-
-  // skull totems flanking the gate
-  for (const s of [-1, 1]) {
-    const totem = skullTotem(2.6 + (s > 0 ? 0.5 : 0));
-    totem.position.set(1.4 * mirror, 0.5, s * 3.2);
-    mesh.add(totem);
   }
 
   // war banner on the menhir, hoist pinned to the pole
