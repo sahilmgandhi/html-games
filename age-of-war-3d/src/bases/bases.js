@@ -524,12 +524,25 @@ function buildModernBunker(accent, mirror) {
   const concrete = pbr(MOD_CONCRETE, 0.95);
   const dark = pbr(MOD_DK, 0.95);
 
-  // sandbag ring + concrete pillbox with a barrel-vault roof
+  // sandbag ring: seeded girth/tilt variance + a stacked second course on
+  // the field arc so it reads as piled bags, not a torus of clones.
+  const bagMat = pbr(MOD_SAND, 1.0);
+  const bagMatDk = pbr('#6e6046', 1.0);
   for (let i = 0; i < 10; i++) {
     const a = (i / 10) * Math.PI * 2;
-    const bag = new THREE.Mesh(new THREE.SphereGeometry(0.45, 8, 6), pbr(MOD_SAND, 1.0));
-    bag.scale.set(1.25, 0.55, 0.8);
+    const k = i * 2.39 + 0.7;
+    const wob = Math.sin(k * 12.9) * 0.5 + Math.sin(k * 5.1) * 0.5;
+    const bag = new THREE.Mesh(new THREE.SphereGeometry(0.45, 8, 6), (i % 2 ? bagMat : bagMatDk));
+    bag.scale.set(1.25 + wob * 0.12, 0.55, 0.8 + wob * 0.08);
     bag.position.set(Math.cos(a) * 3.1 * mirror, 0.24, Math.sin(a) * 3.1);
+    bag.rotation.y = -a + wob * 0.2;
+    mesh.add(bag);
+  }
+  for (let i = 0; i < 5; i++) {
+    const a = (i / 4 - 0.5) * 1.1;
+    const bag = new THREE.Mesh(new THREE.SphereGeometry(0.42, 8, 6), (i % 2 ? bagMatDk : bagMat));
+    bag.scale.set(1.2, 0.5, 0.75);
+    bag.position.set(Math.cos(a) * 3.0 * mirror, 0.62, Math.sin(a) * 3.0);
     bag.rotation.y = -a;
     mesh.add(bag);
   }
@@ -547,6 +560,24 @@ function buildModernBunker(accent, mirror) {
   slit.position.set(2.22 * mirror, 1.1, 0);
   slit.rotation.y = mirror > 0 ? Math.PI / 2 : -Math.PI / 2;
   mesh.add(slit);
+  // splayed blast wing-walls guarding the field face + a concrete base skirt.
+  for (const s of [-1, 1]) {
+    const wing = new THREE.Mesh(new THREE.BoxGeometry(1.6, 1.5, 0.4), concrete);
+    wing.position.set(2.9 * mirror, 0.75, s * 2.2);
+    wing.rotation.y = -s * 0.5 * mirror;
+    mesh.add(wing);
+  }
+  const skirt = new THREE.Mesh(new THREE.BoxGeometry(4.8, 0.3, 3.6), concrete);
+  skirt.position.y = 0.15;
+  mesh.add(skirt);
+  // roof clutter: ammo crate + fuel drum riding the vault crown.
+  const crate = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.5, 0.7), pbr('#5a4a2e', 0.95));
+  crate.position.set(-0.3 * mirror, 3.62, 0.25);
+  crate.rotation.y = 0.3;
+  mesh.add(crate);
+  const drum = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.28, 0.7, 10), pbr('#7a2a1e', 0.8));
+  drum.position.set(-1.0 * mirror, 3.72, 0.35);
+  mesh.add(drum);
   // antenna mast + dish on the roof
   const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.07, 3.2, 6), pbr(IRON, 0.6));
   mast.position.set(-1.2 * mirror, 4.6, -0.8);
@@ -607,6 +638,27 @@ function buildFutureCitadel(accent, mirror) {
   const spire = new THREE.Mesh(new THREE.CylinderGeometry(1.1, 1.9, 5.2, 6), alloy);
   spire.position.y = 3.4;
   mesh.add(spire);
+  // collar rings seated on the spire taper + dark cooling fins between them.
+  for (const [cy, cr] of [[1.7, 1.72], [3.9, 1.42]]) {
+    const collar = new THREE.Mesh(new THREE.CylinderGeometry(cr + 0.08, cr + 0.08, 0.22, 6), dark);
+    collar.position.y = cy;
+    mesh.add(collar);
+  }
+  // corner guards riding the six spire vertices, tilted to the taper slope.
+  for (let fi = 0; fi < 6; fi++) {
+    const finG = new THREE.Group();
+    finG.rotation.y = (fi / 6) * Math.PI * 2;
+    const guard = new THREE.Mesh(new THREE.BoxGeometry(0.14, 3.4, 0.14), dark);
+    guard.position.set(0, 3.0, 1.56);
+    guard.rotation.x = -0.152;
+    finG.add(guard);
+    mesh.add(finG);
+  }
+  // cyan pad ring on the plinth top edge.
+  const pad = new THREE.Mesh(new THREE.TorusGeometry(2.7, 0.05, 6, 8), glowMat('#00e5ff', 0.9));
+  pad.rotation.x = Math.PI / 2;
+  pad.position.y = 0.82;
+  mesh.add(pad);
   // lit window strips facing the field (+x), dark when ruined
   const strips = [];
   for (const wy of [2.2, 3.4, 4.6]) {
@@ -632,6 +684,13 @@ function buildFutureCitadel(accent, mirror) {
   const annex = new THREE.Mesh(new THREE.SphereGeometry(1.3, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2), dark);
   annex.position.set(-2.2 * mirror, 0, 1.6);
   mesh.add(annex);
+  // meridian ribs over the dome annex.
+  for (const ry of [0, Math.PI / 2]) {
+    const rib = new THREE.Mesh(new THREE.TorusGeometry(1.32, 0.045, 6, 12, Math.PI), alloy);
+    rib.position.copy(annex.position);
+    rib.rotation.y = ry;
+    mesh.add(rib);
+  }
   const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.06, 2.6, 6), dark);
   pole.position.set(-2.2 * mirror, 2.2, -1.4);
   mesh.add(pole);
