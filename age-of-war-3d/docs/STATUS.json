@@ -118,6 +118,16 @@
         ],
         "tests": "179/179"
       },
+      "renPilot": {
+        "status": "working end-to-end, verdict: coherent pirate cast, cannon + rifle verified",
+        "verified": "renaissance battle close-ups (dueler bandana+cutlass, shark musketeer with rifle, cannoneer crew beside cannon with muzzle+wheels), 0 console/page errors; 249/249 asserts",
+        "cast": "Quaternius Pirate Kit CC0 (pack page https://quaternius.com/packs/piratekit.html, no License.txt in folder): Barbarossa=dueler, Mako=musketeer (sword hidden, rifle on Middle1R), Henry=cannoneer (lute hidden, static cannon beside), Anne=engineer hero",
+        "notes": [
+          "pirate glTFs embed BasisU atlas: node test shim strips images/textures (geometry identical)",
+          "pirate rig has no FistL: rifle parents to Middle1R finger joint, rotation.z=PI/2",
+          "no shoot clip in pirate set: musketeer/cannoneer attack on Punch"
+        ]
+      },
       "fixed": [
         "castle demo 1583 -> 1384 draw calls via solidify() skipping sub-0.22m casters (tests/shadow-budget.test.js, 2 asserts)",
         "hit-flash emissive 0.55/0.5 -> 0.3 (mid-flash still blows out to white in night stills; transient 0.1s, kept as game feel)",

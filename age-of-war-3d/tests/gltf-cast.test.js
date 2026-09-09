@@ -5,7 +5,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { fetchQuatCast, setQuatTemplates, QuatUnitMesh, QUAT_ROLES, CASTLE_ROLES, quatRoleFor } from '../src/units/gltf-cast.js';
+import { fetchQuatCast, setQuatTemplates, QuatUnitMesh, QUAT_ROLES, CASTLE_ROLES, RENAISSANCE_ROLES, quatRoleFor } from '../src/units/gltf-cast.js';
 import { UnitMesh } from '../src/units/units.js';
 import * as THREE from 'three';
 
@@ -13,11 +13,26 @@ const ROOT = path.dirname(fileURLToPath(import.meta.url));
 const QUAT = path.join(ROOT, '..', 'assets', 'quat');
 
 // Same loading path as the browser: a fetch shim reading the vendored files.
+// Node cannot decode the pirates' embedded PNG atlas (no ImageBitmap), so
+// the shim strips image-bearing JSON keys before parse. Geometry, rigs and
+// clips parse identically; tests measure structure, never pixels.
+const TEX_KEYS = ['map', 'normalTexture', 'occlusionTexture', 'emissiveTexture', 'metallicRoughnessTexture'];
+function stripImages(jsonText) {
+  const json = JSON.parse(jsonText);
+  delete json.images;
+  delete json.textures;
+  for (const m of json.materials || []) {
+    for (const k of TEX_KEYS) delete m[k];
+    if (m.pbrMetallicRoughness) delete m.pbrMetallicRoughness.baseColorTexture;
+    delete m.extensions;
+  }
+  return JSON.stringify(json);
+}
 async function loadTemplates() {
   const shim = async (url) => {
     const file = path.join(QUAT, path.basename(url));
     return {
-      text: async () => fs.readFileSync(file, 'utf8'),
+      text: async () => (url.endsWith('.gltf') ? stripImages(fs.readFileSync(file, 'utf8')) : fs.readFileSync(file, 'utf8')),
       arrayBuffer: async () => {
         const buf = fs.readFileSync(file);
         return buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength);
@@ -113,7 +128,7 @@ export default [
       t.assert('quat mesh with templates', quat.currentClip === 'Idle', quat.currentClip);
       quat.dispose();
 
-      const castle = UnitMesh(fakeEntity(), 2);
+      const castle = UnitMesh(fakeEntity(), 3);
       t.assert('later ages stay procedural', castle.currentClip === undefined, '');
       castle.dispose();
       setQuatTemplates(null);
@@ -274,6 +289,82 @@ export default [
       t.assert('knight armor readable', maxByte(tpl.swordsman.object) >= 100, maxByte(tpl.swordsman.object));
       t.assert('horse coat readable', maxByte(tpl.knight.object) >= 100, maxByte(tpl.knight.object));
       t.assert('paladin armor readable', maxByte(tpl.paladin.object) >= 100, maxByte(tpl.paladin.object));
+    },
+  },
+  {
+    name: 'renaissance templates parse with walk, attack and death clips',
+    async run(t) {
+      const tpl = await loadTemplates();
+      for (const role of ['dueler', 'musketeer', 'cannoneer', 'engineer']) {
+        t.assert(`${role} template loaded`, !!tpl[role] && tpl[role].clips.size > 0, `${tpl[role]?.clips.size} clips`);
+        t.assert(`${role} has Walk`, tpl[role].clips.has('Walk'), '');
+        t.assert(`${role} has Death`, tpl[role].clips.has('Death'), '');
+      }
+      t.assert('dueler attacks with Sword', tpl.dueler.clips.has('Sword'), '');
+      t.assert('musketeer punches (no shoot clip authored)', tpl.musketeer.clips.has('Punch'), '');
+      t.assert('cannon mount template loaded', !!tpl.cannon && !!tpl.cannon.object, '');
+      t.assert('rifle prop template loaded', !!tpl.rifleProp && !!tpl.rifleProp.object, '');
+    },
+  },
+  {
+    name: 'renaissance instances scale to procedural heights',
+    async run(t) {
+      const tpl = await loadTemplates();
+      // procedural rig.height targets: dueler 2.1, musketeer 2.15, cannoneer crew 2.2, engineer-hero 2.6*1.18
+      const targets = { dueler: 2.1, musketeer: 2.15, cannoneer: 2.2, engineer: 2.6 * 1.18 };
+      for (const [role, want] of Object.entries(targets)) {
+        const got = tpl[role].height;
+        t.assert(`${role} height ~${want}m`, Math.abs(got - want) / want < 0.05, `${got.toFixed(2)}m`);
+      }
+      t.assert('cannon mount stays authored size', Math.abs(tpl.cannon.scale - 1.0) < 0.05, tpl.cannon.scale.toFixed(2));
+    },
+  },
+  {
+    name: 'UnitMesh delegates renaissance age to the cast once loaded',
+    async run(t) {
+      const tpl = await loadTemplates();
+      setQuatTemplates(tpl);
+      const q = UnitMesh(fakeEntity(), 2);
+      t.assert('quat renaissance mesh', q.currentClip === 'Idle', q.currentClip);
+      q.dispose();
+      t.assert('melee maps to dueler', quatRoleFor(fakeEntity({ type: 'melee' }), 2) === RENAISSANCE_ROLES.melee, '');
+      t.assert('ranged maps to musketeer', quatRoleFor(fakeEntity({ type: 'ranged' }), 2) === RENAISSANCE_ROLES.ranged, '');
+      t.assert('siege maps to cannoneer', quatRoleFor(fakeEntity({ type: 'siege' }), 2) === RENAISSANCE_ROLES.siege, '');
+      t.assert('hero maps to engineer', quatRoleFor(fakeEntity({ isHero: true }), 2) === RENAISSANCE_ROLES.hero, '');
+      t.assert('castle mapping unchanged', quatRoleFor(fakeEntity({ type: 'melee' }), 1) === CASTLE_ROLES.melee, '');
+      setQuatTemplates(null);
+    },
+  },
+  {
+    name: 'musketeer hides the sword and shoulders the rifle',
+    async run(t) {
+      const tpl = await loadTemplates();
+      const inst = QuatUnitMesh(fakeEntity({ type: 'ranged' }), RENAISSANCE_ROLES.ranged, tpl);
+      const rifle = inst.mesh.getObjectByName('rifle');
+      t.assert('rifle present', !!rifle, '');
+      const hand = inst.mesh.getObjectByName('Middle1R');
+      t.assert('rifle hangs off the firing hand', !!hand && !!hand.getObjectByName('rifle'), '');
+      let swordVisible = false;
+      inst.mesh.traverse((o) => { if (o.name === 'Weapon_Sword' && o.visible) swordVisible = true; });
+      t.assert('cutlass hidden', !swordVisible, '');
+      inst.dispose();
+    },
+  },
+  {
+    name: 'cannoneer crew stands beside the cannon, lute hidden',
+    async run(t) {
+      const tpl = await loadTemplates();
+      const inst = QuatUnitMesh(fakeEntity({ type: 'siege' }), RENAISSANCE_ROLES.siege, tpl);
+      const cannon = inst.mesh.getObjectByName('cannon');
+      t.assert('cannon mount present', !!cannon, '');
+      const dz = Math.abs(cannon.position.z);
+      t.assert('cannon offset to the side of the crew', dz > 0.5 && dz < 2.5, dz.toFixed(2));
+      const ch = new THREE.Box3().setFromObject(cannon);
+      t.assert('cannon stays authored size', Math.abs((ch.max.y - ch.min.y) - 1.13) < 0.25, (ch.max.y - ch.min.y).toFixed(2));
+      let luteVisible = false;
+      inst.mesh.traverse((o) => { if (o.name === 'Weapon_Lute' && o.visible) luteVisible = true; });
+      t.assert('lute hidden', !luteVisible, '');
+      inst.dispose();
     },
   },
 ];
