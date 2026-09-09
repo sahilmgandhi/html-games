@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { pbr, glowMat, glowSprite, solidify, disposeDeep } from '../core/pbr.js';
+import { pbr, glowMat, glowSprite, mottleGeo, rockMat, solidify, disposeDeep } from '../core/pbr.js';
 
 // Pooled 3D projectiles. Stone kinds: 'rock' (sling stone), 'egg' (white,
 // wobbles), 'boulder' (catapult shot, burning trail, splash). Castle kinds:
@@ -60,7 +60,9 @@ function buildCore(kind) {
   }
   if (kind === 'boulder') {
     const g = new THREE.Group();
-    g.add(new THREE.Mesh(rockGeo(0.38, 3), pbr('#5a5a62', 0.9)));
+    const bg = rockGeo(0.38, 3);
+    mottleGeo(bg, 0.12, 3);
+    g.add(new THREE.Mesh(bg, rockMat('#5a5a62', 0.9)));
     const crack = new THREE.Mesh(new THREE.TorusGeometry(0.3, 0.045, 6, 12),
       new THREE.MeshBasicMaterial({ color: '#ff8a2a', fog: false }));
     crack.rotation.set(0.7, 0.4, 0);
@@ -77,10 +79,10 @@ function buildCore(kind) {
     head.rotation.z = -Math.PI / 2;
     head.position.x = 0.55;
     g.add(head);
-    for (const s of [-1, 1]) {
+    for (let i = 0; i < 3; i++) {
       const fletch = new THREE.Mesh(new THREE.PlaneGeometry(0.22, 0.12), pbr('#a83a3a', 0.7));
       fletch.position.x = -0.36;
-      fletch.rotation.x = s * Math.PI / 2;
+      fletch.rotation.x = i * Math.PI * 2 / 3;
       g.add(fletch);
     }
     return g;
@@ -118,7 +120,13 @@ function buildCore(kind) {
   if (kind === 'shell') {
     const g = new THREE.Group();
     g.add(new THREE.Mesh(new THREE.SphereGeometry(0.28, 12, 10), pbr('#3a3028', 0.5)));
-    g.add(new THREE.Mesh(new THREE.SphereGeometry(0.12, 8, 6), glowMat('#ff8a3a', 0.95)));
+    // fuse stub + spark riding on top; the tumble reads as shell rotation.
+    const fuse = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.14, 6), pbr('#7a5a34', 0.8));
+    fuse.position.y = 0.32;
+    g.add(fuse);
+    const spark = new THREE.Mesh(new THREE.SphereGeometry(0.07, 8, 6), glowMat('#ff8a3a', 0.95));
+    spark.position.y = 0.42;
+    g.add(spark);
     return g;
   }
   if (kind === 'bullet') {
@@ -168,7 +176,9 @@ function buildCore(kind) {
     g.add(new THREE.Mesh(new THREE.SphereGeometry(0.14, 10, 8), glowMat('#ffe8f8', 0.95)));
     return g;
   }
-  return new THREE.Mesh(rockGeo(0.16, 1), pbr('#8d8d94', 0.85));
+  const rg = rockGeo(0.16, 1);
+  mottleGeo(rg, 0.12, 1);
+  return new THREE.Mesh(rg, rockMat('#8d8d94', 0.85));
 }
 
 export function ProjectileMesh(kind) {
