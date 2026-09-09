@@ -131,7 +131,9 @@
     "grit_emblems": "6425788: painted canvas emblems: bannerMat device per age on all 5 cloth banners + swordsman shield sigil; verified blue disc banner + white shield device, 60.1fps, 156+36 tests green",
     "fill_light": "3bd9b6d: raised hemi/rim per age (Stone hemi 0.55->0.7, rim 0.45->0.85) so backlit faces keep modeled detail; player menhir shadow side now reads basalt+bands instead of black cutout",
     "phase1_env": "84332b1: craggier mesas (jitter 0.1/0.08->0.16/0.14, 3 strata bands), jittered araucaria/cypress tiers + darker under-tier",
-    "phase2_units": "d728ac8: bigger signature weapons (sword 0.85->1.0, musket/rifle/blaster +15%), eye catchlight glints, dark shield rim ring; verified swordsman sigil+blade, archer quiver+bow, 60.3fps"
+    "phase2_units": "d728ac8: bigger signature weapons (sword 0.85->1.0, musket/rifle/blaster +15%), eye catchlight glints, dark shield rim ring; verified swordsman sigil+blade, archer quiver+bow, 60.3fps",
+    "surface_pass": "263cec4: rockMat fresh flatShading+vertexColors + mottleGeo seeded per-vertex jitter on mesas/volcano/boulders, jitterGeo 2nd high-freq octave + y wobble, canopy tint jitter \u00b18pct on araucaria/cypress/broadleaf; faceted mesas + varied pines verified, 156+36 tests green",
+    "hud_styles": "11cc9d8: CSS-only HUD restyle \u2014 uppercase gold age pill, bottom dark scrim, affordable-card golden lift vs muted disabled, 16px outlined damage numbers; verified live battle 0 errors, 156+36 tests green"
   },
   "playthroughs": {
     "castle": "PASS: evolve->1, Swordsman/Archer/Knight/Paladin, Catapult/Fire/Oil (slots), mine+barracks, Arrow Volley fired; 0 errors",
