@@ -90,11 +90,16 @@ export class AI {
     const hpRatio = g.enemyBase.hp / g.enemyBase.maxHp;
 
     if (g.difficulty === 0) {
-      if ((hpRatio < 0.3 || nearBase >= 4) && this.rng() < 0.3) {
+      if ((hpRatio < 0.2 || nearBase >= 5) && this.rng() < 0.2) {
         g.useEnemySpecial();
         return true;
       }
     } else if (g.difficulty === 1) {
+      if ((hpRatio < 0.3 || nearBase >= 4) && this.rng() < 0.3) {
+        g.useEnemySpecial();
+        return true;
+      }
+    } else if (g.difficulty === 2) {
       if ((hpRatio < 0.4 || nearBase >= 3) && this.rng() < 0.5) {
         g.useEnemySpecial();
         return true;

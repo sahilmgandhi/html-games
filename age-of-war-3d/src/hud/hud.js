@@ -7,6 +7,7 @@
 //   | { type: 'buy-slot' } | { type: 'spawn-turret', index }
 //   | { type: 'sell-turret', index } | { type: 'buy-building', index }
 //   | { type: 'set-speed', speed } | { type: 'cycle-speed' }
+//   | { type: 'cycle-difficulty' }
 //   | { type: 'toggle-pause' } | { type: 'restart' }
 // Hotkeys: 1-4 spawn (guarded by the current age's unit count) · H hero ·
 // E evolve · Q/Space special · B/N shops · T cycle speed · P pause
@@ -23,6 +24,7 @@ export class HUD {
         <span class="aow-res aow-xp">✨ <b data-f="xp">0</b></span>
         <span class="aow-res aow-age" data-f="age">Stone Age</span>
         <button class="aow-res aow-mini" data-act="pause" title="Pause (P)">PAUSE</button>
+        <button class="aow-res aow-mini" data-act="difficulty" title="Cycle difficulty (restarts match)"></button>
       </div>
       <div class="aow-bottombar">
         <div class="aow-row" data-f="row1">
@@ -69,6 +71,8 @@ export class HUD {
         this._emit({ type: 'buy-slot' });
       } else if (btn.dataset.act === 'pause') {
         this._emit({ type: 'toggle-pause' });
+      } else if (btn.dataset.act === 'difficulty') {
+        this._emit({ type: 'cycle-difficulty' });
       } else if (btn.dataset.act === 'restart') {
         this._emit({ type: 'restart' });
       }
@@ -303,6 +307,11 @@ export class HUD {
     if (pauseBtn) {
       pauseBtn.textContent = state.paused ? 'RESUME' : 'PAUSE';
       pauseBtn.disabled = !!state.over;
+    }
+    const diffBtn = this.el.querySelector('[data-act="difficulty"]');
+    if (diffBtn && state.difficulty) {
+      this._setText(diffBtn, `⚔ ${state.difficulty.name}`);
+      diffBtn.disabled = !!state.over;
     }
   }
 

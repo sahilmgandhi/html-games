@@ -82,9 +82,17 @@ export class BattleSim {
     this.balance?.reset();
   }
 
+  // Difficulty index into CONFIG.DIFFICULTIES; changing it restarts the
+  // match (same contract as the original's pre-match select). restart()
+  // rebuilds the AI so the new think interval and special-use odds apply.
+  setDifficulty(i) {
+    const n = CONFIG.DIFFICULTIES.length;
+    this.difficulty = ((i % n) + n) % n;
+    this.restart();
+  }
+
   restart() {
-    const difficulty = this.difficulty;
-    this.resetState();
+    const difficulty = this.difficulty;    this.resetState();
     this.difficulty = difficulty;
     // Reseed both streams so a seeded match replays identically.
     this.rng = mulberry32(this.seed);
@@ -799,6 +807,11 @@ export class BattleSim {
         name: b.name, cost: b.cost, affordable: this.gold >= b.cost,
       })),
       speeds: [1, 2, 3].map((s) => ({ speed: s, active: this.gameSpeed === s })),
+      difficulty: {
+        index: this.difficulty,
+        name: CONFIG.DIFFICULTIES[this.difficulty].name,
+        count: CONFIG.DIFFICULTIES.length,
+      },
       paused: this.paused,
       over: this.gameOver ? {
         winner: this.winner,

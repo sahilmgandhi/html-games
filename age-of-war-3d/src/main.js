@@ -94,6 +94,7 @@ function stubState() {
     sell: [],
     buildings: CONFIG.BUILDINGS.map((b) => ({ name: b.name, cost: b.cost, affordable: false })),
     speeds: [1, 2, 3].map((s) => ({ speed: s, active: s === 1 })),
+    difficulty: { index: 0, name: CONFIG.DIFFICULTIES[0].name, count: CONFIG.DIFFICULTIES.length },
     paused: false,
     over: null,
     hint: CONFIG.HINT,

@@ -23,6 +23,9 @@ export function applyBattleAction(sim, action) {
       if (!sim.gameOver) sim.gameSpeed = sim.gameSpeed >= 3 ? 1 : sim.gameSpeed + 1;
       break;
     case 'toggle-pause': if (!sim.gameOver) sim.paused = !sim.paused; break;
+    case 'cycle-difficulty':
+      if (!sim.gameOver) sim.setDifficulty(sim.difficulty + 1);
+      break;
     case 'restart': sim.restart(); break;
     default: break;
   }
