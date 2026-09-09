@@ -1,36 +1,38 @@
 # __GAME_NAME__
 
-## How to Run
+This is a new game from `template/`. It is a simple chase game. Replace it with your game. Keep the same shape.
 
-From the repo root:
+## Start
+
+Do these steps from the repo root:
 
 ```bash
 npm run serve
 ```
 
-Open http://localhost:8081/__GAME_SLUG__/ in your browser.
+Then open `http://localhost:8081/__GAME_SLUG__/` in your browser.
 
-## Tests
+## Test
 
 ```bash
-npm test          # from this directory, or `npm test -w __GAME_SLUG__` from the root
+npm test  # from this folder
 ```
 
-Runs the headless harness (`test-runner.js`), which loads the real game files listed in
-`index.html` and drives simulated frames — no browser required.
+Or from the root, use `npm test -w __GAME_SLUG__`. Tests run in Node. No browser is needed.
 
 ## Layout
 
-| Path | Purpose |
+| Path | Use |
 |---|---|
-| `index.html` | Script load order — the harness reads it, so a new JS file needs a tag here |
-| `js/config.js` | Every tunable number |
-| `js/utils.js` | Pure helpers |
-| `js/game.js` | `Game`: state, `update(dt)`, `render()` |
-| `js/main.js` | Browser entry (`data-entry`, excluded from tests) |
-| `tests/harness.js` | DOM stubs, source loading, `makeGame`/`runFrames` |
-| `tests/*.test.js` | Arrays of `{ name, run(t) }` blocks |
+| `index.html` | Load order for scripts |
+| `js/config.js` | All game numbers |
+| `js/utils.js` | Small helpers |
+| `js/game.js` | Game state and rules |
+| `js/main.js` | Browser start only |
+| `tests/` | Test files |
 
-The skeleton is a playable click-to-chase game. Replace the contents, keep the shape: state on
-`this`, `update(dt)` free of drawing, `render()` free of state changes — that split is what lets
-the headless harness drive real frames.
+Rules for code:
+- Put state on `this`.
+- Keep drawing out of `update(dt)`.
+- Keep state changes out of `render()`.
+- Add each new script to `index.html`.
