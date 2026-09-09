@@ -51,6 +51,47 @@ export function gritTexture() {
   return _gritTex;
 }
 
+// Skin albedo with pores, blotches and fine lines, so close-up faces read
+// as flesh instead of flat plastic. Baked skin tone in the map; material
+// color stays white. Fresh material per call (caller owns disposal).
+let _skinTex = null;
+export function skinTexture() {
+  if (_skinTex) return _skinTex;
+  _skinTex = canvasTexture(256, 256, (g, w, h) => {
+    const rng = mulberry32(4242);
+    g.fillStyle = '#c98d5f';
+    g.fillRect(0, 0, w, h);
+    for (let i = 0; i < 60; i++) {
+      const r = 10 + rng() * 34;
+      const x = rng() * w, y = rng() * h;
+      g.fillStyle = rng() > 0.5 ? 'rgba(160,90,60,0.10)' : 'rgba(230,180,140,0.10)';
+      g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill();
+    }
+    for (let i = 0; i < 4200; i++) {
+      const v = rng() > 0.5 ? 'rgba(90,50,32,0.16)' : 'rgba(240,200,160,0.14)';
+      g.fillStyle = v;
+      g.fillRect(rng() * w, rng() * h, 1 + rng() * 1.4, 1 + rng() * 1.4);
+    }
+    g.strokeStyle = 'rgba(120,70,48,0.10)';
+    g.lineWidth = 1;
+    for (let i = 0; i < 40; i++) {
+      const x = rng() * w, y = rng() * h, len = 8 + rng() * 22;
+      g.beginPath(); g.moveTo(x, y);
+      g.lineTo(x + len, y + (rng() - 0.5) * 6); g.stroke();
+    }
+  });
+  _skinTex.wrapS = THREE.RepeatWrapping;
+  _skinTex.wrapT = THREE.RepeatWrapping;
+  _skinTex.anisotropy = 4;
+  return _skinTex;
+}
+
+export function skinMat(roughness = 0.55) {
+  return new THREE.MeshStandardMaterial({
+    map: skinTexture(), roughness, metalness: 0.0,
+  });
+}
+
 export function pbr(color, roughness = 0.85, metalness = 0.0) {
   const key = `${color}|${roughness}|${metalness}`;
   let m = _cache.get(key);

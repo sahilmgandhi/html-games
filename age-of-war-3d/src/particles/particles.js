@@ -50,6 +50,24 @@ export class ParticleSystem3D {
     }
     this._numCursor = 0;
     this._v = new THREE.Vector3();
+
+    // Shockwave ring pool: flat additive rings that expand and fade on
+    // heavy impacts (boulder/shell/special). Zero per-frame allocation.
+    this._rings = [];
+    for (let i = 0; i < 8; i++) {
+      const m = new THREE.Mesh(
+        new THREE.RingGeometry(0.85, 1.0, 40),
+        new THREE.MeshBasicMaterial({
+          color: 0xffcc88, transparent: true, opacity: 0,
+          blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide,
+        })
+      );
+      m.rotation.x = -Math.PI / 2;
+      m.visible = false;
+      scene.add(m);
+      this._rings.push({ mesh: m, ttl: 0, max: 1, maxR: 3 });
+    }
+    this._ringCursor = 0;
   }
 
   setCamera(camera) {
@@ -82,6 +100,44 @@ export class ParticleSystem3D {
       this._life[i] = this._maxLife[i];
       this._grav[i] = gravity;
     }
+    // Smoke body: slow grey-brown puffs that rise and linger twice as long
+    // as the sparks, so every burst reads as spark + smoke, not confetti.
+    if (opts.smoke !== false) {
+      const smoke = new THREE.Color(opts.smokeColor ?? 0x5a5048);
+      const nSmoke = Math.max(4, Math.round(count * 0.45));
+      for (let n = 0; n < nSmoke; n++) {
+        const i = this._cursor;
+        this._cursor = (this._cursor + 1) % MAX_POINTS;
+        this._pos[i * 3] = x + (Math.random() - 0.5) * 0.4;
+        this._pos[i * 3 + 1] = y + Math.random() * 0.3;
+        this._pos[i * 3 + 2] = z + (Math.random() - 0.5) * 0.4;
+        const a = Math.random() * Math.PI * 2;
+        const s = speed * 0.12 * (0.4 + Math.random() * 0.6);
+        this._vel[i * 3] = Math.cos(a) * s;
+        this._vel[i * 3 + 1] = (up * 0.5 + 1.2) * (0.5 + Math.random() * 0.5);
+        this._vel[i * 3 + 2] = Math.sin(a) * s;
+        const shade = 0.55 + Math.random() * 0.3;
+        this._baseCol[i * 3] = smoke.r * shade;
+        this._baseCol[i * 3 + 1] = smoke.g * shade;
+        this._baseCol[i * 3 + 2] = smoke.b * shade;
+        this._maxLife[i] = life * 2.1 * (0.7 + Math.random() * 0.4);
+        this._life[i] = this._maxLife[i];
+        this._grav[i] = 1.6; // buoyant: smoke rises instead of falling
+      }
+    }
+    // Heavy hits (12+ sparks) also kick a ground shockwave ring.
+    if (count >= 12) this.shockwave(x, Math.max(0.1, y * 0.3), z, opts);
+  }
+
+  shockwave(x, y, z, opts = {}) {
+    const r = this._rings[this._ringCursor];
+    this._ringCursor = (this._ringCursor + 1) % this._rings.length;
+    r.mesh.position.set(x, Math.max(0.08, y), z);
+    r.mesh.material.color.set(opts.color ?? 0xffcc88);
+    r.max = 0.45;
+    r.ttl = 0.45;
+    r.maxR = opts.shockR ?? 3.2;
+    r.mesh.visible = true;
   }
 
   damageNumber(x, y, z, text, color = '#ffd34d') {
@@ -131,6 +187,21 @@ export class ParticleSystem3D {
     this.points.geometry.attributes.position.needsUpdate = true;
     this.points.geometry.attributes.color.needsUpdate = true;
 
+    // Shockwave rings: expand to maxR and fade over their short life.
+    for (const r of this._rings) {
+      if (r.ttl <= 0) continue;
+      r.ttl -= dt;
+      if (r.ttl <= 0) {
+        r.mesh.visible = false;
+        r.mesh.material.opacity = 0;
+        continue;
+      }
+      const k = 1 - r.ttl / r.max;
+      const rad = Math.max(0.05, r.maxR * (1 - (1 - k) * (1 - k)));
+      r.mesh.scale.set(rad, rad, 1);
+      r.mesh.material.opacity = 0.75 * (r.ttl / r.max);
+    }
+
     // Float numbers upward in world space, project to screen.
     if (this.camera) {
       const w = window.innerWidth;
@@ -153,6 +224,11 @@ export class ParticleSystem3D {
     this.scene.remove(this.points);
     this.points.geometry.dispose();
     this.points.material.dispose();
+    for (const r of this._rings) {
+      this.scene.remove(r.mesh);
+      r.mesh.geometry.dispose();
+      r.mesh.material.dispose();
+    }
     this._layer.remove();
   }
 }

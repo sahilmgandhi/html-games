@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { toMeters } from '../simulation/config.js';
 import {
-  pbr, basic, glowMat, solidify, cloneMats, makeHpBar, teamRing, emblemTexture, disposeDeep, SIDE_ACCENT,
+  pbr, basic, glowMat, solidify, cloneMats, makeHpBar, teamRing, emblemTexture, disposeDeep, SIDE_ACCENT, skinMat,
 } from '../core/pbr.js';
 
 // Procedural units, Clash-Royale chunky style, one builder set per age
@@ -13,7 +13,6 @@ import {
 // Contract: UnitMesh(entity, ageIndex) -> { mesh, update(dt, entity), dispose() }
 // Works for any age (falls back to the melee rig for unknown types).
 
-const SKIN = '#c98d5f';
 const SKIN_DK = '#a06a42';
 const FUR = '#6b4a2f';
 const FUR_DK = '#4a3120';
@@ -27,9 +26,13 @@ function leg(r, len, mat) {
   const m = new THREE.Mesh(new THREE.CylinderGeometry(r * 0.8, r, len, 8), mat);
   m.position.y = -len / 2;
   g.add(m);
-  const foot = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.12, 0.2), pbr(FUR_DK, 0.95));
-  foot.position.set(0.06, -len + 0.06, 0);
-  g.add(foot);
+  // boot: dark leather heel + forward toe box instead of a bare fur slab.
+  const boot = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.14, 0.22), pbr(FUR_DK, 0.95));
+  boot.position.set(0.02, -len + 0.07, 0);
+  g.add(boot);
+  const toe = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.09, 0.2), pbr('#3a2a1c', 0.9));
+  toe.position.set(0.16, -len + 0.045, 0);
+  g.add(toe);
   return g;
 }
 
@@ -41,21 +44,61 @@ function arm(r, len, mat, hand) {
   if (hand) {
     hand.position.y = -len;
     g.add(hand);
+  } else {
+    // empty hand reads as a fist, not a sawn-off stump.
+    const fist = new THREE.Mesh(new THREE.SphereGeometry(r * 1.05, 8, 6), skinMat());
+    fist.position.y = -len - 0.02;
+    fist.scale.set(1, 1.25, 1);
+    g.add(fist);
   }
   return g;
 }
 
+// Realistic close-up face: inset shadowed sockets, small off-white eyeballs
+// with dark irises, upper lids, angled brows, nose bridge, mouth line and
+// ears. Same signature as the old cartoon eyes() so every builder picks it
+// up with no per-rig edits.
 function eyes(head, y, xOff, spread = 0.13) {
+  const socketM = pbr('#7a4e34', 0.8);
+  const ballM = pbr('#e8e0d0', 0.5);
+  const irisM = pbr('#2e2018', 0.4);
+  const lidM = pbr('#a06a42', 0.7);
+  const hairM = pbr('#2e2018', 0.95);
   for (const s of [-1, 1]) {
-    const white = new THREE.Mesh(new THREE.SphereGeometry(0.085, 10, 10), basic('#ffffff'));
-    white.position.set(xOff, y, s * spread);
-    head.add(white);
-    const pupil = new THREE.Mesh(new THREE.SphereGeometry(0.038, 8, 8), basic('#1a1210'));
-    pupil.position.set(xOff + 0.055, y, s * spread);
-    head.add(pupil);
-    const glint = new THREE.Mesh(new THREE.SphereGeometry(0.014, 6, 6), basic('#ffffff'));
-    glint.position.set(xOff + 0.08, y + 0.018, s * spread);
+    const socket = new THREE.Mesh(new THREE.SphereGeometry(0.075, 10, 8), socketM);
+    socket.position.set(xOff - 0.01, y, s * spread);
+    socket.scale.set(0.55, 1, 1);
+    head.add(socket);
+    const ball = new THREE.Mesh(new THREE.SphereGeometry(0.042, 10, 8), ballM);
+    ball.position.set(xOff + 0.02, y, s * spread);
+    ball.scale.set(0.6, 1, 1);
+    head.add(ball);
+    const iris = new THREE.Mesh(new THREE.SphereGeometry(0.02, 8, 6), irisM);
+    iris.position.set(xOff + 0.052, y, s * spread);
+    head.add(iris);
+    const glint = new THREE.Mesh(new THREE.SphereGeometry(0.008, 6, 6), basic('#ffffff'));
+    glint.position.set(xOff + 0.068, y + 0.012, s * spread);
     head.add(glint);
+    const lid = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.022, 0.1), lidM);
+    lid.position.set(xOff + 0.015, y + 0.062, s * spread);
+    lid.rotation.z = -0.15;
+    head.add(lid);
+    const brow = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.028, 0.12), hairM);
+    brow.position.set(xOff - 0.01, y + 0.115, s * (spread + 0.01));
+    brow.rotation.x = s * -0.18;
+    head.add(brow);
+  }
+  const nose = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.09, 0.06), skinMat());
+  nose.position.set(xOff + 0.12, y - 0.08, 0);
+  head.add(nose);
+  const mouth = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.022, 0.13), pbr('#5a3226', 0.8));
+  mouth.position.set(xOff + 0.07, y - 0.19, 0);
+  head.add(mouth);
+  for (const s of [-1, 1]) {
+    const ear = new THREE.Mesh(new THREE.SphereGeometry(0.055, 8, 6), skinMat());
+    ear.position.set(xOff - 0.12, y - 0.03, s * 0.21);
+    ear.scale.set(0.6, 1, 0.8);
+    head.add(ear);
   }
 }
 
@@ -86,7 +129,7 @@ function club(scale = 1) {
 
 function buildClubman(accent) {
   const b = new THREE.Group();
-  const skin = pbr(SKIN, 0.75);
+  const skin = skinMat();
   const legL = leg(0.11, 0.85, skin); legL.position.set(0, 0.95, 0.16);
   const legR = leg(0.11, 0.85, skin); legR.position.set(0, 0.95, -0.16);
   b.add(legL, legR);
@@ -103,8 +146,8 @@ function buildClubman(accent) {
   const head = new THREE.Group(); head.position.y = 1.86;
   const skull = new THREE.Mesh(new THREE.SphereGeometry(0.26, 14, 12), skin);
   head.add(skull);
-  const jaw = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.12, 0.3), pbr(SKIN_DK, 0.8));
-  jaw.position.set(0.12, -0.16, 0); head.add(jaw);
+  const jaw = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.1, 0.24), pbr(SKIN_DK, 0.8));
+  jaw.position.set(0.1, -0.15, 0); head.add(jaw);
   const hair = new THREE.Mesh(new THREE.ConeGeometry(0.24, 0.3, 10), pbr('#2e2018', 0.95));
   hair.position.y = 0.26; head.add(hair);
   eyes(head, 0.04, 0.2);
@@ -115,7 +158,7 @@ function buildClubman(accent) {
 
 function buildSlinger(accent) {
   const b = new THREE.Group();
-  const skin = pbr(SKIN, 0.75);
+  const skin = skinMat();
   const legL = leg(0.09, 0.8, skin); legL.position.set(0, 0.9, 0.14);
   const legR = leg(0.09, 0.8, skin); legR.position.set(0, 0.9, -0.14);
   b.add(legL, legR);
@@ -169,10 +212,21 @@ function buildDinoRider(accent) {
     dhead.add(tooth);
   }
   for (const s of [-1, 1]) {
-    const white = new THREE.Mesh(new THREE.SphereGeometry(0.09, 10, 10), basic('#ffffff'));
-    white.position.set(0.12, 0.14, s * 0.2); dhead.add(white);
-    const pupil = new THREE.Mesh(new THREE.SphereGeometry(0.04, 8, 8), basic('#1a1210'));
-    pupil.position.set(0.19, 0.14, s * 0.2); dhead.add(pupil);
+    const socket = new THREE.Mesh(new THREE.SphereGeometry(0.095, 10, 8), pbr('#3d5a2e', 0.8));
+    socket.position.set(0.1, 0.14, s * 0.2);
+    socket.scale.set(0.55, 1, 1);
+    dhead.add(socket);
+    const ball = new THREE.Mesh(new THREE.SphereGeometry(0.062, 10, 8), pbr('#e8e0c8', 0.5));
+    ball.position.set(0.13, 0.14, s * 0.2);
+    ball.scale.set(0.6, 1, 1);
+    dhead.add(ball);
+    const pupil = new THREE.Mesh(new THREE.SphereGeometry(0.028, 8, 6), pbr('#141a10', 0.4));
+    pupil.position.set(0.17, 0.14, s * 0.2);
+    dhead.add(pupil);
+    const lid = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.03, 0.13), hide);
+    lid.position.set(0.12, 0.21, s * 0.2);
+    lid.rotation.z = -0.15;
+    dhead.add(lid);
   }
   const crest = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.4, 8), pbr('#4a7038', 0.85));
   crest.position.set(-0.1, 0.32, 0); crest.rotation.z = 0.4; dhead.add(crest);
@@ -189,7 +243,7 @@ function buildDinoRider(accent) {
   const legR = leg(0.2, 1.1, hide); legR.position.set(0.1, 1.15, -0.42);
   b.add(legL, legR);
   // rider
-  const skin = pbr(SKIN, 0.75);
+  const skin = skinMat();
   const saddle = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.12, 0.7), pbr(accent, 0.7));
   saddle.position.set(-0.1, 2.28, 0); b.add(saddle);
   const rtorso = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.2, 0.45, 8), skin);
@@ -208,7 +262,7 @@ function buildDinoRider(accent) {
 
 function buildShaman(accent) {
   const b = new THREE.Group();
-  const skin = pbr(SKIN, 0.75);
+  const skin = skinMat();
   const robe = new THREE.Mesh(new THREE.ConeGeometry(0.5, 1.5, 12), pbr('#5a3a6a', 0.85));
   robe.position.y = 0.75; b.add(robe);
   const trim = new THREE.Mesh(new THREE.TorusGeometry(0.48, 0.045, 8, 16), pbr(accent, 0.6));
@@ -306,7 +360,7 @@ function buildSwordsman(accent) {
   const armR = arm(0.09, 0.6, steel, sword()); armR.position.set(0, 1.52, -0.36);
   b.add(armL, armR);
   const head = new THREE.Group(); head.position.y = 1.86;
-  head.add(new THREE.Mesh(new THREE.SphereGeometry(0.22, 14, 12), pbr(SKIN, 0.75)));
+  head.add(new THREE.Mesh(new THREE.SphereGeometry(0.22, 14, 12), skinMat()));
   eyes(head, 0.0, 0.17, 0.11);
   helm(head, accent);
   b.add(head);
@@ -342,7 +396,7 @@ function buildArcher(accent) {
   const armR = arm(0.075, 0.55, cloth); armR.position.set(0, 1.44, -0.3);
   b.add(armL, armR);
   const head = new THREE.Group(); head.position.y = 1.74;
-  head.add(new THREE.Mesh(new THREE.SphereGeometry(0.2, 14, 12), pbr(SKIN, 0.75)));
+  head.add(new THREE.Mesh(new THREE.SphereGeometry(0.2, 14, 12), skinMat()));
   const hood = new THREE.Mesh(new THREE.ConeGeometry(0.24, 0.42, 10), cloth);
   hood.position.y = 0.2; head.add(hood);
   eyes(head, 0.0, 0.16, 0.1);
@@ -419,7 +473,7 @@ function buildPaladin(accent) {
   const armR = arm(0.1, 0.65, steel, sword(1.0)); armR.position.set(0, 1.62, -0.38);
   b.add(armL, armR);
   const head = new THREE.Group(); head.position.y = 1.98;
-  head.add(new THREE.Mesh(new THREE.SphereGeometry(0.24, 14, 12), pbr(SKIN, 0.75)));
+  head.add(new THREE.Mesh(new THREE.SphereGeometry(0.24, 14, 12), skinMat()));
   eyes(head, 0.02, 0.19, 0.11);
   helm(head, accent, GOLD);
   b.add(head);
@@ -518,7 +572,7 @@ function buildDueler(accent) {
   }
   b.add(armL, armR);
   const head = new THREE.Group(); head.position.y = 1.84;
-  head.add(new THREE.Mesh(new THREE.SphereGeometry(0.21, 14, 12), pbr(SKIN, 0.75)));
+  head.add(new THREE.Mesh(new THREE.SphereGeometry(0.21, 14, 12), skinMat()));
   eyes(head, 0.0, 0.17, 0.1);
   const cap = new THREE.Mesh(new THREE.SphereGeometry(0.22, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2),
     pbr(accent, 0.8));
@@ -554,7 +608,7 @@ function buildMusketeer(accent) {
   }
   b.add(armL, armR);
   const head = new THREE.Group(); head.position.y = 1.86;
-  head.add(new THREE.Mesh(new THREE.SphereGeometry(0.22, 14, 12), pbr(SKIN, 0.75)));
+  head.add(new THREE.Mesh(new THREE.SphereGeometry(0.22, 14, 12), skinMat()));
   eyes(head, 0.0, 0.17, 0.1);
   const hat = tricorn(accent); hat.position.y = 0.24; head.add(hat);
   b.add(head);
@@ -578,7 +632,7 @@ function buildCannoneer(accent) {
   const armR = arm(0.095, 0.6, apron, rod); armR.position.set(-0.35, 1.52, -0.36);
   b.add(armL, armR);
   const head = new THREE.Group(); head.position.set(-0.35, 1.88, 0);
-  head.add(new THREE.Mesh(new THREE.SphereGeometry(0.22, 14, 12), pbr(SKIN, 0.75)));
+  head.add(new THREE.Mesh(new THREE.SphereGeometry(0.22, 14, 12), skinMat()));
   eyes(head, 0.0, 0.17, 0.1);
   const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.2, 0.16, 10), pbr(accent, 0.8));
   cap.position.y = 0.24; head.add(cap);
@@ -606,7 +660,7 @@ function buildWarEngineer(accent) {
   const armR = arm(0.1, 0.65, coat, musket()); armR.position.set(-0.5, 1.64, -0.38);
   b.add(armL, armR);
   const head = new THREE.Group(); head.position.set(-0.5, 2.0, 0);
-  head.add(new THREE.Mesh(new THREE.SphereGeometry(0.24, 14, 12), pbr(SKIN, 0.75)));
+  head.add(new THREE.Mesh(new THREE.SphereGeometry(0.24, 14, 12), skinMat()));
   eyes(head, 0.02, 0.19, 0.11);
   const hat = tricorn(GOLD); hat.position.y = 0.26; head.add(hat);
   b.add(head);
@@ -689,7 +743,7 @@ function buildMeleeInfantry(accent) {
   const armR = arm(0.095, 0.6, uniform, rifle()); armR.position.set(0, 1.52, -0.36);
   b.add(armL, armR);
   const head = new THREE.Group(); head.position.y = 1.88;
-  head.add(new THREE.Mesh(new THREE.SphereGeometry(0.21, 14, 12), pbr(SKIN, 0.75)));
+  head.add(new THREE.Mesh(new THREE.SphereGeometry(0.21, 14, 12), skinMat()));
   eyes(head, 0.0, 0.17, 0.1);
   const helm = helmet(accent); helm.position.y = 0.1; head.add(helm);
   b.add(head);
@@ -717,7 +771,7 @@ function buildInfantry(accent) {
   const armR = arm(0.095, 0.6, uniform, aim); armR.position.set(0, 1.52, -0.36);
   b.add(armL, armR);
   const head = new THREE.Group(); head.position.y = 1.88;
-  head.add(new THREE.Mesh(new THREE.SphereGeometry(0.21, 14, 12), pbr(SKIN, 0.75)));
+  head.add(new THREE.Mesh(new THREE.SphereGeometry(0.21, 14, 12), skinMat()));
   eyes(head, 0.0, 0.17, 0.1);
   const helm = helmet(accent); helm.position.y = 0.1; head.add(helm);
   b.add(head);
@@ -798,7 +852,7 @@ function buildCommander(accent) {
   const armR = arm(0.1, 0.62, coat, baton); armR.position.set(0, 1.58, -0.37);
   b.add(armL, armR);
   const head = new THREE.Group(); head.position.y = 1.94;
-  head.add(new THREE.Mesh(new THREE.SphereGeometry(0.22, 14, 12), pbr(SKIN, 0.75)));
+  head.add(new THREE.Mesh(new THREE.SphereGeometry(0.22, 14, 12), skinMat()));
   eyes(head, 0.0, 0.17, 0.1);
   const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.2, 0.14, 12), pbr('#2c2c24', 0.85));
   cap.position.y = 0.26; head.add(cap);
