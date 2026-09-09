@@ -93,6 +93,28 @@
         "evolve sim-correct into Castle Age with Stone Age visuals until age assets land"
       ],
       "note": "Feature parity for the Stone Age loop is done; next ages add per-age visuals."
+    },
+    "gauntlet10_2026_09_09": {
+      "status": "failed - 10/10 not reached, no inflated scores",
+      "verified": "6 fresh shots (units close/side/face, stone battle wide, castle wide x3, future wide); 0 console errors, 0 page errors; 60-61fps; npm test 100/100",
+      "vsCRCoC": {
+        "stoneDayBattle": 8,
+        "castleNightBattle": 7,
+        "futureNightBattle": 7,
+        "unitsCloseUp": 7.5
+      },
+      "vsPhotoreal": 4,
+      "fixed": [
+        "castle demo 1583 -> 1384 draw calls via solidify() skipping sub-0.22m casters (tests/shadow-budget.test.js, 2 asserts)",
+        "hit-flash emissive 0.55/0.5 -> 0.3 (mid-flash still blows out to white in night stills; transient 0.1s, kept as game feel)",
+        "round soft-dot PointsMaterial map (close-range squares fixed)"
+      ],
+      "openIssues": [
+        "procedural low-poly cannot reach GTA/COD/Witcher photoreal; external glTF approved but unused",
+        "night-age unit readability weak (future units read as dark blobs at gameplay distance)",
+        "faces are primitives on cylinders; no subsurface scattering or high-frequency detail",
+        "renaissance/modern ages inherit shared-helper passes but were not re-shot"
+      ]
     }
   }
 }

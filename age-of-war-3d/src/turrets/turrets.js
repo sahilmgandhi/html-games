@@ -969,7 +969,7 @@ export function TurretMesh(turret, ageIndex, anchor) {
   function setFlash(on) {
     for (const m of mats) {
       if ('emissive' in m) m.emissive.setHex(on ? 0xffffff : 0x000000);
-      if ('emissiveIntensity' in m) m.emissiveIntensity = on ? 0.5 : 1;
+      if ('emissiveIntensity' in m) m.emissiveIntensity = on ? 0.3 : 1;
     }
   }
 

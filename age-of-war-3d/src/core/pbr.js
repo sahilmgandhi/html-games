@@ -338,14 +338,23 @@ export function bannerMat(accent, kind) {
   });
 }
 
-export function solidify(root, cast = true, receive = true) {
+export function solidify(root, cast = true, receive = true, maxCastRadius = 0.22) {
   root.traverse((o) => {
     if (o.isMesh) {
-      o.castShadow = cast;
+      o.castShadow = cast && !tooSmallToCast(o, maxCastRadius);
       o.receiveShadow = receive;
     }
   });
   return root;
+}
+
+// Pebble-size meshes cast no visible shadow at gameplay distance; skipping
+// them in the shadow pass keeps the <=1500 draw-call budget. Pass Infinity
+// for legacy all-cast behavior.
+function tooSmallToCast(o, maxCastRadius) {
+  if (maxCastRadius === Infinity || !o.geometry) return false;
+  if (!o.geometry.boundingSphere) o.geometry.computeBoundingSphere();
+  return o.geometry.boundingSphere.radius <= maxCastRadius;
 }
 
 // Deep-clone every material under root so the instance can flash/fade

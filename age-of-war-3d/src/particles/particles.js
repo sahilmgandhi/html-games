@@ -6,6 +6,20 @@ import * as THREE from 'three';
 const MAX_POINTS = 1024;
 const MAX_NUMBERS = 24;
 
+// Soft round sprite so close-range sparks/smoke read as dots, not squares.
+function dotTexture() {
+  const c = document.createElement('canvas');
+  c.width = c.height = 64;
+  const ctx = c.getContext('2d');
+  const g = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+  g.addColorStop(0, 'rgba(255,255,255,1)');
+  g.addColorStop(0.45, 'rgba(255,255,255,0.7)');
+  g.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, 64, 64);
+  return new THREE.CanvasTexture(c);
+}
+
 export class ParticleSystem3D {
   constructor(scene) {
     this.scene = scene;
@@ -26,6 +40,7 @@ export class ParticleSystem3D {
     geo.setAttribute('color', new THREE.BufferAttribute(this._col, 3));
     const mat = new THREE.PointsMaterial({
       size: 0.14,
+      map: dotTexture(),
       vertexColors: true,
       transparent: true,
       opacity: 0.95,
@@ -223,6 +238,7 @@ export class ParticleSystem3D {
   dispose() {
     this.scene.remove(this.points);
     this.points.geometry.dispose();
+    if (this.points.material.map) this.points.material.map.dispose();
     this.points.material.dispose();
     for (const r of this._rings) {
       this.scene.remove(r.mesh);
