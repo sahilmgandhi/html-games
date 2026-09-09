@@ -7,7 +7,6 @@ function fakeSim(overrides = {}) {
     gameOver: false,
     paused: false,
     gameSpeed: 1,
-    formationMode: 0,
     spawnUnit(i) { calls.push(['spawn-unit', i]); },
     upgradeUnit(i) { calls.push(['upgrade-unit', i]); },
     spawnHero() { calls.push(['spawn-hero']); },
@@ -75,17 +74,11 @@ export default [
     },
   },
   {
-    name: 'formation cycles 0-1-2 only while live',
+    name: 'formation action removed (no-op)',
     run(t) {
       const sim = fakeSim();
       applyBattleAction(sim, { type: 'cycle-formation' });
-      t.assert('formation advances', sim.formationMode === 1);
-      sim.formationMode = 2;
-      applyBattleAction(sim, { type: 'cycle-formation' });
-      t.assert('formation wraps to 0', sim.formationMode === 0);
-      sim.paused = true;
-      applyBattleAction(sim, { type: 'cycle-formation' });
-      t.assert('formation frozen while paused', sim.formationMode === 0);
+      t.assert('formation action ignored', sim.calls.length === 0);
     },
   },
 ];

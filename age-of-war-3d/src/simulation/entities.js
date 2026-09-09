@@ -264,7 +264,10 @@ export class Unit {
       }
     } else {
       const dir = Math.sign(target.x - this.x);
-      this.x += this.speed * dir * dt * 60;
+      // Stop-only: clamp the step so we halt at range edge, never overshoot.
+      const step = this.speed * dt * 60;
+      const room = info.dist - this.range;
+      this.x += dir * Math.max(0, Math.min(step, room));
       this.walkPhase += dt * this.speed * 4;
     }
     return null;

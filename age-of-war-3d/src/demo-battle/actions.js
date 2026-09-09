@@ -22,7 +22,6 @@ export function applyBattleAction(sim, action) {
     case 'cycle-speed':
       if (!sim.gameOver) sim.gameSpeed = sim.gameSpeed >= 3 ? 1 : sim.gameSpeed + 1;
       break;
-    case 'cycle-formation': if (live) sim.formationMode = (sim.formationMode + 1) % 3; break;
     case 'toggle-pause': if (!sim.gameOver) sim.paused = !sim.paused; break;
     case 'restart': sim.restart(); break;
     default: break;

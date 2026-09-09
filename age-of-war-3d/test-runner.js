@@ -9,6 +9,25 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 const ROOT = path.dirname(fileURLToPath(import.meta.url));
 const TESTS_DIR = path.join(ROOT, 'tests');
 
+// Headless canvas stub: render modules build CanvasTextures via document.
+// Tests measure geometry, never pixels, so a no-op 2d context is enough.
+if (typeof document === 'undefined') {
+  const grad = { addColorStop() {} };
+  const ctx2d = new Proxy({}, {
+    get: (t, p) => {
+      if (typeof p !== 'string') return undefined;
+      if (p === 'createRadialGradient' || p === 'createLinearGradient') return () => grad;
+      if (p === 'getImageData') return () => ({ data: [], width: 0, height: 0 });
+      if (p === 'measureText') return () => ({ width: 0 });
+      return () => ctx2d;
+    },
+    set: () => true,
+  });
+  globalThis.document = {
+    createElement: () => ({ width: 0, height: 0, getContext: () => ctx2d }),
+  };
+}
+
 const results = [];
 const t = {
   assert(name, condition, detail = '') {

@@ -15,6 +15,7 @@ import { Unit } from '../simulation/entities.js';
 import { UnitMesh } from '../units/units.js';
 import { BaseMesh } from '../bases/bases.js';
 import { TurretMesh } from '../turrets/turrets.js';
+import { TowerMesh } from '../turrets/tower.js';
 import { BuildingMesh } from '../buildings/buildings.js';
 import { ProjectileMesh } from '../projectiles/projectiles.js';
 
@@ -40,6 +41,17 @@ export function attachBattleView(game, sim, fx, opts = {}) {
   let enemyBase = BaseMesh('enemy', sim.enemyAge);
   enemyBase.mesh.position.set(toMeters(sim.enemyBase.x), 0, 0);
   scene.add(enemyBase.mesh);
+
+  // One shared outpost tower per side; turret meshes seat on its mounts.
+  // Tower x follows the sim turret-line x so combat math and visuals agree.
+  const towers = {};
+  for (const side of ['player', 'enemy']) {
+    const tw = TowerMesh(side, sim.currentAge);
+    const slots = side === 'player' ? sim.turretSlotPositions : sim.enemyTurretSlotPositions;
+    tw.mesh.position.set(toMeters(slots?.[0]?.x ?? sim.playerBase.x), 0, 0);
+    scene.add(tw.mesh);
+    towers[side] = tw;
+  }
 
   // Rebuild one side's base mesh for its new age (keep position, HP, damage).
   function rebuildBase(side) {
@@ -276,7 +288,7 @@ export function attachBattleView(game, sim, fx, opts = {}) {
       return { mesh: um.mesh, dispose: () => um.dispose(), update: (d) => um.update(d, e) };
     });
     syncMap(turrets, sim.turrets, (e) => {
-      const tm = TurretMesh(e, e.ageIndex);
+      const tm = TurretMesh(e, e.ageIndex, towers[e.side]?.mount(e.slotIndex));
       return { mesh: tm.mesh, dispose: () => tm.dispose(), ref: e, tm,
         update: (d) => {
           // Track the nearest living enemy unit in range for the barrel yaw.
@@ -328,6 +340,8 @@ export function attachBattleView(game, sim, fx, opts = {}) {
     enemyBase.setHp(sim.enemyBase.hp / sim.enemyBase.maxHp);
     playerBase.update(dt);
     enemyBase.update(dt);
+    towers.player?.update(dt);
+    towers.enemy?.update(dt);
 
     // Siege smoke: battered bases (<50%) smolder, burning (<33%) trail embers.
     siegeT -= dt;
@@ -439,6 +453,12 @@ export function attachBattleView(game, sim, fx, opts = {}) {
       scene.remove(enemyBase.mesh);
       playerBase.dispose();
       enemyBase.dispose();
+      for (const side of ['player', 'enemy']) {
+        if (towers[side]) {
+          scene.remove(towers[side].mesh);
+          towers[side].dispose();
+        }
+      }
     },
   };
 }

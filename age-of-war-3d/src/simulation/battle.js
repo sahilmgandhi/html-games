@@ -74,7 +74,6 @@ export class BattleSim {
     this.winner = null;
     this.paused = false;
     this.gameSpeed = 1;
-    this.formationMode = 0;
     this.gameTime = 0;
     this.totalSpawned = 0;
     this.totalGoldSpent = 0;
@@ -108,12 +107,15 @@ export class BattleSim {
   }
 
   // ---- slots (identical math to the original) ----
+  // All turret slots share one ground position per side: the renderer seats
+  // each turret on its shared tower mount, so sim Y/Z stay level (an old
+  // revision sank each slot by TURRET_SLOT_SPACING and buried the turrets).
   computeSlotPositions(baseX, dir) {
     const positions = [];
     for (let i = 0; i < CONFIG.TURRET_SLOTS; i++) {
       positions.push({
         x: baseX + dir * CONFIG.TURRET_SLOT_OFFSET_X,
-        y: CONFIG.GROUND_Y - i * CONFIG.TURRET_SLOT_SPACING,
+        y: CONFIG.GROUND_Y,
         z: (i - (CONFIG.TURRET_SLOTS - 1) / 2) * 1.1,
       });
     }
@@ -152,19 +154,6 @@ export class BattleSim {
       ? CONFIG.BASE_X_OFFSET + 30
       : CONFIG.WORLD.WIDTH - CONFIG.BASE_X_OFFSET - 30;
 
-    if (isPlayer && this.formationMode > 0) {
-      const sameType = this.units.filter(
-        (u) => u.side === 'player' && u.unitIndex === unitIndex && u.alive);
-      const count = sameType.length;
-      const spacing = 20;
-      if (this.formationMode === 1) {
-        spawnX += (count % 5) * spacing - Math.min(count, 5) * spacing / 2;
-      } else if (this.formationMode === 2) {
-        const row = Math.floor(count / 5);
-        const col = count % 5;
-        spawnX += (col - 2) * spacing * (1 - row * 0.15);
-      }
-    }
     const u = new Unit(
       spawnX, CONFIG.GROUND_Y, side,
       isPlayer ? this.currentAge : this.enemyAge, unitIndex,
@@ -760,7 +749,6 @@ export class BattleSim {
     const hasSpXp = this.xp >= spCost;
     const spReady = this.specialCooldown <= 0 && hasSpXp && !this.specialAnim;
     const placed = this.playerTurrets();
-    const FORMATIONS = ['Scatter', 'Line', 'Wedge'];
     return {
       gold: this.gold,
       xp: this.xp,
@@ -811,7 +799,6 @@ export class BattleSim {
         name: b.name, cost: b.cost, affordable: this.gold >= b.cost,
       })),
       speeds: [1, 2, 3].map((s) => ({ speed: s, active: this.gameSpeed === s })),
-      formation: FORMATIONS[this.formationMode],
       paused: this.paused,
       over: this.gameOver ? {
         winner: this.winner,

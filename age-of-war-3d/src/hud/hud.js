@@ -1,5 +1,5 @@
 // HTML overlay HUD: resources, unit cards + upgrades, turret/building shop,
-// speed/formation, special, pause and game-over overlays.
+// speed, special, pause and game-over overlays.
 //
 // State: see BattleSim.hudState().
 // Actions out: { type: 'spawn-unit', index } | { type: 'upgrade-unit', index }
@@ -7,10 +7,9 @@
 //   | { type: 'buy-slot' } | { type: 'spawn-turret', index }
 //   | { type: 'sell-turret', index } | { type: 'buy-building', index }
 //   | { type: 'set-speed', speed } | { type: 'cycle-speed' }
-//   | { type: 'cycle-formation' }
 //   | { type: 'toggle-pause' } | { type: 'restart' }
 // Hotkeys: 1-4 spawn (guarded by the current age's unit count) · H hero ·
-// E evolve · Q/Space special · B/N shops · T cycle speed · F formation · P pause
+// E evolve · Q/Space special · B/N shops · T cycle speed · P pause
 export class HUD {
   constructor(root, game) {
     this.game = game;
@@ -68,8 +67,6 @@ export class HUD {
         this._emit({ type: 'special' });
       } else if (btn.dataset.act === 'buy-slot') {
         this._emit({ type: 'buy-slot' });
-      } else if (btn.dataset.act === 'formation') {
-        this._emit({ type: 'cycle-formation' });
       } else if (btn.dataset.act === 'pause') {
         this._emit({ type: 'toggle-pause' });
       } else if (btn.dataset.act === 'restart') {
@@ -99,7 +96,6 @@ export class HUD {
       else if (k === 'b') this._emit({ type: 'buy-building', index: 0 });
       else if (k === 'n') this._emit({ type: 'buy-building', index: 1 });
       else if (k === 't') this._emit({ type: 'cycle-speed' });
-      else if (k === 'f') this._emit({ type: 'cycle-formation' });
       else if (k === 'p' || k === 'escape') this._emit({ type: 'toggle-pause' });
     };
     window.addEventListener('keydown', this._onKey);
@@ -190,7 +186,6 @@ export class HUD {
     this._speedBtns = [1, 2, 3].map((s) => mk(
       'aow-btn aow-small aow-speed', { speed: String(s) }, `${s}x`,
     ));
-    this._formBtn = mk('aow-btn aow-small', { act: 'formation' }, '');
   }
 
   update(state) {
@@ -280,10 +275,6 @@ export class HUD {
           this._speedBtns[i].disabled = !!state.over;
         }
       });
-      if (this._formBtn) {
-        this._formBtn.innerHTML = `<span class="aow-card-name">${state.formation || ''}</span><span class="aow-card-key">F</span>`;
-        this._formBtn.disabled = !interactive;
-      }
     }
 
     const ov = this._f.overlay;

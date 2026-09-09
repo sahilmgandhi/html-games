@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { toMeters } from '../simulation/config.js';
 import {
-  pbr, basic, glowMat, glowSprite, jitterGeo, mottleGeo, rockMat, solidify, cloneMats, makeHpBar, teamRing, disposeDeep, SIDE_ACCENT,
+  pbr, basic, glowMat, glowSprite, jitterGeo, mottleGeo, rockMat, solidify, cloneMats, makeHpBar, disposeDeep, SIDE_ACCENT,
 } from '../core/pbr.js';
 
 // Stone Age turrets (by turretIndex):
@@ -929,23 +929,24 @@ const BUILDERS = {
   4: [buildTitaniumShooter, buildLazerCannon, buildIonRay],
 };
 
-// Render-side park spread: sim stacks every turret of a side on one x, so
-// offset each slot sideways in meters (sim math untouched). Roughly one
-// redoubt-width apart so neighboring rigs read as separate emplacements.
-const SLOT_OFF = [-1.9, -0.65, 0.65, 1.9];
-function slotOff(turret) {
-  return SLOT_OFF[turret.slotIndex] ?? 0;
-}
+// Turrets seat on their side's shared tower mounts (see tower.js), so each
+// rig is a compact weapon tub (~0.55x) with no ground footprint of its own.
+// TurretMesh(turret, ageIndex, anchor?) takes an optional tower mount anchor:
+// when given, the mesh follows the anchor; otherwise it parks at sim coords
+// (standalone showcase / tests).
+const TURRET_SCALE = 0.55;
+const _anchorV = new THREE.Vector3();
 
-export function TurretMesh(turret, ageIndex) {
+export function TurretMesh(turret, ageIndex, anchor) {
   const accent = SIDE_ACCENT[turret.side] || SIDE_ACCENT.player;
   const row = BUILDERS[ageIndex] || BUILDERS[0];
   const rig = (row[turret.turretIndex] || BUILDERS[0][0])(accent);
 
   const mesh = new THREE.Group();
+  rig.root.scale.setScalar(TURRET_SCALE);
   mesh.add(rig.root);
-  const bar = makeHpBar(1.8);
-  bar.sprite.position.y = rig.height + 0.5;
+  const bar = makeHpBar(1.4);
+  bar.sprite.position.y = rig.height * TURRET_SCALE + 0.5;
   bar.sprite.visible = false;
   mesh.add(bar.sprite);
   solidify(mesh);
@@ -953,10 +954,9 @@ export function TurretMesh(turret, ageIndex) {
   for (const m of mats) {
     if ('emissive' in m) { m.emissive = new THREE.Color('#000000'); m.transparent = true; }
   }
-  mesh.add(teamRing(2.3, accent));
 
-  mesh.position.set(toMeters(turret.x) + slotOff(turret), 0, turret.z || 0);
-  mesh.rotation.y = turret.side === 'player' ? 0 : Math.PI;
+  if (!anchor) mesh.position.set(toMeters(turret.x), 0, turret.z || 0);
+  mesh.rotation.y = anchor ? 0 : turret.side === 'player' ? 0 : Math.PI;
 
   let recoil = 0;
   let recoilV = 0;
@@ -1005,7 +1005,12 @@ export function TurretMesh(turret, ageIndex) {
       }
     },
     update(dt) {
-      mesh.position.set(toMeters(turret.x) + slotOff(turret), 0, turret.z || 0);
+      if (anchor) {
+        anchor.getWorldPosition(_anchorV);
+        mesh.position.copy(_anchorV);
+      } else {
+        mesh.position.set(toMeters(turret.x), 0, turret.z || 0);
+      }
       t += dt;
       if (rig.flame) {
         const f = 1 + Math.sin(t * 13) * 0.15 + Math.sin(t * 29) * 0.08;
