@@ -5,7 +5,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { fetchQuatCast, setQuatTemplates, QuatUnitMesh, QUAT_ROLES } from '../src/units/gltf-cast.js';
+import { fetchQuatCast, setQuatTemplates, QuatUnitMesh, QUAT_ROLES, CASTLE_ROLES, quatRoleFor } from '../src/units/gltf-cast.js';
 import { UnitMesh } from '../src/units/units.js';
 import * as THREE from 'three';
 
@@ -113,10 +113,107 @@ export default [
       t.assert('quat mesh with templates', quat.currentClip === 'Idle', quat.currentClip);
       quat.dispose();
 
-      const castle = UnitMesh(fakeEntity(), 1);
-      t.assert('other ages stay procedural', castle.currentClip === undefined, '');
+      const castle = UnitMesh(fakeEntity(), 2);
+      t.assert('later ages stay procedural', castle.currentClip === undefined, '');
       castle.dispose();
       setQuatTemplates(null);
+    },
+  },
+  {
+    name: 'castle templates parse with walk, attack and death clips',
+    async run(t) {
+      const tpl = await loadTemplates();
+      for (const role of ['swordsman', 'archer', 'paladin']) {
+        t.assert(`${role} template loaded`, !!tpl[role] && tpl[role].clips.size > 0, `${tpl[role]?.clips.size} clips`);
+        t.assert(`${role} has Walk`, tpl[role].clips.has('Walk'), '');
+        t.assert(`${role} has Death`, tpl[role].clips.has('Death'), '');
+      }
+      t.assert('swordsman attacks with SwordSlash', tpl.swordsman.clips.has('SwordSlash'), '');
+      t.assert('archer attacks with Shoot_OneHanded', tpl.archer.clips.has('Shoot_OneHanded'), '');
+      t.assert('horse walks', tpl.knight.clips.has('Walk'), '');
+      t.assert('horse runs', tpl.knight.clips.has('Run'), '');
+      t.assert('horse dies', tpl.knight.clips.has('Death'), '');
+    },
+  },
+  {
+    name: 'castle instances scale to procedural castle heights',
+    async run(t) {
+      const tpl = await loadTemplates();
+      // procedural rig.height targets: swordsman 2.15, archer 2.0, paladin-hero 2.5*1.18, knight 2.9
+      const targets = { swordsman: 2.15, archer: 2.0, paladin: 2.5 * 1.18, knight: 2.9 };
+      for (const [role, want] of Object.entries(targets)) {
+        const got = tpl[role].height;
+        t.assert(`${role} height ~${want}m`, Math.abs(got - want) / want < 0.05, `${got.toFixed(2)}m`);
+      }
+    },
+  },
+  {
+    name: 'UnitMesh delegates castle age to the cast once loaded',
+    async run(t) {
+      const tpl = await loadTemplates();
+      setQuatTemplates(tpl);
+      const q = UnitMesh(fakeEntity(), 1);
+      t.assert('quat castle mesh', q.currentClip === 'Idle', q.currentClip);
+      q.dispose();
+      t.assert('melee maps to swordsman', quatRoleFor(fakeEntity({ type: 'melee' }), 1) === CASTLE_ROLES.melee, '');
+      t.assert('ranged maps to archer', quatRoleFor(fakeEntity({ type: 'ranged' }), 1) === CASTLE_ROLES.ranged, '');
+      t.assert('fast maps to knight', quatRoleFor(fakeEntity({ type: 'fast' }), 1) === CASTLE_ROLES.fast, '');
+      t.assert('hero maps to paladin', quatRoleFor(fakeEntity({ isHero: true }), 1) === CASTLE_ROLES.hero, '');
+      t.assert('stone mapping unchanged', quatRoleFor(fakeEntity({ type: 'melee' }), 0) === QUAT_ROLES.melee, '');
+      setQuatTemplates(null);
+    },
+  },
+  {
+    name: 'archer carries a longbow in the fist and a quiver on the back',
+    async run(t) {
+      const tpl = await loadTemplates();
+      const inst = QuatUnitMesh(fakeEntity({ type: 'ranged' }), CASTLE_ROLES.ranged, tpl);
+      const bow = inst.mesh.getObjectByName('longbow');
+      t.assert('longbow present', !!bow, '');
+      const fist = inst.mesh.getObjectByName('FistL');
+      t.assert('bow hangs off the left fist', !!fist && (bow === fist || fist.children.includes(bow) || !!fist.getObjectByName('longbow')), '');
+      t.assert('quiver present', !!inst.mesh.getObjectByName('quiver'), '');
+      inst.dispose();
+    },
+  },
+  {
+    name: 'knight rider sits mid-back with feet dangling past the barrel',
+    async run(t) {
+      const tpl = await loadTemplates();
+      const inst = QuatUnitMesh(fakeEntity({ type: 'fast' }), CASTLE_ROLES.fast, tpl);
+      const body = inst.mesh.children[0];
+      const rider = inst.mesh.children[1];
+      t.assert('rider present', !!rider && rider.isGroup, inst.mesh.children.length);
+      const bb = new THREE.Box3().setFromObject(body);
+      const rb = new THREE.Box3().setFromObject(rider);
+      const len = bb.max.x - bb.min.x;
+      const frac = ((rb.min.x + rb.max.x) / 2 - bb.min.x) / len;
+      t.assert('rider centered on mid-back', frac > 0.4 && frac < 0.65, frac.toFixed(2));
+      t.assert('rider feet dangle below the back line', rb.min.y < bb.max.y, `${rb.min.y.toFixed(2)} vs top ${bb.max.y.toFixed(2)}`);
+      // rider fights with a sword while the horse drives
+      const e = fakeEntity({ type: 'fast', walkPhase: 0 });
+      inst.update(0.016, e);
+      e.attackCooldown = 0.5;
+      inst.update(0.016, e);
+      t.assert('rider slashes on attack', inst.riderClip === 'SwordSlash', inst.riderClip);
+      inst.dispose();
+    },
+  },
+  {
+    name: 'horse phong has no white specular wash',
+    async run(t) {
+      const tpl = await loadTemplates();
+      const inst = QuatUnitMesh(fakeEntity({ type: 'fast' }), CASTLE_ROLES.fast, tpl);
+      const specs = [];
+      inst.mesh.traverse((o) => {
+        if (o.isMesh) {
+          const ms = Array.isArray(o.material) ? o.material : [o.material];
+          for (const m of ms) if ('specular' in m) specs.push(m.specular.getHex());
+        }
+      });
+      t.assert('horse has phong materials', specs.length > 0, specs.length);
+      t.assert('no white specular wash', specs.every((s) => s < 0x808080), specs.map((s) => s.toString(16)).join(','));
+      inst.dispose();
     },
   },
   {
@@ -152,6 +249,31 @@ export default [
       t.assert('dino has phong materials', specs.length > 0, specs.length);
       t.assert('no white specular wash', specs.every((s) => s < 0x808080), specs.map((s) => s.toString(16)).join(','));
       inst.dispose();
+    },
+  },
+  {
+    name: 'castle dark authored colors lifted for night readability',
+    async run(t) {
+      const tpl = await loadTemplates();
+      const maxByte = (root) => {
+        let mx = 0;
+        root.traverse((o) => {
+          if (o.isMesh) {
+            const ms = Array.isArray(o.material) ? o.material : [o.material];
+            for (const m of ms) {
+              if (!m.color) continue;
+              const h = m.color.getHex();
+              mx = Math.max(mx, (h >> 16) & 255, (h >> 8) & 255, h & 255);
+            }
+          }
+        });
+        return mx;
+      };
+      // horse coat #2d130c reads as silhouette at night without lift;
+      // knight/paladin runtime colors already clear the bar, locked in here
+      t.assert('knight armor readable', maxByte(tpl.swordsman.object) >= 100, maxByte(tpl.swordsman.object));
+      t.assert('horse coat readable', maxByte(tpl.knight.object) >= 100, maxByte(tpl.knight.object));
+      t.assert('paladin armor readable', maxByte(tpl.paladin.object) >= 100, maxByte(tpl.paladin.object));
     },
   },
 ];

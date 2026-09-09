@@ -303,12 +303,12 @@ export function attachBattleView(game, sim, fx, opts = {}) {
       if (fx && fx.goldNumber) fx.goldNumber(f.x, 2.4, f.z, `+${f.amount}`);
     }
 
-    // The skeletal cast arrives after first spawn: drop pre-cast age-0
-    // meshes once so syncMap recreates them from the same live entities.
+    // The skeletal cast arrives after first spawn: drop pre-cast stone and
+    // castle meshes once so syncMap recreates them from the live entities.
     if (!quatSwapped && getQuatTemplates()) {
       quatSwapped = true;
       for (const [id, w] of units) {
-        if (w.ageIndex === 0) { scene.remove(w.mesh); w.dispose(); units.delete(id); }
+        if (w.ageIndex <= 1) { scene.remove(w.mesh); w.dispose(); units.delete(id); }
       }
     }
     syncMap(units, sim.units, (e) => {

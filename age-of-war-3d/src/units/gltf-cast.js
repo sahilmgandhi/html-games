@@ -1,4 +1,4 @@
-// Quaternius CC0 stone-age cast. Parses the vendored assets/quat files
+// Quaternius CC0 stone + castle casts. Parses the vendored assets/quat files
 // once, then spawns per-instance SkeletonUtils clones with an
 // AnimationMixer each, mirroring the UnitMesh {mesh, update, dispose}
 // contract (HP bar, team rings, hero scale, hit-flash, death fade) so
@@ -10,17 +10,36 @@ import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
 import { toMeters } from '../simulation/config.js';
 import {
   solidify, cloneMats, makeHpBar, teamRing, disposeDeep, SIDE_ACCENT,
+  pbr, basic,
 } from '../core/pbr.js';
 
-// entity.type (or hero) -> template role.
+// entity.type (or hero) -> template role, per age.
 export const QUAT_ROLES = { melee: 'clubman', ranged: 'slinger', fast: 'dino', hero: 'hero' };
+export const CASTLE_ROLES = { melee: 'swordsman', ranged: 'archer', fast: 'knight', hero: 'paladin' };
 
-// Procedural stone-age rig heights the cast must match (units.js builders).
+// Procedural rig heights the cast must match (units.js builders).
+// heroModel: template is already modeled at hero height, skip the 1.18x.
+// lift: color multiplier for authored near-black browns (raptor, horse).
+// glTF knights need none: their runtime colors already clear the bar.
+// bow: earns a procedural longbow + quiver (archer has no bow prop).
 const ROLE_SPEC = {
-  clubman: { file: 'viking', targetH: 2.1, walk: 'Walk', attack: 'SwordSlash', death: 'Death', idle: 'Idle' },
-  slinger: { file: 'goblin', targetH: 1.95, walk: 'Walk', attack: 'Shoot_OneHanded', death: 'Death', idle: 'Idle' },
-  hero: { file: 'wizard', targetH: 2.4 * 1.18, walk: 'Walk', attack: 'SwordSlash', death: 'Death', idle: 'Idle' },
-  dino: { file: 'raptor', targetH: 3.1, walk: 'Velociraptor_Walk', attack: 'Velociraptor_Attack', death: 'Velociraptor_Death', idle: 'Velociraptor_Idle' },
+  clubman: { file: 'Viking_Male', kind: 'gltf', targetH: 2.1, walk: 'Walk', attack: 'SwordSlash', death: 'Death', idle: 'Idle' },
+  slinger: { file: 'Goblin_Male', kind: 'gltf', targetH: 1.95, walk: 'Walk', attack: 'Shoot_OneHanded', death: 'Death', idle: 'Idle' },
+  hero: { file: 'Wizard', kind: 'gltf', targetH: 2.4 * 1.18, walk: 'Walk', attack: 'SwordSlash', death: 'Death', idle: 'Idle', heroModel: true },
+  dino: { file: 'Velociraptor', kind: 'fbx', targetH: 3.1, walk: 'Velociraptor_Walk', attack: 'Velociraptor_Attack', death: 'Velociraptor_Death', idle: 'Velociraptor_Idle', lift: 5.0 },
+  swordsman: { file: 'Knight_Male', kind: 'gltf', targetH: 2.15, walk: 'Walk', attack: 'SwordSlash', death: 'Death', idle: 'Idle' },
+  archer: { file: 'Elf', kind: 'gltf', targetH: 2.0, walk: 'Walk', attack: 'Shoot_OneHanded', death: 'Death', idle: 'Idle', bow: true },
+  paladin: { file: 'Knight_Golden_Male', kind: 'gltf', targetH: 2.5 * 1.18, walk: 'Walk', attack: 'SwordSlash', death: 'Death', idle: 'Idle', heroModel: true },
+  knight: { file: 'Horse', kind: 'fbx', targetH: 2.9, walk: 'Walk', attack: 'Run', death: 'Death', idle: 'Idle', lift: 5.0 },
+  knightRider: { file: 'Knight_Male', kind: 'gltf', targetH: 1.5, walk: 'Walk', attack: 'SwordSlash', death: 'Death', idle: 'Idle' },
+};
+
+// Mounted roles: rider template, rider attack clip, how far the feet hang
+// below the mount's back line (dangle: raptor rider sits tall, knight's
+// feet hang past the barrel).
+const COMPOSITES = {
+  dino: { rider: 'rider', attack: 'Punch', seatDrop: 0.18 },
+  knight: { rider: 'knightRider', attack: 'SwordSlash', seatDrop: 0.55 },
 };
 
 function measureHeight(object) {
@@ -43,8 +62,9 @@ export async function fetchQuatCast(fetchFn = fetch, base = 'assets/quat/') {
     const res = await fetchFn(`${base}${name}.fbx`);
     return fbxLoader.parse(await res.arrayBuffer(), '');
   }
-  const [viking, goblin, wizard, raptor] = await Promise.all([
+  const [viking, goblin, wizard, raptor, knight, golden, elf, horse] = await Promise.all([
     loadGltf('Viking_Male'), loadGltf('Goblin_Male'), loadGltf('Wizard'), loadFbx('Velociraptor'),
+    loadGltf('Knight_Male'), loadGltf('Knight_Golden_Male'), loadGltf('Elf'), loadFbx('Horse'),
   ]);
   // FBX clips arrive prefixed (Armature|Walk); strip to the bare name.
   const clipMap = (animations) => new Map(animations.map((c) => [c.name.split('|').pop(), c]));
@@ -53,28 +73,38 @@ export async function fetchQuatCast(fetchFn = fetch, base = 'assets/quat/') {
     const clips = clipMap(gltf.animations);
     return { object: gltf.scene, clips, scale: spec.targetH / measureHeight(gltf.scene), height: spec.targetH, spec };
   };
-  const dinoSpec = ROLE_SPEC.dino;
-  const dinoClips = clipMap(raptor.animations);
-  // the raptor's authored browns are near-black and read as silhouette;
-  // lift them ~5x and tie the phong specular to the diffuse so facets keep
-  // shape without the white-spec wash. Stripes stay near-black: contrast.
-  raptor.traverse((o) => {
-    if (o.isMesh) {
-      const ms = Array.isArray(o.material) ? o.material : [o.material];
-      for (const m of ms) {
-        if (m.color) m.color.multiplyScalar(5.0);
-        if (m.specular && m.color) m.specular.copy(m.color).multiplyScalar(0.5);
+  // FBX phong materials ship a white specular that washes the diffuse
+  // under the key light; tie it to the diffuse so facets keep shape.
+  // lift is per-role: raptor and horse browns are authored near-black
+  // and read as silhouette without it.
+  const tameFbx = (object, lift) => {
+    object.traverse((o) => {
+      if (o.isMesh) {
+        const ms = Array.isArray(o.material) ? o.material : [o.material];
+        for (const m of ms) {
+          if (m.color && lift !== 1) m.color.multiplyScalar(lift);
+          if (m.specular && m.color) m.specular.copy(m.color).multiplyScalar(0.5);
+        }
       }
-    }
-  });
+    });
+  };
+  tameFbx(raptor, ROLE_SPEC.dino.lift);
+  tameFbx(horse, ROLE_SPEC.knight.lift);
   const goblinH = measureHeight(goblin.scene);
+  const knightH = measureHeight(knight.scene);
   return {
     clubman: pack('clubman', viking),
     slinger: pack('slinger', goblin),
     hero: pack('hero', wizard),
-    dino: { object: raptor, clips: dinoClips, scale: dinoSpec.targetH / measureHeight(raptor), height: dinoSpec.targetH, spec: dinoSpec },
+    dino: { object: raptor, clips: clipMap(raptor.animations), scale: ROLE_SPEC.dino.targetH / measureHeight(raptor), height: ROLE_SPEC.dino.targetH, spec: ROLE_SPEC.dino },
     // the dino rider is a small goblin seated on the raptor's back.
     rider: { object: goblin.scene, clips: clipMap(goblin.animations), scale: 1.2 / goblinH, height: 1.2, spec: ROLE_SPEC.slinger },
+    swordsman: pack('swordsman', knight),
+    archer: pack('archer', elf),
+    paladin: pack('paladin', golden),
+    knight: { object: horse, clips: clipMap(horse.animations), scale: ROLE_SPEC.knight.targetH / measureHeight(horse), height: ROLE_SPEC.knight.targetH, spec: ROLE_SPEC.knight },
+    // the knight's rider is a knight fighting on horseback, feet dangling.
+    knightRider: { object: knight.scene, clips: clipMap(knight.animations), scale: 1.5 / knightH, height: 1.5, spec: ROLE_SPEC.knightRider },
   };
 }
 
@@ -103,15 +133,43 @@ export function loadQuatCastOnce(fetchFn = fetch, base = 'assets/quat/') {
   return quatPromise;
 }
 
-// UnitMesh calls this: any stone-age render path (battle, showcase)
+// UnitMesh calls this: any cast-covered render path (battle, showcase)
 // triggers the cast load without caring who got there first.
 export function ensureQuatLoaded() {
   if (activeTemplates || typeof fetch === 'undefined') return;
   loadQuatCastOnce();
 }
-export function quatRoleFor(entity) {
-  if (entity.isHero) return QUAT_ROLES.hero;
-  return QUAT_ROLES[entity.type] || QUAT_ROLES.melee;
+// Stone age 0 uses QUAT_ROLES, castle age 1 uses CASTLE_ROLES.
+export function quatRoleFor(entity, ageIndex = 0) {
+  const roles = ageIndex === 1 ? CASTLE_ROLES : QUAT_ROLES;
+  if (entity.isHero) return roles.hero;
+  return roles[entity.type] || roles.melee;
+}
+
+// Procedural longbow + quiver for the archer (same design as the
+// procedural buildArcher). k counter-scales the dims so the prop lands
+// at procedural size inside the scaled body group.
+function buildLongbow(k) {
+  const bow = new THREE.Group();
+  bow.name = 'longbow';
+  const arc = new THREE.Mesh(new THREE.TorusGeometry(0.38 * k, 0.03 * k, 6, 14, Math.PI), pbr('#7a5230', 0.85));
+  arc.rotation.z = -Math.PI / 2;
+  bow.add(arc);
+  const string = new THREE.Mesh(new THREE.CylinderGeometry(0.008 * k, 0.008 * k, 0.76 * k, 4), basic('#d8cfb8'));
+  bow.add(string);
+  return bow;
+}
+function buildQuiver(k) {
+  const quiver = new THREE.Group();
+  quiver.name = 'quiver';
+  const tube = new THREE.Mesh(new THREE.CylinderGeometry(0.09 * k, 0.07 * k, 0.55 * k, 8), pbr('#5a3d26', 0.9));
+  quiver.add(tube);
+  for (let i = 0; i < 3; i++) {
+    const tip = new THREE.Mesh(new THREE.ConeGeometry(0.03 * k, 0.1 * k, 5), pbr('#9aa0a8', 0.4, 0.8));
+    tip.position.set((-0.08 + i * 0.05) * k, 0.31 * k, 0);
+    quiver.add(tip);
+  }
+  return quiver;
 }
 
 function playAction(holder, name) {
@@ -138,8 +196,8 @@ export function QuatUnitMesh(entity, role, templates) {
   const tpl = templates[role] || templates.clubman;
   const accent = SIDE_ACCENT[entity.side] || SIDE_ACCENT.player;
   const heroS = entity.isHero ? 1.18 : 1;
-  // the hero template is already modeled at hero height; other roles scale.
-  const s = role === 'hero' ? 1 : heroS;
+  // heroModel templates are already modeled at hero height; others scale.
+  const s = tpl.spec.heroModel ? 1 : heroS;
   const height = tpl.height * s;
 
   const mesh = new THREE.Group();
@@ -148,22 +206,38 @@ export function QuatUnitMesh(entity, role, templates) {
   body.rotation.y = Math.PI / 2;
   body.scale.setScalar(tpl.scale * s);
   mesh.add(body);
+  // the archer's file has no bow: hang a procedural longbow off the left
+  // fist and a quiver off the torso.
+  if (tpl.spec.bow) {
+    const k = 1 / (tpl.scale * s);
+    const fist = body.getObjectByName('FistL');
+    (fist || body).add(buildLongbow(k));
+    const torso = body.getObjectByName('Torso');
+    const quiver = buildQuiver(k);
+    quiver.position.set(-0.2 * k, 1.35 * k, 0.12 * k);
+    quiver.rotation.z = 0.35;
+    (torso || body).add(quiver);
+  }
   const holder = { mixer: new THREE.AnimationMixer(body), actions: new Map(), clips: tpl.clips, current: null, currentName: null };
 
   let riderHolder = null;
-  if (role === 'dino' && templates.rider) {
-    const rider = SkeletonUtils.clone(templates.rider.object);
+  let riderAttack = 'Punch';
+  const comp = COMPOSITES[role];
+  if (comp && templates[comp.rider]) {
+    const riderTpl = templates[comp.rider];
+    const rider = SkeletonUtils.clone(riderTpl.object);
     rider.rotation.y = Math.PI / 2;
-    rider.scale.setScalar(templates.rider.scale);
-    // seat on the raptor's back: mid-back, feet resting on the back line
-    // (not sunk into the spine like the old rear-third 0.82-depth seat).
+    rider.scale.setScalar(riderTpl.scale);
+    // seat on the mount's back: mid-back, feet resting near (dino) or
+    // dangling past (knight) the back line.
     const box = new THREE.Box3().setFromObject(body);
     rider.position.set(box.min.x + (box.max.x - box.min.x) * 0.5, 0, 0);
     mesh.add(rider);
     mesh.updateMatrixWorld(true);
     const rb = new THREE.Box3().setFromObject(rider);
-    rider.position.y += box.max.y * 0.92 - rb.min.y - 0.18;
-    riderHolder = { mixer: new THREE.AnimationMixer(rider), actions: new Map(), clips: templates.rider.clips, current: null, currentName: null };
+    rider.position.y += box.max.y * 0.92 - rb.min.y - comp.seatDrop;
+    riderHolder = { mixer: new THREE.AnimationMixer(rider), actions: new Map(), clips: riderTpl.clips, current: null, currentName: null };
+    riderAttack = comp.attack;
   }
 
   const bar = makeHpBar(entity.isHero ? 1.8 : 1.3);
@@ -195,6 +269,7 @@ export function QuatUnitMesh(entity, role, templates) {
   const inst = {
     mesh,
     get currentClip() { return currentClip; },
+    get riderClip() { return riderHolder ? riderHolder.currentName : null; },
     update(dt, e) {
       mesh.position.set(toMeters(e.x), 0, e.z || 0);
       facing = e.side === 'player' ? 0 : Math.PI;
@@ -215,7 +290,7 @@ export function QuatUnitMesh(entity, role, templates) {
       }
       wasAttacking = attacking;
       if (riderHolder) {
-        const rwant = dying ? 'Death' : (attacking ? 'Punch' : 'Idle');
+        const rwant = dying ? 'Death' : (attacking ? riderAttack : 'Idle');
         if (rwant !== riderHolder.currentName) playAction(riderHolder, rwant);
       }
       holder.mixer.update(dt);
