@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { mulberry32 } from '../simulation/rng.js';
 
 // Shared procedural-PBR helpers (integrator-owned). Every gameplay module builds
 // meshes from these so palette, roughness and shadow flags stay consistent.
@@ -59,16 +60,45 @@ export function glowSprite(color, opacity = 0.7, scale = 1, additive = true) {
 }
 
 // Deterministic rock jitter: breaks smooth lathe/cylinder silhouettes.
+// Second high-frequency octave + slight height wobble for surface definition.
 export function jitterGeo(geo, amt = 0.12, freq = 2.5, seed = 1) {
   const pos = geo.attributes.position;
   for (let i = 0; i < pos.count; i++) {
     const x = pos.getX(i), y = pos.getY(i), z = pos.getZ(i);
     const w = 1 + amt * Math.sin(x * freq + seed) * Math.cos(z * freq * 1.3 + seed * 2)
-      + amt * 0.5 * Math.sin(y * freq * 2 + seed * 3);
-    pos.setXYZ(i, x * w, y, z * w);
+      + amt * 0.5 * Math.sin(y * freq * 2 + seed * 3)
+      + amt * 0.35 * Math.sin(x * freq * 3.7 + seed * 5) * Math.cos(z * freq * 3.1 + seed * 7);
+    const h = 1 + amt * 0.3 * Math.sin(x * freq * 2.3 + seed) * Math.cos(z * freq * 2.1 + seed * 4);
+    pos.setXYZ(i, x * w, y * h, z * w);
   }
   geo.computeVertexNormals();
   return geo;
+}
+
+// Seeded per-vertex brightness jitter: mottled rock/earth variation. Writes a
+// 'color' attribute, so the mesh MUST use a vertexColors material (rockMat).
+export function mottleGeo(geo, amt = 0.12, seed = 1) {
+  const rng = mulberry32((seed * 1e6) | 0);
+  const pos = geo.attributes.position;
+  const col = new Float32Array(pos.count * 3);
+  for (let i = 0; i < pos.count; i++) {
+    const v = 1 + (rng() * 2 - 1) * amt;
+    col[i * 3] = v;
+    col[i * 3 + 1] = v;
+    col[i * 3 + 2] = v;
+  }
+  geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  return geo;
+}
+
+// Fresh (uncached) faceted rock material: flatShading for crisp facets over
+// jittered geometry, vertexColors for mottleGeo variation. Fresh per call
+// because a shared instance would leak across geos with/without color
+// attributes (missing attribute + vertexColors renders black).
+export function rockMat(color, roughness = 0.95) {
+  return new THREE.MeshStandardMaterial({
+    color, roughness, metalness: 0.0, flatShading: true, vertexColors: true,
+  });
 }
 
 export function canvasTexture(w, h, draw) {

@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { mulberry32 } from '../simulation/rng.js';
-import { pbr, glowMat, glowSprite, solidify, disposeDeep, jitterGeo } from '../core/pbr.js';
+import { pbr, glowMat, glowSprite, solidify, disposeDeep, jitterGeo, rockMat, mottleGeo } from '../core/pbr.js';
 
 // Castle Age backdrop: a moonlit fortress on the horizon, rolling dark
 // hills, broadleaf trees, braziers along the lane, grey boulders, grass
@@ -22,6 +22,14 @@ const KEEP_STONE_DK = '#46464f';
 const KEEP_ROOF = '#33415e';
 const LEAF = ['#2e5b2e', '#3a6b34', '#274d28'];
 
+// Canopy tint jitter: ±8% lightness around a base green, quantized through the
+// shared pbr() cache so variants dedupe instead of spawning materials.
+function canopyTint(base, rng) {
+  const c = new THREE.Color(base);
+  c.offsetHSL(0, (rng() - 0.5) * 0.04, (rng() - 0.5) * 0.08);
+  return pbr(`#${c.getHexString()}`, 0.9);
+}
+
 function araucaria(rng) {
   const g = new THREE.Group();
   const h = 3.5 + rng() * 2.5;
@@ -34,7 +42,7 @@ function araucaria(rng) {
     const tierGeo = new THREE.ConeGeometry(r, 1.1, 9);
     jitterGeo(tierGeo, 0.06, 3, h * 10 + i);
     const cone = new THREE.Mesh(tierGeo,
-      pbr(i === 0 ? PINE_DK : (i % 2 ? PINE : PINE_DK), 0.9));
+      canopyTint(i === 0 ? PINE_DK : (i % 2 ? PINE : PINE_DK), rng));
     cone.position.y = h * 0.55 + i * 0.85;
     g.add(cone);
   }
@@ -47,7 +55,8 @@ function araucaria(rng) {
 function boulder(rng) {
   const r = 0.4 + rng() * 1.1;
   const g = new THREE.IcosahedronGeometry(r, 0);
-  const m = new THREE.Mesh(g, pbr(rng() > 0.5 ? '#7d7468' : '#6a6055', 0.95));
+  mottleGeo(g, 0.14, (r * 91) | 0);
+  const m = new THREE.Mesh(g, rockMat(rng() > 0.5 ? '#7d7468' : '#6a6055', 0.95));
   m.scale.y = 0.7;
   m.rotation.set(rng() * 3, rng() * 3, rng() * 3);
   return m;
@@ -67,24 +76,26 @@ function fernTuft(rng) {
   return g;
 }
 
-function mesa(w, h, d, mat) {
+function mesa(w, h, d) {
   const g = new THREE.Group();
   const baseGeo = new THREE.CylinderGeometry(w * 0.42, w * 0.62, h, 9);
   jitterGeo(baseGeo, 0.16, 1.8, w);
-  const base = new THREE.Mesh(baseGeo, mat);
+  mottleGeo(baseGeo, 0.14, w);
+  const base = new THREE.Mesh(baseGeo, rockMat(MESA, 0.95));
   base.position.y = h / 2 - 0.5;
   g.add(base);
   const capGeo = new THREE.CylinderGeometry(w * 0.4, w * 0.37, h * 0.22, 9);
   jitterGeo(capGeo, 0.14, 2.2, w + 3);
-  const cap = new THREE.Mesh(capGeo, pbr(MESA_DK, 0.95));
+  mottleGeo(capGeo, 0.14, w + 3);
+  const cap = new THREE.Mesh(capGeo, rockMat(MESA_DK, 0.95));
   cap.position.y = h - 0.5;
   g.add(cap);
   // strata bands break the cooling-tower smoothness
   for (const f of [0.3, 0.5, 0.7]) {
     const r = w * (0.62 - 0.2 * f) + 0.12;
-    const band = new THREE.Mesh(
-      new THREE.CylinderGeometry(r - 0.02, r + 0.02, h * 0.07, 9),
-      pbr('#5e3a2c', 0.95));
+    const bandGeo = new THREE.CylinderGeometry(r - 0.02, r + 0.02, h * 0.07, 9);
+    mottleGeo(bandGeo, 0.1, w + f * 100);
+    const band = new THREE.Mesh(bandGeo, rockMat('#5e3a2c', 0.95));
     band.position.y = h * f - 0.5;
     band.rotation.y = f * 3;
     g.add(band);
@@ -96,7 +107,8 @@ function volcano() {
   const g = new THREE.Group();
   const coneGeo = new THREE.CylinderGeometry(2.2, 6.5, 9, 11);
   jitterGeo(coneGeo, 0.12, 1.6, 7);
-  const cone = new THREE.Mesh(coneGeo, pbr('#54423a', 0.95));
+  mottleGeo(coneGeo, 0.14, 7);
+  const cone = new THREE.Mesh(coneGeo, rockMat('#54423a', 0.95));
   cone.position.y = 4;
   g.add(cone);
   const crater = new THREE.Mesh(new THREE.CircleGeometry(1.3, 16),
@@ -244,7 +256,7 @@ function broadleaf(rng) {
     const r = 1.1 + rng() * 0.9;
     const geo = new THREE.IcosahedronGeometry(r, 1);
     jitterGeo(geo, 0.18, 3.1, r * 7 + i);
-    const c = new THREE.Mesh(geo, pbr(LEAF[i % LEAF.length], 0.95));
+    const c = new THREE.Mesh(geo, canopyTint(LEAF[i % LEAF.length], rng));
     c.position.set((rng() - 0.5) * 1.6, h + (rng() - 0.2) * 0.9, (rng() - 0.5) * 1.6);
     g.add(c);
   }
@@ -287,7 +299,7 @@ function cypress(rng) {
     const cypGeo = new THREE.ConeGeometry(r * (0.9 + rng() * 0.2), h * 0.42, 7);
     jitterGeo(cypGeo, 0.05, 3, h * 7 + y * 100);
     const c = new THREE.Mesh(cypGeo,
-      pbr(dk ? '#243a20' : (rng() > 0.5 ? CYPRESS : '#35522e'), 0.95));
+      canopyTint(dk ? '#243a20' : (rng() > 0.5 ? CYPRESS : '#35522e'), rng));
     c.position.y = h * y;
     g.add(c);
   }
@@ -718,10 +730,9 @@ export function createEnvironment(scene, ageIndex) {
       return;
     }
     // mesas on the horizon
-    const mesaMat = pbr(MESA, 0.95);
     const mesaDefs = [[-14, -30, 10, 12], [6, -34, 14, 16], [26, -30, 9, 11], [40, -33, 12, 14]];
     for (const [x, z, w, h] of mesaDefs) {
-      const m = mesa(w, h, 6, mesaMat);
+      const m = mesa(w, h, 6);
       m.position.set(x, 0, z);
       group.add(m);
     }
