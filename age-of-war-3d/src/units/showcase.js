@@ -1,4 +1,5 @@
 import { UnitMesh } from './units.js';
+import { getQuatTemplates } from './gltf-cast.js';
 import { Unit } from '../simulation/entities.js';
 import { ParticleSystem3D } from '../particles/particles.js';
 
@@ -29,7 +30,19 @@ export function runShowcase(game) {
 
   let t = 0;
   let killTimer = 3;
+  let quatSwapped = false;
   game.onUpdate((dt) => {
+    // The skeletal cast loads async; upgrade staged fighters once it lands
+    // (mirrors the battle-view quatSwap).
+    if (!quatSwapped && getQuatTemplates()) {
+      quatSwapped = true;
+      for (const f of fighters) {
+        game.scene.remove(f.um.mesh);
+        f.um.dispose();
+        f.um = UnitMesh(f.e, 0);
+        game.scene.add(f.um.mesh);
+      }
+    }
     t += dt;
     for (const { e, um, ox } of fighters) {
       if (!e.alive) continue;

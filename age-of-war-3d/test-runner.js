@@ -28,6 +28,16 @@ if (typeof document === 'undefined') {
   };
 }
 
+// three's loaders report progress via ProgressEvent (browser-only).
+if (typeof ProgressEvent === 'undefined') {
+  globalThis.ProgressEvent = class ProgressEvent {
+    constructor(type, init = {}) {
+      this.type = type;
+      Object.assign(this, init);
+    }
+  };
+}
+
 const results = [];
 const t = {
   assert(name, condition, detail = '') {

@@ -358,13 +358,22 @@ function tooSmallToCast(o, maxCastRadius) {
 }
 
 // Deep-clone every material under root so the instance can flash/fade
-// independently. Returns the list of cloned materials.
+// independently. Handles material arrays (multi-material glTF/FBX parts).
+// Returns the flat list of cloned materials.
 export function cloneMats(root) {
   const mats = [];
   root.traverse((o) => {
     if (o.isMesh) {
-      o.material = o.material.clone();
-      mats.push(o.material);
+      if (Array.isArray(o.material)) {
+        o.material = o.material.map((m) => {
+          const c = m.clone();
+          mats.push(c);
+          return c;
+        });
+      } else if (o.material) {
+        o.material = o.material.clone();
+        mats.push(o.material);
+      }
     }
   });
   return mats;

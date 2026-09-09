@@ -13,6 +13,7 @@ import * as THREE from 'three';
 import { CONFIG, toMeters } from '../simulation/config.js';
 import { Unit } from '../simulation/entities.js';
 import { UnitMesh } from '../units/units.js';
+import { loadQuatCastOnce, getQuatTemplates } from '../units/gltf-cast.js';
 import { BaseMesh } from '../bases/bases.js';
 import { TurretMesh } from '../turrets/turrets.js';
 import { TowerMesh } from '../turrets/tower.js';
@@ -53,6 +54,13 @@ export function attachBattleView(game, sim, fx, opts = {}) {
     scene.add(tw.mesh);
     towers[side] = tw;
   }
+
+  // Stone-age CC0 cast: loads once in the background (shared with
+  // showcases via loadQuatCastOnce); age-0 units created before it lands
+  // are swapped to skeletal meshes on arrival (quatSwap in update).
+  // A failed fetch simply keeps the procedural rigs.
+  let quatSwapped = false;
+  loadQuatCastOnce();
 
   // Rebuild one side's base mesh for its new age (keep position, HP, damage).
   function rebuildBase(side) {
@@ -295,9 +303,17 @@ export function attachBattleView(game, sim, fx, opts = {}) {
       if (fx && fx.goldNumber) fx.goldNumber(f.x, 2.4, f.z, `+${f.amount}`);
     }
 
+    // The skeletal cast arrives after first spawn: drop pre-cast age-0
+    // meshes once so syncMap recreates them from the same live entities.
+    if (!quatSwapped && getQuatTemplates()) {
+      quatSwapped = true;
+      for (const [id, w] of units) {
+        if (w.ageIndex === 0) { scene.remove(w.mesh); w.dispose(); units.delete(id); }
+      }
+    }
     syncMap(units, sim.units, (e) => {
       const um = UnitMesh(e, e.ageIndex);
-      return { mesh: um.mesh, dispose: () => um.dispose(), update: (d) => um.update(d, e) };
+      return { mesh: um.mesh, dispose: () => um.dispose(), update: (d) => um.update(d, e), ageIndex: e.ageIndex };
     });
     syncMap(turrets, sim.turrets, (e) => {
       const tm = TurretMesh(e, e.ageIndex, towers[e.side]?.mount(e.slotIndex));

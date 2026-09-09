@@ -104,6 +104,16 @@
         "unitsCloseUp": 7.5
       },
       "vsPhotoreal": 4,
+      "quatPilot": {
+        "status": "working end-to-end, verdict: coherent stylized cast, still not AAA",
+        "verified": "units showcase 49 skinned meshes + live battle 11 skinned, 0 console/page errors; 174/174 tests; Vite-less vendor addons + import map",
+        "cast": "Quaternius CC0 (verified License.txt): Viking=clubman, Goblin=slinger+rider, Wizard=Shaman hero, Velociraptor FBX=dino",
+        "fixed": [
+          "showcase units staged before async cast load stayed procedural: added quatSwap to units showcase (mirrors battle-view)",
+          "raptor multi-material broke cloneMats mid-swap (o.material.clone is not a function): array support + tests/clone-mats.test.js",
+          "browser heuristic cache hid the fix behind stale modules: verify with cache-ignoring reload"
+        ]
+      },
       "fixed": [
         "castle demo 1583 -> 1384 draw calls via solidify() skipping sub-0.22m casters (tests/shadow-budget.test.js, 2 asserts)",
         "hit-flash emissive 0.55/0.5 -> 0.3 (mid-flash still blows out to white in night stills; transient 0.1s, kept as game feel)",

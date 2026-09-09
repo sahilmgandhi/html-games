@@ -3,6 +3,7 @@ import { toMeters } from '../simulation/config.js';
 import {
   pbr, basic, glowMat, solidify, cloneMats, makeHpBar, teamRing, emblemTexture, disposeDeep, SIDE_ACCENT, skinMat, clothMat, furMat,
 } from '../core/pbr.js';
+import { getQuatTemplates, quatRoleFor, QuatUnitMesh, ensureQuatLoaded } from './gltf-cast.js';
 
 // Procedural units, Clash-Royale chunky style, one builder set per age
 // (Stone: clubman/slinger/dino-rider/shaman; Castle: swordsman/archer/
@@ -1112,6 +1113,13 @@ const HEROES = { 0: buildShaman, 1: buildPaladin, 2: buildWarEngineer, 3: buildC
 export function UnitMesh(entity, ageIndex) {
   // Unknown ages reuse the Stone rigs so evolve never renders a missing mesh.
   const age = BUILDERS[ageIndex] ? ageIndex : 0;
+  // Stone-age pilot: vendored CC0 skeletal cast once loaded, with the
+  // procedural rigs as the fallback until the fetch lands (and in tests).
+  // The kick is here so every stone-age render path (battle, showcases)
+  // loads the cast without its own wiring.
+  ensureQuatLoaded();
+  const quat = age === 0 ? getQuatTemplates() : null;
+  if (quat) return QuatUnitMesh(entity, quatRoleFor(entity), quat);
   const accent = SIDE_ACCENT[entity.side] || SIDE_ACCENT.player;
   const rig = entity.isHero ? (HEROES[age] || buildShaman)(accent)
     : ((BUILDERS[age] || BUILDERS[0])[entity.type] || buildClubman)(accent);
