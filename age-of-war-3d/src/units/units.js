@@ -397,7 +397,8 @@ function buildKnight(accent) {
   head.add(helmM);
   eyes(head, 0.02, 0.18, 0.09);
   b.add(head);
-  return { body: b, legL, legR, armL, armR, head, height: 2.9, tail: tailM };
+  // couched lance: the strike anim drives this arm forward (thrust), never overhead.
+  return { body: b, legL, legR, armL, armR, head, height: 2.9, tail: tailM, thrust: true };
 }
 
 function buildPaladin(accent) {
@@ -526,7 +527,8 @@ function buildMusketeer(accent) {
   eyes(head, 0.0, 0.17, 0.1);
   const hat = tricorn(accent); hat.position.y = 0.24; head.add(hat);
   b.add(head);
-  return { body: b, legL, legR, armL, armR, head, height: 2.15 };
+  // leveled musket: the strike anim holds aim and kicks back, never overhead.
+  return { body: b, legL, legR, armL, armR, head, height: 2.15, thrust: true };
 }
 
 function buildCannoneer(accent) {
@@ -942,6 +944,9 @@ export function UnitMesh(entity, ageIndex) {
 
   let facing = entity.side === 'player' ? 0 : Math.PI;
   mesh.rotation.y = facing;
+  // thrust rigs (lance, musket) drive the weapon forward; capture the rest
+  // pose once so the snap always returns to it.
+  let armRx = null;
 
   function setFlash(on) {
     for (const m of mats) {
@@ -980,11 +985,21 @@ export function UnitMesh(entity, ageIndex) {
             : Math.sin(((k - 0.18) / 0.27) * Math.PI * 0.5);
         }
       }
-      if (rig.armR) rig.armR.rotation.z = -strike * 1.9 + (rig.dino ? -0.3 : 0);
-      if (rig.armL && !rig.dino) rig.armL.rotation.z = swing * 0.3 - Math.max(0, -strike) * 0.5;
       if (rig.head && !rig.dino) rig.head.rotation.y = Math.sin(t * 0.25) * 0.12;
-      rig.body.rotation.y = strike * 0.14;
-      rig.body.position.x = strike > 0 ? strike * 0.14 : 0;
+      if (rig.thrust && rig.armR) {
+        // couched thrust: gather back on windup, punch forward on the snap.
+        if (armRx === null) armRx = rig.armR.position.x;
+        rig.armR.rotation.z = (rig.dino ? -0.3 : 0) + Math.max(0, -strike) * 0.12;
+        rig.armR.position.x = armRx + (strike > 0 ? strike * 0.55 : strike * 0.2);
+        if (rig.armL) rig.armL.rotation.z = swing * 0.15;
+        rig.body.rotation.y = strike * 0.06;
+        rig.body.position.x = strike > 0 ? strike * 0.3 : 0;
+      } else {
+        if (rig.armR) rig.armR.rotation.z = -strike * 1.9 + (rig.dino ? -0.3 : 0);
+        if (rig.armL && !rig.dino) rig.armL.rotation.z = swing * 0.3 - Math.max(0, -strike) * 0.5;
+        rig.body.rotation.y = strike * 0.14;
+        rig.body.position.x = strike > 0 ? strike * 0.14 : 0;
+      }
       // hit pop: brief squash on the 0.1s hitFlash so impacts land visually.
       if (e.hitFlash > 0) {
         const pop = Math.min(1, e.hitFlash / 0.1);
@@ -1007,6 +1022,8 @@ export function UnitMesh(entity, ageIndex) {
           : 1 - Math.sin((raw - 0.7) / 0.3 * Math.PI) * 0.08;
         rig.body.rotation.x = p * 1.45;
         rig.body.position.y = -p * 0.15;
+        rig.body.position.x = 0;
+        if (rig.thrust && rig.armR && armRx !== null) rig.armR.position.x = armRx;
         rig.body.scale.set(1, 1 - p * 0.22, 1);
         for (const m of mats) m.opacity = 1 - raw * 0.45;
         bar.sprite.visible = false;

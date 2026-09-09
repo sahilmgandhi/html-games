@@ -237,10 +237,16 @@ function buildCastleKeep(accent, mirror) {
   const stone = pbr(CASTLE_STONE, 0.9);
   const stoneDk = pbr(CASTLE_DK, 0.95);
 
-  // foundation platform
-  const mound = new THREE.Mesh(new THREE.CylinderGeometry(4.0, 4.8, 0.7, 18), stoneDk);
+  // foundation platform: broken ground silhouette + trampled dirt skirt.
+  const moundGeo = new THREE.CylinderGeometry(4.0, 4.8, 0.7, 18);
+  jitterGeo(moundGeo, 0.08, 2.0, 41);
+  mottleGeo(moundGeo, 0.12, 41);
+  const mound = new THREE.Mesh(moundGeo, rockMat(CASTLE_DK, 0.95));
   mound.position.y = 0.3;
   mesh.add(mound);
+  const skirt = new THREE.Mesh(new THREE.CylinderGeometry(5.6, 6.1, 0.16, 18), pbr('#4a3b2c', 0.98));
+  skirt.position.y = 0.05;
+  mesh.add(skirt);
 
   // keep core with stone course bands
   const keep = new THREE.Mesh(new THREE.BoxGeometry(3.2, 5.0, 3.2), stone);
@@ -250,6 +256,15 @@ function buildCastleKeep(accent, mirror) {
     const band = new THREE.Mesh(new THREE.BoxGeometry(3.3, 0.22, 3.3), stoneDk);
     band.position.y = y;
     mesh.add(band);
+  }
+  // corner quoins: alternating proud blocks so the keep reads as laid masonry.
+  for (let qi = 0; qi < 5; qi++) {
+    const qy = 1.15 + qi * 0.95;
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
+      const q = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.5, 0.36), (qi % 2 ? stone : stoneDk));
+      q.position.set(sx * 1.62, qy, sz * 1.62);
+      mesh.add(q);
+    }
   }
   crenellate(mesh, 3.2, 3.2, 5.85, stoneDk);
 
@@ -276,18 +291,30 @@ function buildCastleKeep(accent, mirror) {
   shield.position.set(1.65 * mirror, 5.3, 0);
   mesh.add(shield);
 
-  // curtain wall arc facing the battlefield, gate in the middle
+  // curtain wall arc facing the battlefield, gate in the middle.
+  // Per-seg groups carry merlons + arrow slit so dressing follows wall yaw.
+  const slitMat = basic('#14141c');
   for (let i = -2; i <= 2; i++) {
     if (i === 0) continue;
     const a = (i / 2) * 0.55;
+    const segG = new THREE.Group();
+    segG.position.set(Math.cos(a) * 3.4 * mirror, 0, Math.sin(a) * 3.7);
+    segG.rotation.y = -a * mirror;
+    mesh.add(segG);
     const seg = new THREE.Mesh(new THREE.BoxGeometry(0.6, 2.6, 1.7), (i % 2 ? stone : stoneDk));
-    seg.position.set(Math.cos(a) * 3.4 * mirror, 1.9, Math.sin(a) * 3.7);
-    seg.rotation.y = -a * mirror;
-    mesh.add(seg);
+    seg.position.y = 1.9;
+    segG.add(seg);
     const cap = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.35, 1.8), stoneDk);
-    cap.position.set(Math.cos(a) * 3.4 * mirror, 3.35, Math.sin(a) * 3.7);
-    cap.rotation.y = -a * mirror;
-    mesh.add(cap);
+    cap.position.y = 3.35;
+    segG.add(cap);
+    for (const mz of [-0.55, 0, 0.55]) {
+      const merlon = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.32, 0.28), stone);
+      merlon.position.set(0, 3.68, mz);
+      segG.add(merlon);
+    }
+    const slit = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.55, 0.14), slitMat);
+    slit.position.set(0.3 * mirror, 2.5, 0);
+    segG.add(slit);
   }
   // gatehouse: jambs + lintel + dark opening + portcullis bars
   for (const s of [-1, 1]) {
