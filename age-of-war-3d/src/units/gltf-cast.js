@@ -138,6 +138,13 @@ export async function fetchQuatCast(fetchFn = fetch, base = 'assets/quat/') {
   nightPrep(stan.scene, 2, 0xffffff);
   nightPrep(alien, 1, 0x35f0e0);
   nightPrep(robot, 1, 0x35f0e0);
+  // the castle fights at night too: its dark bronze + tribal paints need
+  // a stronger lift than the future panels (Main stays out of the set so
+  // the light grey does not blow out).
+  nightPrep(knight.scene, 4, 0xffffff, CASTLE_PANELS);
+  nightPrep(golden.scene, 4, 0xffffff, CASTLE_PANELS);
+  nightPrep(elf.scene, 4, 0xffffff, CASTLE_PANELS);
+  nightPrep(horse, 4, 0xffffff, CASTLE_PANELS);
   const goblinH = measureHeight(goblin.scene);
   const knightH = measureHeight(knight.scene);
   return {
@@ -178,14 +185,16 @@ export async function fetchQuatCast(fetchFn = fetch, base = 'assets/quat/') {
 
 // Night-fighting cast: lift named panel paints out of silhouette and give
 // eye dots an emissive glow. lift 1 leaves paint alone (eyes only).
+// The castle set is separate: its light-grey Main must not lift.
 const PANELS = new Set(['Main', 'Accent', 'Grey', 'LightGrey']);
-export function nightPrep(object, lift, eyeHex) {
+const CASTLE_PANELS = new Set(['Skin', 'Brown', 'Armor_Dark', 'Detail', 'Red', 'Material.006']);
+export function nightPrep(object, lift, eyeHex, panels = PANELS) {
   object.traverse((o) => {
     if (!o.isMesh) return;
     const ms = Array.isArray(o.material) ? o.material : [o.material];
     for (const m of ms) {
       if (!m.color) continue;
-      if (lift !== 1 && PANELS.has(m.name)) m.color.multiplyScalar(lift);
+      if (lift !== 1 && panels.has(m.name)) m.color.multiplyScalar(lift);
       if (/^eyes?$/i.test(m.name) && m.emissive) {
         m.emissive.setHex(eyeHex);
         m.emissiveIntensity = 1;

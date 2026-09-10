@@ -146,7 +146,7 @@
           "nightPrep lifts Main/Accent/Grey/LightGrey panels + emissive eyes (white mechs, cyan alien/robot)",
           "alien fingers run along PalmR +Y: blaster gun gets rotX -PI/2 so barrel tracks fingers (barrel-tracks-fingers test, was 101deg)",
           "robot HandR has no finger bones: blade orientation visual-only, confirmed in close-up",
-          "castle-night warbands still read as dark silhouettes in live play (bot basepush shot)"
+          "castle-night warbands fixed: CASTLE_PANELS nightPrep lift 4x on knight/golden/elf/horse (Skin/Armor_Dark/Brown/Detail/Red/Material.006); horses read chestnut, riders+trim visible, foot troops olive-readable (castle-night.png); lighting raise proved unnecessary, night mood kept"
         ]
       },
       "fixed": [

@@ -590,4 +590,28 @@ export default [
       t.assert('eyes glow', eyes.emissive.getHex() === 0x35f0e0, eyes.emissive.getHexString());
     },
   },
+  {
+    name: 'castle night readability prep',
+    async run(t) {
+      const tpl = await loadTemplates();
+      const lum = (c) => { const l = new THREE.Color(c).getHSL({ h: 0, s: 0, l: 0 }); return l.l; };
+      // NOTE: linear-space lightness again: raw Skin reads ~0.012 here.
+      // Materials are pooled across the knight + horse scenes, so search both.
+      const pool = new Map();
+      for (const root of [tpl.swordsman.object, tpl.knight.object]) {
+        root.traverse((o) => {
+          if (o.isMesh) {
+            const ms = Array.isArray(o.material) ? o.material : [o.material];
+            for (const m of ms) if (m.name && !pool.has(m.name)) pool.set(m.name, m);
+          }
+        });
+      }
+      for (const name of ['Skin', 'Armor_Dark', 'Material.006']) {
+        t.assert(`${name} present`, pool.has(name), [...pool.keys()].join(','));
+      }
+      t.assert('knight skin lifted out of silhouette', lum(pool.get('Skin').color.getHex()) > 0.04, pool.get('Skin').color.getHexString());
+      t.assert('knight armor lifted', lum(pool.get('Armor_Dark').color.getHex()) > 0.05, pool.get('Armor_Dark').color.getHexString());
+      t.assert('dark trim lifted', lum(pool.get('Material.006').color.getHex()) > 0.02, pool.get('Material.006').color.getHexString());
+    },
+  },
 ];
