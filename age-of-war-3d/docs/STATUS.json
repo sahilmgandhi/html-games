@@ -138,6 +138,17 @@
           "rifle spec generalized from boolean to template key (rifleProp vs akProp)"
         ]
       },
+      "futPilot": {
+        "status": "working end-to-end, verdict: all 5 roles verified, all ages now animated",
+        "verified": "future battle close-up (sage Titan with antennae+glowing eyes, golden Mike, red Stan, robot with cyan eyes, energy-blade arc correct) + bot full-match playthrough (blue wins on Easy, t=251); 321/321 asserts",
+        "cast": "Quaternius Animated Mech CC0 glTF (George=titan hero, Stan=warmachine, Mike=supersoldier golden-tinted) + Animated Robot CC0 FBX (godsblade + procedural energy blade) + Animated Alien CC0 FBX (blaster + procedural gun); robot License.txt vendored",
+        "notes": [
+          "nightPrep lifts Main/Accent/Grey/LightGrey panels + emissive eyes (white mechs, cyan alien/robot)",
+          "alien fingers run along PalmR +Y: blaster gun gets rotX -PI/2 so barrel tracks fingers (barrel-tracks-fingers test, was 101deg)",
+          "robot HandR has no finger bones: blade orientation visual-only, confirmed in close-up",
+          "castle-night warbands still read as dark silhouettes in live play (bot basepush shot)"
+        ]
+      },
       "fixed": [
         "castle demo 1583 -> 1384 draw calls via solidify() skipping sub-0.22m casters (tests/shadow-budget.test.js, 2 asserts)",
         "hit-flash emissive 0.55/0.5 -> 0.3 (mid-flash still blows out to white in night stills; transient 0.1s, kept as game feel)",

@@ -308,7 +308,7 @@ export function attachBattleView(game, sim, fx, opts = {}) {
     if (!quatSwapped && getQuatTemplates()) {
       quatSwapped = true;
       for (const [id, w] of units) {
-        if (w.ageIndex <= 3) { scene.remove(w.mesh); w.dispose(); units.delete(id); }
+        if (w.ageIndex <= 4) { scene.remove(w.mesh); w.dispose(); units.delete(id); }
       }
     }
     syncMap(units, sim.units, (e) => {

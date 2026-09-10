@@ -1118,7 +1118,7 @@ export function UnitMesh(entity, ageIndex) {
   // The kick is here so every covered-age render path (battle, showcases)
   // loads the cast without its own wiring.
   ensureQuatLoaded();
-  const quat = age <= 3 ? getQuatTemplates() : null;
+  const quat = age <= 4 ? getQuatTemplates() : null;
   if (quat) return QuatUnitMesh(entity, quatRoleFor(entity, age), quat);
   const accent = SIDE_ACCENT[entity.side] || SIDE_ACCENT.player;
   const rig = entity.isHero ? (HEROES[age] || buildShaman)(accent)

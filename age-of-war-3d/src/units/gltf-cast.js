@@ -10,7 +10,7 @@ import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
 import { toMeters } from '../simulation/config.js';
 import {
   solidify, cloneMats, makeHpBar, teamRing, disposeDeep, SIDE_ACCENT,
-  pbr, basic,
+  pbr, basic, glowMat,
 } from '../core/pbr.js';
 
 // entity.type (or hero) -> template role, per age.
@@ -18,6 +18,7 @@ export const QUAT_ROLES = { melee: 'clubman', ranged: 'slinger', fast: 'dino', h
 export const CASTLE_ROLES = { melee: 'swordsman', ranged: 'archer', fast: 'knight', hero: 'paladin' };
 export const RENAISSANCE_ROLES = { melee: 'dueler', ranged: 'musketeer', siege: 'cannoneer', hero: 'engineer' };
 export const MODERN_ROLES = { melee: 'meleeinf', ranged: 'infantry', armored: 'tank', hero: 'commander' };
+export const FUTURE_ROLES = { melee: 'godsblade', ranged: 'blaster', armored: 'warmachine', elite: 'supersoldier', hero: 'titan' };
 
 // Procedural rig heights the cast must match (units.js builders).
 // heroModel: template is already modeled at hero height, skip the 1.18x.
@@ -47,6 +48,11 @@ const ROLE_SPEC = {
   commander: { file: 'Shooter_Hazmat', kind: 'gltf', targetH: 2.3 * 1.18, walk: 'Walk', attack: 'Punch', death: 'Death', idle: 'Idle', heroModel: true },
   tank: { file: 'Quat_Tank', kind: 'fbx', targetH: 2.4, walk: 'Tank_Forward', attack: 'Tank_Forward', death: null, idle: 'Tank_Forward' },
   ak: { file: 'Shooter_AK', kind: 'gltf', targetH: 1.42, walk: 'Idle', attack: 'Idle', death: 'Death', idle: 'Idle' },
+  godsblade: { file: 'Future_Robot', kind: 'fbx', targetH: 2.3, walk: 'Robot_Walking', attack: 'Robot_Punch', death: 'Robot_Death', idle: 'Robot_Idle', handProp: 'blade' },
+  blaster: { file: 'Future_Alien', kind: 'fbx', targetH: 2.15, walk: 'Alien_Walk', attack: 'Alien_Punch', death: 'Alien_Death', idle: 'Alien_Idle', handProp: 'blaster' },
+  warmachine: { file: 'Future_Stan', kind: 'gltf', targetH: 2.6, walk: 'Walk', attack: 'Punch', death: 'Death', idle: 'Idle' },
+  supersoldier: { file: 'Future_Mike', kind: 'gltf', targetH: 2.8, walk: 'Walk', attack: 'SwordSlash', death: 'Death', idle: 'Idle' },
+  titan: { file: 'Future_George', kind: 'gltf', targetH: 3.0 * 1.18, walk: 'Walk', attack: 'Shoot', death: 'Death', idle: 'Idle', heroModel: true },
 };
 
 // Mounted roles: rider template, rider attack clip, how far the feet hang
@@ -85,13 +91,16 @@ export async function fetchQuatCast(fetchFn = fetch, base = 'assets/quat/') {
   }
   const [viking, goblin, wizard, raptor, knight, golden, elf, horse,
     barbarossa, mako, henry, anne, cannon, rifle,
-    soldier, enemy, hazmat, ak, tank] = await Promise.all([
+    soldier, enemy, hazmat, ak, tank,
+    george, mike, stan, robot, alien] = await Promise.all([
     loadGltf('Viking_Male'), loadGltf('Goblin_Male'), loadGltf('Wizard'), loadFbx('Velociraptor'),
     loadGltf('Knight_Male'), loadGltf('Knight_Golden_Male'), loadGltf('Elf'), loadFbx('Horse'),
     loadGltf('Pirate_Barbarossa'), loadGltf('Pirate_Mako'), loadGltf('Pirate_Henry'),
     loadGltf('Pirate_Anne'), loadGltf('Pirate_Cannon'), loadGltf('Pirate_Rifle'),
     loadGltf('Shooter_Soldier'), loadGltf('Shooter_Enemy'), loadGltf('Shooter_Hazmat'),
     loadGltf('Shooter_AK'), loadFbx('Quat_Tank'),
+    loadGltf('Future_George'), loadGltf('Future_Mike'), loadGltf('Future_Stan'),
+    loadFbx('Future_Robot'), loadFbx('Future_Alien'),
   ]);
   // FBX clips arrive prefixed (Armature|Walk); strip to the bare name.
   const clipMap = (animations) => new Map(animations.map((c) => [c.name.split('|').pop(), c]));
@@ -118,6 +127,17 @@ export async function fetchQuatCast(fetchFn = fetch, base = 'assets/quat/') {
   tameFbx(raptor, ROLE_SPEC.dino.lift);
   tameFbx(horse, ROLE_SPEC.knight.lift);
   tameFbx(tank, 1);
+  tameFbx(robot, 1);
+  tameFbx(alien, 4);
+  // the super soldier is a golden mech variant: pull Mike's paint to gold.
+  tintGold(mike.scene);
+  // the future fights at night: lift dark panels out of silhouette and give
+  // eye dots an emissive glow so fighters read in the dark.
+  nightPrep(george.scene, 2, 0xffffff);
+  nightPrep(mike.scene, 2, 0xffffff);
+  nightPrep(stan.scene, 2, 0xffffff);
+  nightPrep(alien, 1, 0x35f0e0);
+  nightPrep(robot, 1, 0x35f0e0);
   const goblinH = measureHeight(goblin.scene);
   const knightH = measureHeight(knight.scene);
   return {
@@ -148,7 +168,41 @@ export async function fetchQuatCast(fetchFn = fetch, base = 'assets/quat/') {
     tank: { object: tank, clips: clipMap(tank.animations), scale: ROLE_SPEC.tank.targetH / measureHeight(tank), height: ROLE_SPEC.tank.targetH, spec: ROLE_SPEC.tank },
     // the AK is a hand prop cloned onto modern firing hands.
     akProp: { object: ak.scene, clips: clipMap(ak.animations || []), scale: 1, height: ROLE_SPEC.ak.targetH, spec: ROLE_SPEC.ak },
+    warmachine: pack('warmachine', stan),
+    supersoldier: pack('supersoldier', mike),
+    titan: pack('titan', george),
+    godsblade: { object: robot, clips: clipMap(robot.animations), scale: ROLE_SPEC.godsblade.targetH / measureHeight(robot), height: ROLE_SPEC.godsblade.targetH, spec: ROLE_SPEC.godsblade },
+    blaster: { object: alien, clips: clipMap(alien.animations), scale: ROLE_SPEC.blaster.targetH / measureHeight(alien), height: ROLE_SPEC.blaster.targetH, spec: ROLE_SPEC.blaster },
   };
+}
+
+// Night-fighting cast: lift named panel paints out of silhouette and give
+// eye dots an emissive glow. lift 1 leaves paint alone (eyes only).
+const PANELS = new Set(['Main', 'Accent', 'Grey', 'LightGrey']);
+export function nightPrep(object, lift, eyeHex) {
+  object.traverse((o) => {
+    if (!o.isMesh) return;
+    const ms = Array.isArray(o.material) ? o.material : [o.material];
+    for (const m of ms) {
+      if (!m.color) continue;
+      if (lift !== 1 && PANELS.has(m.name)) m.color.multiplyScalar(lift);
+      if (/^eyes?$/i.test(m.name) && m.emissive) {
+        m.emissive.setHex(eyeHex);
+        m.emissiveIntensity = 1;
+      }
+    }
+  });
+}
+
+// Golden mech variant: pull every paint color partway to gold.
+const GOLD = new THREE.Color(0xc9a227);
+export function tintGold(object) {
+  object.traverse((o) => {
+    if (o.isMesh) {
+      const ms = Array.isArray(o.material) ? o.material : [o.material];
+      for (const m of ms) if (m.color) m.color.lerp(GOLD, 0.55);
+    }
+  });
 }
 
 let activeTemplates = null;
@@ -185,7 +239,7 @@ export function ensureQuatLoaded() {
 // Stone age 0 uses QUAT_ROLES, castle age 1 CASTLE_ROLES, renaissance
 // age 2 RENAISSANCE_ROLES, modern age 3 MODERN_ROLES.
 export function quatRoleFor(entity, ageIndex = 0) {
-const AGE_ROLES = { 1: CASTLE_ROLES, 2: RENAISSANCE_ROLES, 3: MODERN_ROLES };
+const AGE_ROLES = { 1: CASTLE_ROLES, 2: RENAISSANCE_ROLES, 3: MODERN_ROLES, 4: FUTURE_ROLES };
   const roles = AGE_ROLES[ageIndex] || QUAT_ROLES;
   if (entity.isHero) return roles.hero;
   return roles[entity.type] || roles.melee;
@@ -216,6 +270,39 @@ function buildQuiver(k) {
   }
   return quiver;
 }
+
+// Procedural energy blade for the god's blade (robot file has no weapon)
+// and blaster gun for the alien. k counter-scales like the longbow.
+function buildEnergyBlade(k) {
+  const blade = new THREE.Group();
+  const hilt = new THREE.Mesh(new THREE.CylinderGeometry(0.035 * k, 0.045 * k, 0.22 * k, 8), pbr('#2b2f36', 0.4, 0.8));
+  hilt.position.y = 0.11 * k;
+  blade.add(hilt);
+  const core = new THREE.Mesh(new THREE.BoxGeometry(0.05 * k, 0.85 * k, 0.02 * k), basic('#bffbff'));
+  core.position.y = 0.64 * k;
+  blade.add(core);
+  const halo = new THREE.Mesh(new THREE.BoxGeometry(0.11 * k, 0.9 * k, 0.06 * k), glowMat('#35e0ff', 0.45));
+  halo.position.y = 0.64 * k;
+  blade.add(halo);
+  return blade;
+}
+function buildBlaster(k) {
+  const gun = new THREE.Group();
+  const bodyM = new THREE.Mesh(new THREE.BoxGeometry(0.09 * k, 0.14 * k, 0.34 * k), pbr('#3a4048', 0.45, 0.7));
+  gun.add(bodyM);
+  const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.03 * k, 0.035 * k, 0.3 * k, 8), pbr('#23272e', 0.4, 0.8));
+  barrel.rotation.x = Math.PI / 2;
+  barrel.position.set(0, 0.03 * k, 0.3 * k);
+  gun.add(barrel);
+  const sight = new THREE.Mesh(new THREE.BoxGeometry(0.03 * k, 0.03 * k, 0.03 * k), glowMat('#ff5a3c', 0.8));
+  sight.position.set(0, 0.1 * k, -0.05 * k);
+  gun.add(sight);
+  return gun;
+}
+const HAND_PROPS = {
+  blade: { bone: 'HandR', name: 'energyblade', make: buildEnergyBlade },
+  blaster: { bone: 'PalmR', name: 'blastergun', make: buildBlaster, rotX: -Math.PI / 2 },
+};
 
 function playAction(holder, name) {
   const { mixer, actions } = holder;
@@ -279,6 +366,19 @@ export function QuatUnitMesh(entity, role, templates) {
     gun.name = tpl.spec.gunName || 'rifle';
     gun.rotation.z = Math.PI / 2;
     (hand || body).add(gun);
+  }
+  // future fighters with a procedural hand prop (energy blade, blaster gun).
+  if (tpl.spec.handProp && HAND_PROPS[tpl.spec.handProp]) {
+    const k = 1 / (tpl.scale * s);
+    const { bone, name, make, rotX } = HAND_PROPS[tpl.spec.handProp];
+    const grip = body.getObjectByName(bone);
+    const prop = make(k);
+    prop.name = name;
+    // the blaster barrel is built along +Z but the alien's fingers run
+    // along the palm bone's +Y; tip the gun onto the finger line so the
+    // grip reads instead of pointing back down the wrist.
+    if (rotX) prop.rotation.x = rotX;
+    (grip || body).add(prop);
   }
   // the cannoneer fights beside a static cannon mount, not on it.
   const mount = MOUNTS[role];

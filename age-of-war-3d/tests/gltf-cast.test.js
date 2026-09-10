@@ -5,7 +5,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { fetchQuatCast, setQuatTemplates, QuatUnitMesh, QUAT_ROLES, CASTLE_ROLES, RENAISSANCE_ROLES, MODERN_ROLES, quatRoleFor } from '../src/units/gltf-cast.js';
+import { fetchQuatCast, setQuatTemplates, QuatUnitMesh, QUAT_ROLES, CASTLE_ROLES, RENAISSANCE_ROLES, MODERN_ROLES, FUTURE_ROLES, tintGold, nightPrep, quatRoleFor } from '../src/units/gltf-cast.js';
 import { UnitMesh } from '../src/units/units.js';
 import * as THREE from 'three';
 
@@ -128,8 +128,9 @@ export default [
       t.assert('quat mesh with templates', quat.currentClip === 'Idle', quat.currentClip);
       quat.dispose();
 
+      setQuatTemplates(null);
       const future = UnitMesh(fakeEntity(), 4);
-      t.assert('later ages stay procedural', future.currentClip === undefined, '');
+      t.assert('future procedural before templates load', future.currentClip === undefined, '');
       future.dispose();
       setQuatTemplates(null);
     },
@@ -426,6 +427,167 @@ export default [
       const inst = QuatUnitMesh(fakeEntity({ type: 'armored' }), MODERN_ROLES.armored, tpl);
       t.assert('tank rolls on Tank_Forward', inst.currentClip === 'Tank_Forward', inst.currentClip);
       inst.dispose();
+    },
+  },
+  {
+    name: 'future templates parse with walk, attack and death clips',
+    async run(t) {
+      const tpl = await loadTemplates();
+      for (const [role, walk, attack, death] of [
+        ['warmachine', 'Walk', 'Punch', 'Death'],
+        ['supersoldier', 'Walk', 'SwordSlash', 'Death'],
+        ['titan', 'Walk', 'Shoot', 'Death'],
+        ['godsblade', 'Robot_Walking', 'Robot_Punch', 'Robot_Death'],
+        ['blaster', 'Alien_Walk', 'Alien_Punch', 'Alien_Death'],
+      ]) {
+        for (const clip of [walk, attack, death]) {
+          t.assert(`${role} has ${clip}`, tpl[role].clips.has(clip), [...tpl[role].clips.keys()].join(','));
+        }
+      }
+      t.assert('robot has a right hand bone', !!tpl.godsblade.object.getObjectByName('HandR'), '');
+      t.assert('alien has a right palm bone', !!tpl.blaster.object.getObjectByName('PalmR'), '');
+    },
+  },
+  {
+    name: 'future instances scale to procedural heights',
+    async run(t) {
+      const tpl = await loadTemplates();
+      // procedural rig.height targets: godsblade 2.3, blaster 2.15,
+      // warmachine 2.6, supersoldier 2.8, titan-hero 3.0*1.18
+      const targets = { godsblade: 2.3, blaster: 2.15, warmachine: 2.6, supersoldier: 2.8, titan: 3.0 * 1.18 };
+      for (const [role, want] of Object.entries(targets)) {
+        const got = tpl[role].height;
+        t.assert(`${role} height ~${want}m`, Math.abs(got - want) / want < 0.05, `${got.toFixed(2)}m`);
+      }
+    },
+  },
+  {
+    name: 'UnitMesh delegates future age to the cast once loaded',
+    async run(t) {
+      const tpl = await loadTemplates();
+      setQuatTemplates(tpl);
+      const q = UnitMesh(fakeEntity(), 4);
+      t.assert('quat future mesh', q.currentClip === 'Robot_Idle', q.currentClip);
+      q.dispose();
+      t.assert('melee maps to godsblade', quatRoleFor(fakeEntity({ type: 'melee' }), 4) === FUTURE_ROLES.melee, '');
+      t.assert('ranged maps to blaster', quatRoleFor(fakeEntity({ type: 'ranged' }), 4) === FUTURE_ROLES.ranged, '');
+      t.assert('armored maps to warmachine', quatRoleFor(fakeEntity({ type: 'armored' }), 4) === FUTURE_ROLES.armored, '');
+      t.assert('elite maps to supersoldier', quatRoleFor(fakeEntity({ type: 'elite' }), 4) === FUTURE_ROLES.elite, '');
+      t.assert('hero maps to titan', quatRoleFor(fakeEntity({ isHero: true }), 4) === FUTURE_ROLES.hero, '');
+      t.assert('modern mapping unchanged', quatRoleFor(fakeEntity({ type: 'melee' }), 3) === MODERN_ROLES.melee, '');
+      setQuatTemplates(null);
+    },
+  },
+  {
+    name: 'godsblade carries an energy blade, blaster a gun',
+    async run(t) {
+      const tpl = await loadTemplates();
+      const blade = QuatUnitMesh(fakeEntity({ type: 'melee' }), FUTURE_ROLES.melee, tpl);
+      const hand = blade.mesh.getObjectByName('HandR');
+      t.assert('blade hangs off the right hand', !!hand && !!hand.getObjectByName('energyblade'), '');
+      blade.dispose();
+      const gun = QuatUnitMesh(fakeEntity({ type: 'ranged' }), FUTURE_ROLES.ranged, tpl);
+      const palm = gun.mesh.getObjectByName('PalmR');
+      t.assert('gun sits in the right palm', !!palm && !!palm.getObjectByName('blastergun'), '');
+      gun.dispose();
+    },
+  },
+  {
+    name: 'blaster gun barrel runs along the fingers',
+    async run(t) {
+      const tpl = await loadTemplates();
+      const gun = QuatUnitMesh(fakeEntity({ type: 'ranged' }), FUTURE_ROLES.ranged, tpl);
+      gun.mesh.updateMatrixWorld(true);
+      const prop = gun.mesh.getObjectByName('blastergun');
+      t.assert('gun prop present', !!prop, '');
+      // barrel is built along prop-local +Z; it should track the finger chain.
+      const e = prop.matrixWorld.elements;
+      const barrel = new THREE.Vector3(e[8], e[9], e[10]).normalize();
+      const palm = gun.mesh.getObjectByName('PalmR');
+      let tip = palm;
+      for (let i = 0; i < 6; i++) {
+        const kids = tip.children.filter((c) => c.isBone);
+        if (!kids.length) break;
+        tip = kids.sort((a, b) => a.name.localeCompare(b.name))[0];
+      }
+      const bp = new THREE.Vector3().setFromMatrixPosition(palm.matrixWorld);
+      const tp = new THREE.Vector3().setFromMatrixPosition(tip.matrixWorld);
+      const fingers = tp.sub(bp).normalize();
+      const deg = (barrel.angleTo(fingers) * 180) / Math.PI;
+      t.assert('barrel tracks fingers', deg < 35, `${deg.toFixed(1)}deg`);
+      gun.dispose();
+    },
+  },
+  {
+    name: 'supersoldier reads golden',
+    async run(t) {
+      const tpl = await loadTemplates();
+      const cols = [];
+      tpl.supersoldier.object.traverse((o) => {
+        if (o.isMesh) {
+          const ms = Array.isArray(o.material) ? o.material : [o.material];
+          for (const m of ms) if (m.color) cols.push(m.color);
+        }
+      });
+      t.assert('super has tinted materials', cols.length > 0, '');
+      for (const c of cols) t.assert('warm gold tint', c.r > c.b, `${c.r.toFixed(2)}/${c.b.toFixed(2)}`);
+    },
+  },
+  {
+    name: 'tintGold pulls colors toward gold',
+    async run(t) {
+      const mat = new THREE.MeshStandardMaterial({ color: new THREE.Color(0.5, 0.5, 0.5) });
+      const group = new THREE.Group();
+      group.add(new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), mat));
+      tintGold(group);
+      const want = new THREE.Color(0.5, 0.5, 0.5).lerp(new THREE.Color(0xc9a227), 0.55);
+      t.assert('lerped toward gold', mat.color.equals(want), mat.color.getHexString());
+    },
+  },
+  {
+    name: 'future night readability prep',
+    async run(t) {
+      const tpl = await loadTemplates();
+      const matByName = (root, name) => {
+        let found = null;
+        root.traverse((o) => {
+          if (o.isMesh) {
+            const ms = Array.isArray(o.material) ? o.material : [o.material];
+            for (const m of ms) if (m.name === name) found = m;
+          }
+        });
+        return found;
+      };
+      const lum = (c) => { const l = new THREE.Color(c).getHSL({ h: 0, s: 0, l: 0 }); return l.l; };
+      // NOTE: getHSL measures linear-space lightness, so floors look small:
+      // raw alien Main reads ~0.026, raw Stan Main ~0.12 on this scale.
+      const alienMain = matByName(tpl.blaster.object, 'Main');
+      t.assert('alien main lifted out of silhouette', lum(alienMain.color.getHex()) > 0.06, alienMain.color.getHexString());
+      const alienEyes = matByName(tpl.blaster.object, 'Eyes');
+      t.assert('alien eyes glow', alienEyes.emissive && alienEyes.emissive.getHex() !== 0, alienEyes.emissive?.getHexString());
+      const mechEye = matByName(tpl.warmachine.object, 'Eye');
+      t.assert('mech visor glows', mechEye.emissive && mechEye.emissive.getHex() !== 0, mechEye.emissive?.getHexString());
+      const mechMain = matByName(tpl.warmachine.object, 'Main');
+      t.assert('mech panels lifted', lum(mechMain.color.getHex()) > 0.18, mechMain.color.getHexString());
+    },
+  },
+  {
+    name: 'nightPrep lifts panels and glows eyes',
+    async run(t) {
+      const main = new THREE.MeshStandardMaterial({ color: 0x404040 });
+      main.name = 'Main';
+      const black = new THREE.MeshStandardMaterial({ color: 0x2a2a2a });
+      black.name = 'Black';
+      const eyes = new THREE.MeshStandardMaterial({ color: 0x060606 });
+      eyes.name = 'Eyes';
+      const group = new THREE.Group();
+      for (const m of [main, black, eyes]) group.add(new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), m));
+      const lum = (c) => new THREE.Color(c).getHSL({ h: 0, s: 0, l: 0 }).l;
+      const before = lum(main.color.getHex());
+      nightPrep(group, 2, 0x35f0e0);
+      t.assert('panels lift', lum(main.color.getHex()) > before, main.color.getHexString());
+      t.assert('black stays dark', lum(black.color.getHex()) < 0.2, black.color.getHexString());
+      t.assert('eyes glow', eyes.emissive.getHex() === 0x35f0e0, eyes.emissive.getHexString());
     },
   },
 ];
