@@ -162,6 +162,15 @@
           "rifle spec generalized from boolean to template key (rifleProp vs akProp)"
         ]
       },
+      "modProps": {
+        "status": "shipped, video-verified: melee blade, forward tank gun, commander trim",
+        "verified": "modern gallery video (861 calls wide, 385 zoomed, 0 console/page errors): meleeinf sword in hand no-AK bulk, commander gold cap+baton+collar bars; tank gun proven forward numerically (dot 0.997 vs facing); 390/390 asserts",
+        "fixed": [
+          "meleeinf carried the same AK as infantry: rifle keys removed, HAND_PROPS sword on Middle1R (shooter rig has no Fist bones: LowerArmR straight into fingers)",
+          "tank gun aimed sideways (+Z): per-role turn override (spec.turn ?? PI/2), tank turn PI maps muzzle -X to mesh-local +X forward",
+          "commander was a plain hazmat: procedural cap (dome+gold band+brim) on Head_M, baton (shaft+gold pommel) on Middle1R, gold collar bars on Head_M; prop loop extended to headProp/trimProp keys"
+        ]
+      },
       "futPilot": {
         "status": "working end-to-end, verdict: all 5 roles verified, all ages now animated",
         "verified": "future battle close-up (sage Titan with antennae+glowing eyes, golden Mike, red Stan, robot with cyan eyes, energy-blade arc correct) + bot full-match playthrough (blue wins on Easy, t=251); 321/321 asserts",
@@ -181,7 +190,7 @@
       "openIssues": [
         "procedural low-poly cannot reach GTA/COD/Witcher photoreal; Quaternius CC0 casts ship for all 5 ages (best stylized coherent look per user)",
         "renaissance FX shipped: musket flash+tracer, cannon recoil+flash+smoke, barrel forward (renFX)",
-        "modern: melee infantry carries AK (needs blade); tank gun 90deg off facing; commander needs cap + baton + gold trim",
+        "modern props shipped: melee sword (no AK), forward tank gun, commander cap+baton+trim (modProps)",
         "user-reported dino/knight walk fluidity: simDt speed fix test-proven, sheet shows no slide; motion verdict via videocap per age"
       ]
     }

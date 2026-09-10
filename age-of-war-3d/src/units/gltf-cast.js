@@ -43,10 +43,10 @@ const ROLE_SPEC = {
   engineer: { file: 'Pirate_Anne', kind: 'gltf', targetH: 2.6 * 1.18, walk: 'Walk', attack: 'Sword', death: 'Death', idle: 'Idle', heroModel: true },
   cannon: { file: 'Pirate_Cannon', kind: 'gltf', targetH: 1.13, walk: 'Idle', attack: 'Idle', death: 'Death', idle: 'Idle' },
   rifle: { file: 'Pirate_Rifle', kind: 'gltf', targetH: 0.69, walk: 'Idle', attack: 'Idle', death: 'Death', idle: 'Idle' },
-  meleeinf: { file: 'Shooter_Soldier', kind: 'gltf', targetH: 2.15, walk: 'Walk', attack: 'Punch', death: 'Death', idle: 'Idle', rifle: 'akProp', gunName: 'ak' },
+  meleeinf: { file: 'Shooter_Soldier', kind: 'gltf', targetH: 2.15, walk: 'Walk', attack: 'Punch', death: 'Death', idle: 'Idle', handProp: 'sword', handBone: 'Middle1R' },
   infantry: { file: 'Shooter_Enemy', kind: 'gltf', targetH: 2.15, walk: 'Walk', attack: 'Idle_Shoot', death: 'Death', idle: 'Idle', rifle: 'akProp', gunName: 'ak' },
-  commander: { file: 'Shooter_Hazmat', kind: 'gltf', targetH: 2.3 * 1.18, walk: 'Walk', attack: 'Punch', death: 'Death', idle: 'Idle', heroModel: true },
-  tank: { file: 'Quat_Tank', kind: 'fbx', targetH: 2.4, walk: 'Tank_Forward', attack: 'Tank_Forward', death: null, idle: 'Tank_Forward' },
+  commander: { file: 'Shooter_Hazmat', kind: 'gltf', targetH: 2.3 * 1.18, walk: 'Walk', attack: 'Punch', death: 'Death', idle: 'Idle', heroModel: true, headProp: 'cap', handProp: 'baton', handBone: 'Middle1R', trimProp: 'collartrim' },
+  tank: { file: 'Quat_Tank', kind: 'fbx', targetH: 2.4, walk: 'Tank_Forward', attack: 'Tank_Forward', death: null, idle: 'Tank_Forward', turn: Math.PI },
   ak: { file: 'Shooter_AK', kind: 'gltf', targetH: 1.42, walk: 'Idle', attack: 'Idle', death: 'Death', idle: 'Idle' },
   godsblade: { file: 'Future_Robot', kind: 'fbx', targetH: 2.3, walk: 'Robot_Walking', attack: 'Robot_Punch', death: 'Robot_Death', idle: 'Robot_Idle', handProp: 'blade' },
   blaster: { file: 'Future_Alien', kind: 'fbx', targetH: 2.15, walk: 'Alien_Walk', attack: 'Alien_Punch', death: 'Alien_Death', idle: 'Alien_Idle', handProp: 'blaster' },
@@ -388,6 +388,40 @@ function buildShield(k) {
   shield.add(trim);
   return shield;
 }
+// commander's peaked cap: dome + gold band + forward brim.
+function buildCap(k) {
+  const cap = new THREE.Group();
+  const dome = new THREE.Mesh(new THREE.SphereGeometry(0.17 * k, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2), pbr('#2e3b2f', 0.8, 0.1));
+  dome.position.y = 0.1 * k;
+  cap.add(dome);
+  const band = new THREE.Mesh(new THREE.CylinderGeometry(0.175 * k, 0.175 * k, 0.06 * k, 12), pbr('#c9a227', 0.5, 0.7));
+  band.position.y = 0.1 * k;
+  cap.add(band);
+  const brim = new THREE.Mesh(new THREE.CylinderGeometry(0.2 * k, 0.2 * k, 0.02 * k, 12), pbr('#232b23', 0.8, 0.1));
+  brim.position.set(0, 0.08 * k, 0.12 * k);
+  cap.add(brim);
+  return cap;
+}
+// commander's baton: dark shaft + gold pommel, gripped in the fist.
+function buildBaton(k) {
+  const baton = new THREE.Group();
+  const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.03 * k, 0.035 * k, 0.5 * k, 8), pbr('#3a2c1c', 0.7, 0.2));
+  baton.add(shaft);
+  const pommel = new THREE.Mesh(new THREE.SphereGeometry(0.05 * k, 8, 6), pbr('#c9a227', 0.4, 0.8));
+  pommel.position.y = 0.28 * k;
+  baton.add(pommel);
+  return baton;
+}
+// commander's gold collar trim: bright bars at the neck base.
+function buildCollarTrim(k) {
+  const trim = new THREE.Group();
+  for (const sx of [-1, 1]) {
+    const bar = new THREE.Mesh(new THREE.BoxGeometry(0.12 * k, 0.04 * k, 0.06 * k), pbr('#c9a227', 0.4, 0.8));
+    bar.position.set(sx * 0.14 * k, -0.02 * k, 0.05 * k);
+    trim.add(bar);
+  }
+  return trim;
+}
 const HAND_PROPS = {
   club: { bone: 'FistR', name: 'club', make: buildClub },
   sling: { bone: 'FistR', name: 'slingshot', make: buildSlingshot },
@@ -396,6 +430,9 @@ const HAND_PROPS = {
   shield: { bone: 'LowerArmL', name: 'shield', make: buildShield },
   blade: { bone: 'HandR', name: 'energyblade', make: buildEnergyBlade },
   blaster: { bone: 'PalmR', name: 'blastergun', make: buildBlaster, rotX: -Math.PI / 2 },
+  cap: { bone: 'Head_M', name: 'cap', make: buildCap },
+  baton: { bone: 'FistR', name: 'baton', make: buildBaton },
+  collartrim: { bone: 'Head_M', name: 'collartrim', make: buildCollarTrim },
 };
 
 function playAction(holder, name) {
@@ -429,7 +466,9 @@ export function QuatUnitMesh(entity, role, templates) {
   const mesh = new THREE.Group();
   const body = SkeletonUtils.clone(tpl.object);
   // Quaternius models face +Z; procedural rigs face +X at rotation 0.
-  body.rotation.y = Math.PI / 2;
+  // The tank's gun runs along prop-local -X, so it turns PI to face +X
+  // like every other unit instead of sideways.
+  body.rotation.y = tpl.spec.turn ?? Math.PI / 2;
   body.scale.setScalar(tpl.scale * s);
   mesh.add(body);
   // FBX files can hide unit-conversion nodes below the root (the alien's
@@ -476,11 +515,21 @@ export function QuatUnitMesh(entity, role, templates) {
   }
   // fighters with procedural hand props (stone clubs, castle swords,
   // paladin shield off the left arm, future energy blade, blaster gun).
-  for (const key of [tpl.spec.handProp, tpl.spec.armProp]) {
+  // handBone overrides the entry bone for rigs without fists (shooter
+  // arms run LowerArmR straight into fingers; the sword hangs off the
+  // finger base like the infantry AK).
+  const slots = [
+    [tpl.spec.handProp, tpl.spec.handBone],
+    [tpl.spec.armProp, null],
+    [tpl.spec.headProp, null],
+    [tpl.spec.trimProp, null],
+  ];
+  for (const [key, boneOverride] of slots) {
     if (!key || !HAND_PROPS[key]) continue;
     const { bone, name, make, rotX } = HAND_PROPS[key];
-    const k = gripK(bone);
-    const grip = body.getObjectByName(bone);
+    const useBone = boneOverride || bone;
+    const k = gripK(useBone);
+    const grip = body.getObjectByName(useBone);
     const prop = make(k);
     prop.name = name;
     // the blaster barrel is built along +Z but the alien's fingers run

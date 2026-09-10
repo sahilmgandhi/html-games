@@ -507,6 +507,48 @@ export default [
     },
   },
   {
+    name: 'modern melee carries a blade, not a rifle',
+    async run(t) {
+      const tpl = await loadTemplates();
+      const inst = QuatUnitMesh(fakeEntity({ type: 'melee' }), MODERN_ROLES.melee, tpl);
+      // shooter rigs have no Fist bones (LowerArmR runs straight into the
+      // fingers); the sword hangs off the finger base like the infantry AK.
+      const hand = inst.mesh.getObjectByName('Middle1R');
+      t.assert('sword hangs off the sword hand', !!hand && !!hand.getObjectByName('sword'), '');
+      t.assert('no AK on the melee fighter', !inst.mesh.getObjectByName('ak'), '');
+      inst.dispose();
+    },
+  },
+  {
+    name: 'tank gun runs along the facing axis',
+    async run(t) {
+      const tpl = await loadTemplates();
+      const inst = QuatUnitMesh(fakeEntity({ type: 'armored' }), MODERN_ROLES.armored, tpl);
+      inst.mesh.updateMatrixWorld(true);
+      let gun = null, best = 0;
+      inst.mesh.traverse((o) => {
+        if (!o.isMesh) return;
+        const b = new THREE.Box3().setFromObject(o);
+        const x = b.max.x - b.min.x, z = b.max.z - b.min.z;
+        if (x > best) { best = x; gun = { x, z }; }
+      });
+      t.assert('gun part found', !!gun, '');
+      t.assert('gun long axis is mesh +X, not sideways +Z', gun.x > gun.z * 2, `${gun.x.toFixed(1)}x${gun.z.toFixed(1)}`);
+      inst.dispose();
+    },
+  },
+  {
+    name: 'commander reads as command: cap, baton, gold trim',
+    async run(t) {
+      const tpl = await loadTemplates();
+      const inst = QuatUnitMesh(fakeEntity({ isHero: true }), MODERN_ROLES.hero, tpl);
+      t.assert('peaked cap on the head', !!inst.mesh.getObjectByName('cap'), '');
+      t.assert('baton in the fist', !!inst.mesh.getObjectByName('baton'), '');
+      t.assert('gold collar trim', !!inst.mesh.getObjectByName('collartrim'), '');
+      inst.dispose();
+    },
+  },
+  {
     name: 'future templates parse with walk, attack and death clips',
     async run(t) {
       const tpl = await loadTemplates();
