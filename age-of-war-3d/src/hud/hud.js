@@ -75,6 +75,8 @@ export class HUD {
         this._emit({ type: 'cycle-difficulty' });
       } else if (btn.dataset.act === 'restart') {
         this._emit({ type: 'restart' });
+      } else if (btn.dataset.act === 'gallery') {
+        this._emit({ type: 'gallery' });
       }
     });
 
@@ -297,6 +299,7 @@ export class HUD {
         ov.innerHTML = `<div class="aow-panel">
           <h1>PAUSED</h1>
           <button class="aow-btn" data-act="restart">↻ Restart</button>
+          <button class="aow-btn" data-act="gallery">🖼 Unit gallery</button>
         </div>`;
       } else {
         ov.style.display = 'none';

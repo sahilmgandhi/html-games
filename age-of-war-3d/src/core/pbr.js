@@ -431,6 +431,38 @@ export function makeHpBar(width = 1.4) {
   };
 }
 
+// Floating name tag billboard: same canvas-sprite idiom as makeHpBar,
+// one dark plaque with centered text. Static after creation.
+export function makeNameTag(label, width = 1.6) {
+  const W = 256;
+  const H = 48;
+  const c = document.createElement('canvas');
+  c.width = W;
+  c.height = H;
+  const g = c.getContext('2d');
+  g.fillStyle = 'rgba(8,8,10,0.72)';
+  g.fillRect(0, 0, W, H);
+  g.strokeStyle = '#3a3a44';
+  g.lineWidth = 3;
+  g.strokeRect(2, 2, W - 4, H - 4);
+  g.fillStyle = '#e8e4d8';
+  g.font = 'bold 26px system-ui, sans-serif';
+  g.textAlign = 'center';
+  g.textBaseline = 'middle';
+  g.fillText(label, W / 2, H / 2 + 1);
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.generateMipmaps = false;
+  tex.minFilter = THREE.LinearFilter;
+  tex.anisotropy = 4;
+  const sprite = new THREE.Sprite(
+    new THREE.SpriteMaterial({ map: tex, depthTest: false, transparent: true })
+  );
+  sprite.scale.set(width, width * (H / W), 1);
+  sprite.renderOrder = 20;
+  return sprite;
+}
+
 // Rippling cloth banner shared by every age's base. Hoist edge pinned at
 // local x=0, wave amplitude growing toward the fly end. The material is
 // cloned so DoubleSide stays local to the banner. Returns { mesh, update(t) }.

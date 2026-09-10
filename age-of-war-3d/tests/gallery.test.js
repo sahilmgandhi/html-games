@@ -1,4 +1,6 @@
 import { galleryRoster } from '../src/gallery/roster.js';
+import { createPhasePlayer } from '../src/gallery/player.js';
+import { toGallery, toBattle } from '../src/gallery/nav.js';
 
 export default [
   {
@@ -28,6 +30,45 @@ export default [
     run(t) {
       t.assert('age 5 empty', galleryRoster(5).length === 0);
       t.assert('age -1 empty', galleryRoster(-1).length === 0);
+    },
+  },
+  {
+    name: 'phase player auto-cycles walk/attack/idle',
+    run(t) {
+      const p = createPhasePlayer();
+      t.assert('starts on walk', p.phase === 0 && p.label === 'Walk');
+      p.update(3.1);
+      t.assert('advances to attack', p.phase === 1 && p.label === 'Attack');
+      p.update(2.1);
+      t.assert('advances to idle', p.phase === 2 && p.label === 'Idle');
+      p.update(2.1);
+      t.assert('loops back to walk', p.phase === 0);
+    },
+  },
+  {
+    name: 'phase player manual select pauses auto',
+    run(t) {
+      const p = createPhasePlayer();
+      p.setPhase(2);
+      t.assert('jumps to idle', p.phase === 2);
+      t.assert('auto off after manual', p.auto === false);
+      p.update(99);
+      t.assert('frozen while manual', p.phase === 2);
+      p.setAuto(true);
+      t.assert('auto resumes', p.auto === true);
+      p.update(3.1);
+      t.assert('cycling again', p.phase === 0);
+    },
+  },
+  {
+    name: 'gallery/battle nav helpers keep the page, swap the param',
+    run(t) {
+      const g = toGallery('http://x/game/');
+      t.assert('adds showcase=gallery', g.includes('showcase=gallery'));
+      const b = toBattle('http://x/game/?showcase=gallery');
+      t.assert('drops showcase param', !b.includes('showcase'));
+      const b2 = toBattle('http://x/game/?showcase=gallery&foo=1');
+      t.assert('keeps other params', b2.includes('foo=1') && !b2.includes('showcase'));
     },
   },
 ];

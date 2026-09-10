@@ -8,6 +8,7 @@ import { AudioManager } from './audio/audio.js';
 import { BattleSim } from './simulation/battle.js';
 import { CONFIG } from './simulation/config.js';
 import { attachBattleView, applyBattleAction } from './demo-battle/battle-view.js';
+import { toGallery } from './gallery/nav.js';
 
 window.__errors = [];
 window.addEventListener('error', (e) => window.__errors.push(`error: ${e.message}`));
@@ -52,7 +53,14 @@ if (!showcase) {
     autoPlayer: false,
   });
   attachBattleView(game, sim, particles, { lockCamera: !!params.get('camera') });
-  hud.on((action) => applyBattleAction(sim, action));
+  hud.on((action) => {
+    // Gallery nav leaves the match behind: same page, showcase param on.
+    if (action.type === 'gallery') {
+      location.href = toGallery(location.href);
+      return;
+    }
+    applyBattleAction(sim, action);
+  });
   window.__battle = sim;
 }
 

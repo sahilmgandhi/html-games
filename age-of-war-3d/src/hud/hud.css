@@ -234,3 +234,26 @@
     0 2px 3px #000, 0 0 8px rgba(0, 0, 0, 0.9);
   will-change: transform;
 }
+
+/* Gallery showcase side panel: same plaque idiom as .aow-panel, docked
+   right so the lineup stays visible. Rows wrap inside .aow-grow. */
+.aow-gallery {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  max-width: 240px;
+  padding: 16px 18px;
+  align-items: stretch;
+  z-index: 15;
+}
+
+.aow-gallery h2 { margin: 0 0 4px; font-size: 20px; text-align: center; }
+
+.aow-gallery .aow-grow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: center;
+}
+
+.aow-gallery .aow-btn { min-width: 0; font-size: 12px; padding: 5px 8px; }
