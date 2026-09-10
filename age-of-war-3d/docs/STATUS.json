@@ -171,6 +171,13 @@
           "commander was a plain hazmat: procedural cap (dome+gold band+brim) on Head_M, baton (shaft+gold pommel) on Middle1R, gold collar bars on Head_M; prop loop extended to headProp/trimProp keys"
         ]
       },
+      "spectateBot": {
+        "status": "shipped, browser-verified: HUD BOT button toggles competent in-sim bot; manual play takes over; restart preserves",
+        "verified": "live interaction (0 errors): init off/Bot, toggle on/BOT ON, manual spawn-unit click takes over to off/Bot, restart preserves on/BOT ON; tests/bot.test.js (5 tests) incl bot-driven competent sim winning on Easy; 419/419 asserts",
+        "notes": [
+          "_demoPlayer upgraded to competent policy (mine, barracks, melee upgrade, hero, special, evolve); takeovers classified by takesOverBot in main.js (showcase bots untouched); bot survives restart, dies only on gameOver guard"
+        ]
+      },
       "futPilot": {
         "status": "working end-to-end, verdict: all 5 roles verified, all ages now animated",
         "verified": "future battle close-up (sage Titan with antennae+glowing eyes, golden Mike, red Stan, robot with cyan eyes, energy-blade arc correct) + bot full-match playthrough (blue wins on Easy, t=251); 321/321 asserts",
@@ -191,7 +198,8 @@
         "procedural low-poly cannot reach GTA/COD/Witcher photoreal; Quaternius CC0 casts ship for all 5 ages (best stylized coherent look per user)",
         "renaissance FX shipped: musket flash+tracer, cannon recoil+flash+smoke, barrel forward (renFX)",
         "modern props shipped: melee sword (no AK), forward tank gun, commander cap+baton+trim (modProps)",
-        "user-reported dino/knight walk fluidity: simDt speed fix test-proven, sheet shows no slide; motion verdict via videocap per age"
+        "user-reported dino/knight walk fluidity: simDt speed fix test-proven, sheet shows no slide; motion verdict via videocap per age",
+        "spectate bot shipped: HUD BOT button, competent in-sim policy, manual takeover, restart preserves (spectateBot)"
       ]
     }
   }

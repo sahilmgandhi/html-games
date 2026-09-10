@@ -722,31 +722,20 @@ export class BattleSim {
     this.balance.update(this);
   }
 
-  // Scripted player for demo mode: opens with turret + mine, then keeps a
-  // mixed warband in the field and fires the special when affordable.
+  // Scripted player for the spectate bot: the same competent policy as the
+  // winnability bar (mine, barracks, melee upgrades, hero, special, evolve,
+  // mass melee), once per second. Every call is internally gold-gated.
   _demoPlayer(dt) {
     this._demoTimer += dt;
     if (this._demoTimer < 1) return;
     this._demoTimer = 0;
-    const age = CONFIG.AGES[this.currentAge];
-    if (this.turrets.filter((t) => t.side === 'player').length === 0 && this.gold >= age.turrets[0].cost + 60) {
-      this.spawnTurretForSide('player', 0);
-    }
-    if (this.getBuildingCount('player') === 0 && this.gold >= CONFIG.BUILDINGS[0].cost + 40) {
-      this.buyBuildingForSide('player', 0);
-    }
-    const fielded = this.units.filter((u) => u.side === 'player' && u.alive).length;
-    if (fielded < 4) {
-      let idx = 0;
-      for (let i = age.units.length - 1; i >= 0; i--) {
-        if (this.gold >= age.units[i].cost) { idx = i; break; }
-      }
-      this.spawnUnitForSide('player', idx);
-    }
-    // Hold the special for a dramatic mid-battle moment: 30s in with an
-    // enemy fielded force of 3+.
-    const enemyField = this.units.filter((u) => u.side === 'enemy' && u.alive).length;
-    if (this.gameTime > 30 && enemyField >= 3) this.useSpecialForSide('player');
+    this.buyBuilding(0); // Gold Mine when affordable (no-op otherwise)
+    this.buyBuilding(1); // Barracks when affordable
+    this.upgradeUnit(0); // melee tiers when affordable
+    this.spawnHero('player');
+    this.useSpecial();
+    this.evolve();
+    this.spawnUnit(0);
   }
 
   // HUD state (matches hud.js contract).
@@ -812,6 +801,7 @@ export class BattleSim {
         name: CONFIG.DIFFICULTIES[this.difficulty].name,
         count: CONFIG.DIFFICULTIES.length,
       },
+      bot: this.autoPlayer,
       paused: this.paused,
       over: this.gameOver ? {
         winner: this.winner,

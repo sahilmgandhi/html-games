@@ -27,6 +27,19 @@ export function applyBattleAction(sim, action) {
       if (!sim.gameOver) sim.setDifficulty(sim.difficulty + 1);
       break;
     case 'restart': sim.restart(); break;
+    case 'toggle-bot': if (!sim.gameOver) sim.autoPlayer = !sim.autoPlayer; break;
     default: break;
   }
+}
+
+// Manual gameplay actions hand control to the player: when the spectate bot
+// is on, any of these switches it off (takeover). Pacing, pause, difficulty,
+// restart, the bot toggle itself and navigation never disengage the bot.
+// Pure so the live-battle handler and node tests share one definition.
+const TAKEOVER_ACTIONS = new Set([
+  'spawn-unit', 'upgrade-unit', 'spawn-hero', 'evolve', 'special',
+  'buy-slot', 'spawn-turret', 'sell-turret', 'buy-building',
+]);
+export function takesOverBot(action) {
+  return !!action && TAKEOVER_ACTIONS.has(action.type);
 }

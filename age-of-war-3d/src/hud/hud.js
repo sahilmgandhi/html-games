@@ -25,6 +25,7 @@ export class HUD {
         <span class="aow-res aow-age" data-f="age">Stone Age</span>
         <button class="aow-res aow-mini" data-act="pause" title="Pause (P)">PAUSE</button>
         <button class="aow-res aow-mini" data-act="difficulty" title="Cycle difficulty (restarts match)"></button>
+        <button class="aow-res aow-mini" data-act="bot" title="Spectate: bot plays blue"></button>
       </div>
       <div class="aow-bottombar">
         <div class="aow-row" data-f="row1">
@@ -73,6 +74,8 @@ export class HUD {
         this._emit({ type: 'toggle-pause' });
       } else if (btn.dataset.act === 'difficulty') {
         this._emit({ type: 'cycle-difficulty' });
+      } else if (btn.dataset.act === 'bot') {
+        this._emit({ type: 'toggle-bot' });
       } else if (btn.dataset.act === 'restart') {
         this._emit({ type: 'restart' });
       } else if (btn.dataset.act === 'gallery') {
@@ -315,6 +318,11 @@ export class HUD {
     if (diffBtn && state.difficulty) {
       this._setText(diffBtn, `⚔ ${state.difficulty.name}`);
       diffBtn.disabled = !!state.over;
+    }
+    const botBtn = this.el.querySelector('[data-act="bot"]');
+    if (botBtn && state.bot !== undefined) {
+      this._setText(botBtn, state.bot ? '🤖 BOT ON' : '🤖 Bot');
+      botBtn.disabled = !!state.over;
     }
   }
 

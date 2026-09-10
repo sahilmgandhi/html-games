@@ -8,6 +8,7 @@ import { AudioManager } from './audio/audio.js';
 import { BattleSim } from './simulation/battle.js';
 import { CONFIG } from './simulation/config.js';
 import { attachBattleView, applyBattleAction } from './demo-battle/battle-view.js';
+import { takesOverBot } from './demo-battle/actions.js';
 import { toGallery } from './gallery/nav.js';
 
 window.__errors = [];
@@ -59,6 +60,9 @@ if (!showcase) {
       location.href = toGallery(location.href);
       return;
     }
+    // Manual play takes over from the spectate bot; the bot toggle, pacing,
+    // pause, difficulty and restart leave it alone.
+    if (takesOverBot(action)) sim.autoPlayer = false;
     applyBattleAction(sim, action);
   });
   window.__battle = sim;
@@ -103,6 +107,7 @@ function stubState() {
     buildings: CONFIG.BUILDINGS.map((b) => ({ name: b.name, cost: b.cost, affordable: false })),
     speeds: [1, 2, 3].map((s) => ({ speed: s, active: s === 1 })),
     difficulty: { index: 0, name: CONFIG.DIFFICULTIES[0].name, count: CONFIG.DIFFICULTIES.length },
+    bot: false,
     paused: false,
     over: null,
     hint: CONFIG.HINT,
