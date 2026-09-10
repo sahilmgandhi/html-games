@@ -180,6 +180,47 @@ export default [
     },
   },
   {
+    name: 'stone fighters carry hand props: club, slingshot, shaman staff',
+    async run(t) {
+      const tpl = await loadTemplates();
+      const club = QuatUnitMesh(fakeEntity({ type: 'melee' }), QUAT_ROLES.melee, tpl);
+      const fistR = club.mesh.getObjectByName('FistR');
+      t.assert('clubman has a right fist bone', !!fistR, '');
+      t.assert('club hangs off the right fist', !!fistR && !!fistR.getObjectByName('club'), '');
+      club.dispose();
+      const sling = QuatUnitMesh(fakeEntity({ type: 'ranged' }), QUAT_ROLES.ranged, tpl);
+      t.assert('slingshot present', !!sling.mesh.getObjectByName('slingshot'), '');
+      sling.dispose();
+      const shaman = QuatUnitMesh(fakeEntity({ isHero: true }), QUAT_ROLES.hero, tpl);
+      const wfist = shaman.mesh.getObjectByName('FistR');
+      t.assert('shaman has a right fist bone', !!wfist, '');
+      t.assert('staff hangs off the right fist', !!wfist && !!wfist.getObjectByName('staff'), '');
+      shaman.dispose();
+    },
+  },
+  {
+    name: 'castle fighters carry steel: swordsman sword, paladin sword+shield, rider sword',
+    async run(t) {
+      const tpl = await loadTemplates();
+      const sword = QuatUnitMesh(fakeEntity({ type: 'melee' }), CASTLE_ROLES.melee, tpl);
+      const fistR = sword.mesh.getObjectByName('FistR');
+      t.assert('swordsman has a right fist bone', !!fistR, '');
+      t.assert('sword hangs off the right fist', !!fistR && !!fistR.getObjectByName('sword'), '');
+      sword.dispose();
+      const pal = QuatUnitMesh(fakeEntity({ isHero: true }), CASTLE_ROLES.hero, tpl);
+      const pfist = pal.mesh.getObjectByName('FistR');
+      t.assert('paladin sword hangs off the right fist', !!pfist && !!pfist.getObjectByName('sword'), '');
+      const farm = pal.mesh.getObjectByName('LowerArmL') || pal.mesh.getObjectByName('UpperArmL');
+      t.assert('paladin shield rides the left arm', !!farm && !!farm.getObjectByName('shield'), '');
+      pal.dispose();
+      const knight = QuatUnitMesh(fakeEntity({ type: 'fast' }), CASTLE_ROLES.fast, tpl);
+      const rider = knight.mesh.children[1];
+      const rfist = rider && rider.getObjectByName('FistR');
+      t.assert('knight rider sword hangs off the right fist', !!rfist && !!rfist.getObjectByName('sword'), '');
+      knight.dispose();
+    },
+  },
+  {
     name: 'archer carries a longbow in the fist and a quiver on the back',
     async run(t) {
       const tpl = await loadTemplates();
@@ -246,7 +287,7 @@ export default [
       const cx = (rb.min.x + rb.max.x) / 2;
       const frac = (cx - bb.min.x) / len;
       t.assert('rider centered on mid-back', frac > 0.4 && frac < 0.65, frac.toFixed(2));
-      t.assert('rider feet near the back line', rb.min.y >= bb.max.y * 0.85, `${rb.min.y.toFixed(2)} vs top ${bb.max.y.toFixed(2)}`);
+      t.assert('rider feet rest on the back, not the crest', rb.min.y >= bb.max.y * 0.6 && rb.min.y <= bb.max.y * 0.78, `${rb.min.y.toFixed(2)} vs top ${bb.max.y.toFixed(2)}`);
       inst.dispose();
     },
   },
@@ -516,6 +557,32 @@ export default [
       const deg = (barrel.angleTo(fingers) * 180) / Math.PI;
       t.assert('barrel tracks fingers', deg < 35, `${deg.toFixed(1)}deg`);
       gun.dispose();
+    },
+  },
+  {
+    name: 'hand props stay body-scale (no x100 blowup)',
+    async run(t) {
+      const tpl = await loadTemplates();
+      const cases = [
+        ['clubman', QUAT_ROLES.melee, { type: 'melee' }],
+        ['slinger', QUAT_ROLES.ranged, { type: 'ranged' }],
+        ['shaman', QUAT_ROLES.hero, { isHero: true }],
+        ['archer', CASTLE_ROLES.ranged, { type: 'ranged' }],
+        ['godsblade', FUTURE_ROLES.melee, { type: 'melee' }],
+        ['blaster', FUTURE_ROLES.ranged, { type: 'ranged' }],
+        ['titan', FUTURE_ROLES.hero, { isHero: true }],
+      ];
+      for (const [label, role, over] of cases) {
+        const inst = QuatUnitMesh(fakeEntity(over), role, tpl);
+        inst.mesh.updateMatrixWorld(true);
+        const box = new THREE.Box3().setFromObject(inst.mesh);
+        const size = new THREE.Vector3();
+        box.getSize(size);
+        const maxDim = Math.max(size.x, size.y, size.z);
+        const cap = tpl[role].height * 1.5 + 0.5;
+        t.assert(`${label} fits in its height`, maxDim < cap, `${maxDim.toFixed(2)}m vs cap ${cap.toFixed(2)}m`);
+        inst.dispose();
+      }
     },
   },
   {

@@ -9,3 +9,8 @@ export function galleryRoster(ageIndex) {
   out.push({ unitIndex: -1, isHero: true, label: age.hero.name });
   return out;
 }
+
+// Lane x (px) of the i-th gallery slot. Wide enough for titan-scale units.
+export function lineupX(i) {
+  return 600 + i * 300;
+}

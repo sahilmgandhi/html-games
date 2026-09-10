@@ -108,7 +108,22 @@
         "status": "working end-to-end, verdict: coherent stylized cast, still not AAA",
         "verified": "units showcase 49 skinned meshes + live battle 11 skinned, 0 console/page errors; 174/174 tests; Vite-less vendor addons + import map",
         "cast": "Quaternius CC0 (verified License.txt): Viking=clubman, Goblin=slinger+rider, Wizard=Shaman hero, Velociraptor FBX=dino",
-        "fixed": [
+      "galleryVerdict_2026_09_10": {
+        "status": "user walkthrough found 12 of 14 claims true; stone + castle fixed and video-verified, ren/modern/future TODO",
+        "verified": "castle lineup video (238 frames, 0 errors, 470 calls, 61fps): swordsman sword, fuller archer bow, seated knight rider, paladin sword + red shield; stone batch committed as cephradine (374/374)",
+        "stoneFixed": [
+          "battle-view passed raw dt to skeletal mixers while sim ran at gameSpeed: simDt to units/turrets/projectiles (tests/battle-speed.test.js, skeletal bone-travel ratio)",
+          "tools/videocap.mjs: CDP screencast to mp4 + contact-sheet PNG (permanent repo tool)",
+          "procedural club/slingshot/staff on quat FistR (HAND_PROPS idiom)",
+          "dino rider floated 0.7m (seat targeted crest Box3-top 2.79): seatFrac 0.68, feet on back ~1.91",
+          "blaster gun rendered 34m: alien FBX has internal x100 node (AlienArmature 100,100,100); gripK derives prop k from grip world scale (all k-built props)"
+        ],
+        "castleFixed": [
+          "buildSword + buildShield (sword FistR, shield LowerArmL via armProp loop); swordsman/paladin/knightRider armed",
+          "longbow fullered (arc tube 0.03->0.055, radius 0.42, grip wrap)"
+        ]
+      },
+      "fixed": [
           "showcase units staged before async cast load stayed procedural: added quatSwap to units showcase (mirrors battle-view)",
           "raptor multi-material broke cloneMats mid-swap (o.material.clone is not a function): array support + tests/clone-mats.test.js",
           "browser heuristic cache hid the fix behind stale modules: verify with cache-ignoring reload",
@@ -155,10 +170,10 @@
         "round soft-dot PointsMaterial map (close-range squares fixed)"
       ],
       "openIssues": [
-        "procedural low-poly cannot reach GTA/COD/Witcher photoreal; external glTF approved but unused",
-        "night-age unit readability weak (future units read as dark blobs at gameplay distance)",
-        "faces are primitives on cylinders; no subsurface scattering or high-frequency detail",
-        "renaissance/modern ages inherit shared-helper passes but were not re-shot"
+        "procedural low-poly cannot reach GTA/COD/Witcher photoreal; Quaternius CC0 casts ship for all 5 ages (best stylized coherent look per user)",
+        "renaissance: musketeer punches (no shoot clip in pirate rig) - muzzle-flash + tracer TODO; cannon static - recoil + flash + smoke TODO",
+        "modern: melee infantry carries AK (needs blade); tank gun 90deg off facing; commander needs cap + baton + gold trim",
+        "user-reported dino/knight walk fluidity: simDt speed fix test-proven, sheet shows no slide; motion verdict via videocap per age"
       ]
     }
   }

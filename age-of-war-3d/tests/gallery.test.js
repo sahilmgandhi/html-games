@@ -1,4 +1,4 @@
-import { galleryRoster } from '../src/gallery/roster.js';
+import { galleryRoster, lineupX } from '../src/gallery/roster.js';
 import { createPhasePlayer } from '../src/gallery/player.js';
 import { toGallery, toBattle } from '../src/gallery/nav.js';
 

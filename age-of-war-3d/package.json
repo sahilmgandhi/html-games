@@ -8,7 +8,8 @@
     "build": "vite build",
     "test": "node test-runner.js",
     "preview": "vite preview",
-    "shot": "PLAYWRIGHT_BROWSERS_PATH=./.browsers node tools/screenshot.mjs"
+    "shot": "PLAYWRIGHT_BROWSERS_PATH=./.browsers node tools/screenshot.mjs",
+    "videocap": "PLAYWRIGHT_BROWSERS_PATH=./.browsers node tools/videocap.mjs"
   },
   "dependencies": {
     "three": "^0.185.1"

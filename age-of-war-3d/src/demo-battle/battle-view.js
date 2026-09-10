@@ -350,7 +350,7 @@ export function attachBattleView(game, sim, fx, opts = {}) {
         scene.add(w.mesh);
       }
       w.mesh.position.set(toMeters(p.x), projHeight(p), p.z || 0);
-      w.update(dt);
+      w.update(simDt);
     }
     for (const [id, w] of projectiles) {
       if (!aliveProj.has(id)) {
@@ -360,8 +360,8 @@ export function attachBattleView(game, sim, fx, opts = {}) {
       }
     }
 
-    for (const [, w] of units) w.update(dt);
-    for (const [, w] of turrets) w.update(dt);
+    for (const [, w] of units) w.update(simDt);
+    for (const [, w] of turrets) w.update(simDt);
     for (const [, w] of buildings) w.update(dt);
 
     playerBase.setHp(sim.playerBase.hp / sim.playerBase.maxHp);

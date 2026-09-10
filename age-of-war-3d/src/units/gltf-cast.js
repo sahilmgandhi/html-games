@@ -28,15 +28,15 @@ export const FUTURE_ROLES = { melee: 'godsblade', ranged: 'blaster', armored: 'w
 // hide: authored weapon meshes to switch off per role (musketeer drops the
 // cutlass for a rifle, the cannoneer crew drops the lute for a cannon).
 const ROLE_SPEC = {
-  clubman: { file: 'Viking_Male', kind: 'gltf', targetH: 2.1, walk: 'Walk', attack: 'SwordSlash', death: 'Death', idle: 'Idle' },
-  slinger: { file: 'Goblin_Male', kind: 'gltf', targetH: 1.95, walk: 'Walk', attack: 'Shoot_OneHanded', death: 'Death', idle: 'Idle' },
-  hero: { file: 'Wizard', kind: 'gltf', targetH: 2.4 * 1.18, walk: 'Walk', attack: 'SwordSlash', death: 'Death', idle: 'Idle', heroModel: true },
+  clubman: { file: 'Viking_Male', kind: 'gltf', targetH: 2.1, walk: 'Walk', attack: 'SwordSlash', death: 'Death', idle: 'Idle', handProp: 'club' },
+  slinger: { file: 'Goblin_Male', kind: 'gltf', targetH: 1.95, walk: 'Walk', attack: 'Shoot_OneHanded', death: 'Death', idle: 'Idle', handProp: 'sling' },
+  hero: { file: 'Wizard', kind: 'gltf', targetH: 2.4 * 1.18, walk: 'Walk', attack: 'SwordSlash', death: 'Death', idle: 'Idle', heroModel: true, handProp: 'staff' },
   dino: { file: 'Velociraptor', kind: 'fbx', targetH: 3.1, walk: 'Velociraptor_Walk', attack: 'Velociraptor_Attack', death: 'Velociraptor_Death', idle: 'Velociraptor_Idle', lift: 5.0 },
-  swordsman: { file: 'Knight_Male', kind: 'gltf', targetH: 2.15, walk: 'Walk', attack: 'SwordSlash', death: 'Death', idle: 'Idle' },
+  swordsman: { file: 'Knight_Male', kind: 'gltf', targetH: 2.15, walk: 'Walk', attack: 'SwordSlash', death: 'Death', idle: 'Idle', handProp: 'sword' },
   archer: { file: 'Elf', kind: 'gltf', targetH: 2.0, walk: 'Walk', attack: 'Shoot_OneHanded', death: 'Death', idle: 'Idle', bow: true },
-  paladin: { file: 'Knight_Golden_Male', kind: 'gltf', targetH: 2.5 * 1.18, walk: 'Walk', attack: 'SwordSlash', death: 'Death', idle: 'Idle', heroModel: true },
+  paladin: { file: 'Knight_Golden_Male', kind: 'gltf', targetH: 2.5 * 1.18, walk: 'Walk', attack: 'SwordSlash', death: 'Death', idle: 'Idle', heroModel: true, handProp: 'sword', armProp: 'shield' },
   knight: { file: 'Horse', kind: 'fbx', targetH: 2.9, walk: 'Walk', attack: 'Run', death: 'Death', idle: 'Idle', lift: 5.0 },
-  knightRider: { file: 'Knight_Male', kind: 'gltf', targetH: 1.5, walk: 'Walk', attack: 'SwordSlash', death: 'Death', idle: 'Idle' },
+  knightRider: { file: 'Knight_Male', kind: 'gltf', targetH: 1.5, walk: 'Walk', attack: 'SwordSlash', death: 'Death', idle: 'Idle', handProp: 'sword' },
   dueler: { file: 'Pirate_Barbarossa', kind: 'gltf', targetH: 2.1, walk: 'Walk', attack: 'Sword', death: 'Death', idle: 'Idle' },
   musketeer: { file: 'Pirate_Mako', kind: 'gltf', targetH: 2.15, walk: 'Walk', attack: 'Punch', death: 'Death', idle: 'Idle', rifle: 'rifleProp', hide: ['Weapon_Sword'] },
   cannoneer: { file: 'Pirate_Henry', kind: 'gltf', targetH: 2.2, walk: 'Walk', attack: 'Punch', death: 'Death', idle: 'Idle', hide: ['Weapon_Lute'] },
@@ -59,7 +59,7 @@ const ROLE_SPEC = {
 // below the mount's back line (dangle: raptor rider sits tall, knight's
 // feet hang past the barrel).
 const COMPOSITES = {
-  dino: { rider: 'rider', attack: 'Punch', seatDrop: 0.18 },
+  dino: { rider: 'rider', attack: 'Punch', seatDrop: 0.18, seatFrac: 0.68 },
   knight: { rider: 'knightRider', attack: 'SwordSlash', seatDrop: 0.55 },
 };
 
@@ -260,10 +260,12 @@ const AGE_ROLES = { 1: CASTLE_ROLES, 2: RENAISSANCE_ROLES, 3: MODERN_ROLES, 4: F
 function buildLongbow(k) {
   const bow = new THREE.Group();
   bow.name = 'longbow';
-  const arc = new THREE.Mesh(new THREE.TorusGeometry(0.38 * k, 0.03 * k, 6, 14, Math.PI), pbr('#7a5230', 0.85));
+  const arc = new THREE.Mesh(new THREE.TorusGeometry(0.42 * k, 0.055 * k, 7, 18, Math.PI), pbr('#7a5230', 0.85));
   arc.rotation.z = -Math.PI / 2;
   bow.add(arc);
-  const string = new THREE.Mesh(new THREE.CylinderGeometry(0.008 * k, 0.008 * k, 0.76 * k, 4), basic('#d8cfb8'));
+  const grip = new THREE.Mesh(new THREE.CylinderGeometry(0.05 * k, 0.05 * k, 0.22 * k, 7), pbr('#4e3822', 0.9));
+  bow.add(grip);
+  const string = new THREE.Mesh(new THREE.CylinderGeometry(0.008 * k, 0.008 * k, 0.84 * k, 4), basic('#d8cfb8'));
   bow.add(string);
   return bow;
 }
@@ -308,7 +310,90 @@ function buildBlaster(k) {
   gun.add(sight);
   return gun;
 }
+// Procedural stone-age hand props (the UAC files ship bare-handed).
+// k counter-scales like the longbow; all hang off the right fist.
+function buildClub(k) {
+  const club = new THREE.Group();
+  club.name = 'club';
+  const haft = new THREE.Mesh(new THREE.CylinderGeometry(0.035 * k, 0.045 * k, 0.7 * k, 7), pbr('#6b4a2c', 0.9));
+  haft.position.y = 0.35 * k;
+  club.add(haft);
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.11 * k, 8, 6), pbr('#8d8d94', 0.7));
+  head.position.y = 0.72 * k;
+  head.scale.y = 1.25;
+  club.add(head);
+  return club;
+}
+function buildSlingshot(k) {
+  const sling = new THREE.Group();
+  sling.name = 'slingshot';
+  const grip = new THREE.Mesh(new THREE.CylinderGeometry(0.03 * k, 0.035 * k, 0.3 * k, 6), pbr('#6b4a2c', 0.9));
+  grip.position.y = 0.15 * k;
+  sling.add(grip);
+  for (const sx of [-1, 1]) {
+    const fork = new THREE.Mesh(new THREE.CylinderGeometry(0.02 * k, 0.025 * k, 0.28 * k, 6), pbr('#6b4a2c', 0.9));
+    fork.position.set(sx * 0.07 * k, 0.4 * k, 0);
+    fork.rotation.z = -sx * 0.35;
+    sling.add(fork);
+    const band = new THREE.Mesh(new THREE.CylinderGeometry(0.008 * k, 0.008 * k, 0.16 * k, 4), basic('#3a2c1c'));
+    band.position.set(sx * 0.035 * k, 0.5 * k, 0);
+    band.rotation.z = Math.PI / 2 - sx * 0.2;
+    sling.add(band);
+  }
+  return sling;
+}
+function buildStaff(k) {
+  const staff = new THREE.Group();
+  staff.name = 'staff';
+  const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.03 * k, 0.035 * k, 1.5 * k, 7), pbr('#4e3822', 0.85));
+  shaft.position.y = 0.75 * k;
+  staff.add(shaft);
+  const skull = new THREE.Mesh(new THREE.SphereGeometry(0.09 * k, 8, 6), pbr('#ded8c8', 0.6));
+  skull.position.y = 1.56 * k;
+  staff.add(skull);
+  const glow = new THREE.Mesh(new THREE.SphereGeometry(0.05 * k, 8, 6), glowMat('#7fe0ff', 0.9));
+  glow.position.y = 1.56 * k;
+  staff.add(glow);
+  return staff;
+}
+// Procedural arming sword + heater shield for the castle age (the knight
+// files ship bare-handed). k counter-scales like the longbow.
+function buildSword(k) {
+  const sword = new THREE.Group();
+  sword.name = 'sword';
+  const gripM = new THREE.Mesh(new THREE.CylinderGeometry(0.03 * k, 0.035 * k, 0.16 * k, 7), pbr('#4e3822', 0.9));
+  gripM.position.y = 0.08 * k;
+  sword.add(gripM);
+  const guard = new THREE.Mesh(new THREE.BoxGeometry(0.22 * k, 0.04 * k, 0.06 * k), pbr('#8d8d94', 0.4, 0.8));
+  guard.position.y = 0.18 * k;
+  sword.add(guard);
+  const bladeM = new THREE.Mesh(new THREE.BoxGeometry(0.09 * k, 0.85 * k, 0.02 * k), pbr('#c7ccd4', 0.3, 0.9));
+  bladeM.position.y = 0.62 * k;
+  sword.add(bladeM);
+  const tip = new THREE.Mesh(new THREE.ConeGeometry(0.045 * k, 0.12 * k, 4), pbr('#c7ccd4', 0.3, 0.9));
+  tip.position.y = 1.1 * k;
+  sword.add(tip);
+  return sword;
+}
+function buildShield(k) {
+  const shield = new THREE.Group();
+  shield.name = 'shield';
+  const plate = new THREE.Mesh(new THREE.CylinderGeometry(0.3 * k, 0.3 * k, 0.05 * k, 12), pbr('#7a1f1f', 0.7));
+  plate.rotation.x = Math.PI / 2;
+  shield.add(plate);
+  const boss = new THREE.Mesh(new THREE.SphereGeometry(0.09 * k, 8, 6), pbr('#8d8d94', 0.4, 0.8));
+  boss.position.z = 0.05 * k;
+  shield.add(boss);
+  const trim = new THREE.Mesh(new THREE.TorusGeometry(0.3 * k, 0.03 * k, 6, 16), pbr('#c9a227', 0.5, 0.7));
+  shield.add(trim);
+  return shield;
+}
 const HAND_PROPS = {
+  club: { bone: 'FistR', name: 'club', make: buildClub },
+  sling: { bone: 'FistR', name: 'slingshot', make: buildSlingshot },
+  staff: { bone: 'FistR', name: 'staff', make: buildStaff },
+  sword: { bone: 'FistR', name: 'sword', make: buildSword },
+  shield: { bone: 'LowerArmL', name: 'shield', make: buildShield },
   blade: { bone: 'HandR', name: 'energyblade', make: buildEnergyBlade },
   blaster: { bone: 'PalmR', name: 'blastergun', make: buildBlaster, rotX: -Math.PI / 2 },
 };
@@ -347,10 +432,21 @@ export function QuatUnitMesh(entity, role, templates) {
   body.rotation.y = Math.PI / 2;
   body.scale.setScalar(tpl.scale * s);
   mesh.add(body);
+  // FBX files can hide unit-conversion nodes below the root (the alien's
+  // AlienArmature is x100): they survive cloning, so size procedural
+  // props from the grip's true world scale, not tpl.scale.
+  body.updateMatrixWorld(true);
+  const gripK = (bone) => {
+    const b = body.getObjectByName(bone);
+    if (!b) return 1 / (tpl.scale * s);
+    const v = new THREE.Vector3();
+    b.getWorldScale(v);
+    return v.x > 0 ? 1 / v.x : 1 / (tpl.scale * s);
+  };
   // the archer's file has no bow: hang a procedural longbow off the left
   // fist and a quiver off the torso.
   if (tpl.spec.bow) {
-    const k = 1 / (tpl.scale * s);
+    const k = gripK('FistL');
     const fist = body.getObjectByName('FistL');
     (fist || body).add(buildLongbow(k));
     const torso = body.getObjectByName('Torso');
@@ -376,10 +472,12 @@ export function QuatUnitMesh(entity, role, templates) {
     gun.rotation.z = Math.PI / 2;
     (hand || body).add(gun);
   }
-  // future fighters with a procedural hand prop (energy blade, blaster gun).
-  if (tpl.spec.handProp && HAND_PROPS[tpl.spec.handProp]) {
-    const k = 1 / (tpl.scale * s);
-    const { bone, name, make, rotX } = HAND_PROPS[tpl.spec.handProp];
+  // fighters with procedural hand props (stone clubs, castle swords,
+  // paladin shield off the left arm, future energy blade, blaster gun).
+  for (const key of [tpl.spec.handProp, tpl.spec.armProp]) {
+    if (!key || !HAND_PROPS[key]) continue;
+    const { bone, name, make, rotX } = HAND_PROPS[key];
+    const k = gripK(bone);
     const grip = body.getObjectByName(bone);
     const prop = make(k);
     prop.name = name;
@@ -416,7 +514,18 @@ export function QuatUnitMesh(entity, role, templates) {
     mesh.add(rider);
     mesh.updateMatrixWorld(true);
     const rb = new THREE.Box3().setFromObject(rider);
-    rider.position.y += box.max.y * 0.92 - rb.min.y - comp.seatDrop;
+    rider.position.y += box.max.y * (comp.seatFrac ?? 0.92) - rb.min.y - comp.seatDrop;
+    // riders fight armed too: hang their hand prop off the rider's fist
+    // (the seat-block clone above is raw, like the dino rider).
+    if (riderTpl.spec.handProp && HAND_PROPS[riderTpl.spec.handProp]) {
+      const { bone, name, make } = HAND_PROPS[riderTpl.spec.handProp];
+      const fist = rider.getObjectByName(bone);
+      const rv = new THREE.Vector3();
+      (fist || rider).getWorldScale(rv);
+      const prop = make(rv.x > 0 ? 1 / rv.x : 1 / riderTpl.scale);
+      prop.name = name;
+      (fist || rider).add(prop);
+    }
     riderHolder = { mixer: new THREE.AnimationMixer(rider), actions: new Map(), clips: riderTpl.clips, current: null, currentName: null };
     riderAttack = comp.attack;
   }

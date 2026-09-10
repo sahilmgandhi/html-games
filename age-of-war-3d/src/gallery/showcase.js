@@ -5,7 +5,7 @@ import { getQuatTemplates } from '../units/gltf-cast.js';
 import { Unit } from '../simulation/entities.js';
 import { CONFIG } from '../simulation/config.js';
 import { makeNameTag } from '../core/pbr.js';
-import { galleryRoster } from './roster.js';
+import { galleryRoster, lineupX } from './roster.js';
 import { createPhasePlayer } from './player.js';
 import { toBattle } from './nav.js';
 
@@ -65,7 +65,7 @@ export function runShowcase(game) {
     lineup = [];
     galleryRoster(age).forEach((slot, i) => {
       const def = slot.isHero ? CONFIG.AGES[age].hero : CONFIG.AGES[age].units[slot.unitIndex];
-      const e = new Unit(600 + i * 230, def.hp, 'player', age, slot.isHero ? 0 : slot.unitIndex, 0, slot.isHero, 0);
+      const e = new Unit(lineupX(i), def.hp, 'player', age, slot.isHero ? 0 : slot.unitIndex, 0, slot.isHero, 0);
       const um = UnitMesh(e, age);
       um.update(0, e); // sync mesh position before Box3/center math
       const tag = makeNameTag(slot.label);
