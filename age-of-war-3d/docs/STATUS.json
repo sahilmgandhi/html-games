@@ -143,6 +143,15 @@
           "no shoot clip in pirate set: musketeer/cannoneer attack on Punch"
         ]
       },
+      "renFX": {
+        "status": "shipped, video-verified: musketeer fires (flash + tracer), cannon fires (recoil + flash + smoke), barrel points forward",
+        "verified": "renaissance gallery video (311 calls, 60fps, 0 console/page errors): dueler sword swings, musketeer rifle in hands, cannoneer crew beside forward-facing cannon, engineer axe over shoulder; flash/tracer presence+expiry test-proven (0.12s too brief for sheet sampling); 383/383 asserts",
+        "fixed": [
+          "cannon mount rotY PI/2 aimed the barrel sideways (+Z): rotY PI so prop-local -X muzzle maps to mesh-local +X forward; recoil runs prop-local +X (mesh-backward), spring-back exp decay",
+          "muzzle-flash (additive glowSprite) + gold tracer box at rifle muzzle (+2.04,0,0) on attack rising edge, 0.12-0.15s",
+          "cannon flash + rising grey smoke + kick=1 recoil on attack rising edge; fx list decayed in update, materials disposed on expiry (disposeDeep skips Sprites)"
+        ]
+      },
       "modPilot": {
         "status": "working end-to-end, verdict: coherent modern cast, AK + tank verified",
         "verified": "modern battle wide (40 skinned, soldiers+tanks both sides, 0 errors) + close-up (hazmat commander, AKs held, tank with turret+gun, team rings, HP bar); 273/273 asserts",
@@ -171,7 +180,7 @@
       ],
       "openIssues": [
         "procedural low-poly cannot reach GTA/COD/Witcher photoreal; Quaternius CC0 casts ship for all 5 ages (best stylized coherent look per user)",
-        "renaissance: musketeer punches (no shoot clip in pirate rig) - muzzle-flash + tracer TODO; cannon static - recoil + flash + smoke TODO",
+        "renaissance FX shipped: musket flash+tracer, cannon recoil+flash+smoke, barrel forward (renFX)",
         "modern: melee infantry carries AK (needs blade); tank gun 90deg off facing; commander needs cap + baton + gold trim",
         "user-reported dino/knight walk fluidity: simDt speed fix test-proven, sheet shows no slide; motion verdict via videocap per age"
       ]

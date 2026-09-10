@@ -10,7 +10,7 @@ import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
 import { toMeters } from '../simulation/config.js';
 import {
   solidify, cloneMats, makeHpBar, teamRing, disposeDeep, SIDE_ACCENT,
-  pbr, basic, glowMat,
+  pbr, basic, glowMat, glowSprite,
 } from '../core/pbr.js';
 
 // entity.type (or hero) -> template role, per age.
@@ -465,12 +465,14 @@ export function QuatUnitMesh(entity, role, templates) {
   }
   // roles with a gun file hang the prop off the firing hand (a finger
   // joint the clip articulates). It inherits body scale.
+  let gunProp = null;
   if (tpl.spec.rifle && templates[tpl.spec.rifle]) {
     const hand = body.getObjectByName('Middle1R');
     const gun = templates[tpl.spec.rifle].object.clone();
     gun.name = tpl.spec.gunName || 'rifle';
     gun.rotation.z = Math.PI / 2;
     (hand || body).add(gun);
+    gunProp = gun;
   }
   // fighters with procedural hand props (stone clubs, castle swords,
   // paladin shield off the left arm, future energy blade, blaster gun).
@@ -488,14 +490,18 @@ export function QuatUnitMesh(entity, role, templates) {
     (grip || body).add(prop);
   }
   // the cannoneer fights beside a static cannon mount, not on it.
+  // the barrel runs along prop-local -X, so a PI turn points the muzzle
+  // at mesh-local +X (forward); the old PI/2 aimed it sideways (+Z).
   const mount = MOUNTS[role];
+  let cannonProp = null;
   if (mount && templates[mount.tpl]) {
     const prop = SkeletonUtils.clone(templates[mount.tpl].object);
     prop.name = mount.tpl;
-    prop.rotation.y = Math.PI / 2;
+    prop.rotation.y = Math.PI;
     prop.scale.setScalar(templates[mount.tpl].scale * mount.scale);
     prop.position.set(0, 0, mount.side);
     mesh.add(prop);
+    cannonProp = prop;
   }
   const holder = { mixer: new THREE.AnimationMixer(body), actions: new Map(), clips: tpl.clips, current: null, currentName: null };
 
@@ -556,6 +562,47 @@ export function QuatUnitMesh(entity, role, templates) {
     }
   }
 
+  // transient muzzle fx (flash sprites, tracers): spawned on the attack
+  // rising edge, decayed in update, disposed on expiry. disposeDeep skips
+  // sprites, so each entry owns its material (the shared glow texture
+  // survives material disposal).
+  const fx = [];
+  function addFx(obj, ttl, vel) {
+    mesh.add(obj);
+    fx.push({ obj, ttl, vel });
+  }
+  function muzzleMeshLocal(prop, local) {
+    mesh.updateMatrixWorld(true);
+    return mesh.worldToLocal(prop.localToWorld(local.clone()));
+  }
+  let cannonKick = 0;
+  function fireFx() {
+    if (cannonProp) {
+      // recoil backward: prop-local +X is mesh-local -X after the PI turn.
+      cannonKick = 1;
+      cannonProp.position.x = 0.3;
+      const m = muzzleMeshLocal(cannonProp, new THREE.Vector3(-0.87, 0.1, 0));
+      const flash = glowSprite('#ffd23a', 0.95, 1.2);
+      flash.name = 'cannonflash';
+      flash.position.copy(m);
+      addFx(flash, 0.2);
+      const smoke = glowSprite('#9aa0a8', 0.55, 1.0, false);
+      smoke.name = 'cannonsmoke';
+      smoke.position.copy(m);
+      addFx(smoke, 0.8, new THREE.Vector3(0, 1.2, 0));
+    } else if (gunProp) {
+      const m = muzzleMeshLocal(gunProp, new THREE.Vector3(2.04, 0, 0));
+      const flash = glowSprite('#ffe9a3', 0.95, 0.8);
+      flash.name = 'muzzleflash';
+      flash.position.copy(m);
+      addFx(flash, 0.12);
+      const beam = new THREE.Mesh(new THREE.BoxGeometry(3, 0.06, 0.06), glowMat('#ffd23a', 0.8));
+      beam.name = 'tracer';
+      beam.position.set(m.x + 1.5, m.y, m.z);
+      addFx(beam, 0.15);
+    }
+  }
+
   const inst = {
     mesh,
     get currentClip() { return currentClip; },
@@ -578,6 +625,7 @@ export function QuatUnitMesh(entity, role, templates) {
         playAction(holder, want);
         currentClip = want;
       }
+      if (attacking && !wasAttacking) fireFx();
       wasAttacking = attacking;
       if (riderHolder) {
         const rwant = dying ? 'Death' : (attacking ? riderAttack : 'Idle');
@@ -585,6 +633,29 @@ export function QuatUnitMesh(entity, role, templates) {
       }
       holder.mixer.update(dt);
       if (riderHolder) riderHolder.mixer.update(dt);
+
+      // recoil spring-back + transient fx expiry (dt is sim-scaled here).
+      // the firing frame keeps full kick; decay starts the next frame.
+      if (cannonProp) {
+        if (cannonKick > 0.001) {
+          const before = cannonKick;
+          cannonKick *= Math.exp(-dt * 6);
+          if (before < 1) cannonProp.position.x = cannonKick * 0.3;
+        } else if (cannonProp.position.x !== 0) {
+          cannonKick = 0;
+          cannonProp.position.x = 0;
+        }
+      }
+      for (let i = fx.length - 1; i >= 0; i--) {
+        const f = fx[i];
+        f.ttl -= dt;
+        if (f.vel) f.obj.position.addScaledVector(f.vel, dt);
+        if (f.ttl <= 0) {
+          mesh.remove(f.obj);
+          f.obj.material?.dispose?.();
+          fx.splice(i, 1);
+        }
+      }
 
       if (e.hitFlash > 0) {
         const pop = Math.min(1, e.hitFlash / 0.1);
@@ -606,6 +677,11 @@ export function QuatUnitMesh(entity, role, templates) {
       }
     },
     dispose() {
+      for (const f of fx) {
+        mesh.remove(f.obj);
+        f.obj.material?.dispose?.();
+      }
+      fx.length = 0;
       disposeDeep(mesh);
       bar.sprite.material.map?.dispose?.();
       bar.sprite.material.dispose?.();

@@ -393,6 +393,42 @@ export default [
     },
   },
   {
+    name: 'musketeer muzzle flash and tracer fire on the attack edge, then expire',
+    async run(t) {
+      const tpl = await loadTemplates();
+      const inst = QuatUnitMesh(fakeEntity({ type: 'ranged' }), RENAISSANCE_ROLES.ranged, tpl);
+      inst.update(0.016, fakeEntity({ type: 'ranged', attackCooldown: 0 }));
+      t.assert('no flash before the edge', !inst.mesh.getObjectByName('muzzleflash'), '');
+      inst.update(0.016, fakeEntity({ type: 'ranged', attackCooldown: 1.5 }));
+      t.assert('flash appears on the edge', !!inst.mesh.getObjectByName('muzzleflash'), '');
+      t.assert('tracer appears on the edge', !!inst.mesh.getObjectByName('tracer'), '');
+      for (let i = 0; i < 30; i++) inst.update(0.1, fakeEntity({ type: 'ranged', attackCooldown: 0 }));
+      t.assert('flash expires', !inst.mesh.getObjectByName('muzzleflash'), '');
+      t.assert('tracer expires', !inst.mesh.getObjectByName('tracer'), '');
+      inst.dispose();
+    },
+  },
+  {
+    name: 'cannon recoils, flashes and smokes on the attack edge, then recovers',
+    async run(t) {
+      const tpl = await loadTemplates();
+      const inst = QuatUnitMesh(fakeEntity({ type: 'siege' }), RENAISSANCE_ROLES.siege, tpl);
+      const cannon = inst.mesh.getObjectByName('cannon');
+      const restX = cannon.position.x;
+      inst.update(0.016, fakeEntity({ type: 'siege', attackCooldown: 0 }));
+      inst.update(0.016, fakeEntity({ type: 'siege', attackCooldown: 2.5 }));
+      // recoil runs mesh-backward: the PI turn maps prop-local +X to
+      // mesh-local -X, away from the forward-pointing muzzle.
+      t.assert('cannon kicks back on the edge', cannon.position.x > restX + 0.05, cannon.position.x.toFixed(2));
+      t.assert('cannon flash appears', !!inst.mesh.getObjectByName('cannonflash'), '');
+      t.assert('cannon smoke appears', !!inst.mesh.getObjectByName('cannonsmoke'), '');
+      for (let i = 0; i < 40; i++) inst.update(0.1, fakeEntity({ type: 'siege', attackCooldown: 0 }));
+      t.assert('cannon recovers', Math.abs(cannon.position.x - restX) < 0.05, cannon.position.x.toFixed(2));
+      t.assert('cannon flash expires', !inst.mesh.getObjectByName('cannonflash'), '');
+      inst.dispose();
+    },
+  },
+  {
     name: 'cannoneer crew stands beside the cannon, lute hidden',
     async run(t) {
       const tpl = await loadTemplates();
