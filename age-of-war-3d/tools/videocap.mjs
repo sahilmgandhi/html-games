@@ -51,6 +51,9 @@ page.on('console', (m) => {
 page.on('pageerror', (e) => consoleErrors.push(`pageerror: ${e.message}`));
 
 await page.goto(url, { waitUntil: 'load' });
+// Static python http.server sends only Last-Modified, so the persistent
+// bridge profile would heuristically cache stale modules across runs.
+await page.reload({ waitUntil: 'load', ignoreCache: true });
 try {
   await page.waitForFunction(() => window.__ready === true, { timeout: 20000 });
 } catch {

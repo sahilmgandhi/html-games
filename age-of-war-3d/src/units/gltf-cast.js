@@ -10,7 +10,7 @@ import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
 import { toMeters } from '../simulation/config.js';
 import {
   solidify, cloneMats, makeHpBar, teamRing, disposeDeep, SIDE_ACCENT,
-  pbr, basic, glowMat, glowSprite,
+  pbr, basic, glowMat, glowSprite, FLASH_HEX, FLASH_PEAK,
 } from '../core/pbr.js';
 
 // entity.type (or hero) -> template role, per age.
@@ -604,10 +604,10 @@ export function QuatUnitMesh(entity, role, templates) {
   let wasAttacking = false;
   let currentClip = tpl.spec.idle;
 
-  function setFlash(on) {
+  function setFlash(level) {
     for (const m of mats) {
-      if ('emissive' in m) m.emissive.setHex(on ? 0xffffff : 0x000000);
-      if ('emissiveIntensity' in m) m.emissiveIntensity = on ? 0.3 : 1;
+      if ('emissive' in m) m.emissive.setHex(level > 0 ? FLASH_HEX : 0x000000);
+      if ('emissiveIntensity' in m) m.emissiveIntensity = level > 0 ? level * FLASH_PEAK : 1;
     }
   }
 
@@ -709,10 +709,11 @@ export function QuatUnitMesh(entity, role, templates) {
       if (e.hitFlash > 0) {
         const pop = Math.min(1, e.hitFlash / 0.1);
         body.scale.set(tpl.scale * s * (1 + pop * 0.05), tpl.scale * s * (1 - pop * 0.05), tpl.scale * s * (1 + pop * 0.05));
+        setFlash(pop);
       } else {
         body.scale.setScalar(tpl.scale * s);
+        setFlash(0);
       }
-      setFlash(e.hitFlash > 0);
 
       if (dying) {
         const raw = Math.min(1, (e.deathTimer || 0) / 0.35);

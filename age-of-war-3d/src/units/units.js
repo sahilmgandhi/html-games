@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { toMeters } from '../simulation/config.js';
 import {
-  pbr, basic, glowMat, solidify, cloneMats, makeHpBar, teamRing, emblemTexture, disposeDeep, SIDE_ACCENT, skinMat, clothMat, furMat,
+  pbr, basic, glowMat, solidify, cloneMats, makeHpBar, teamRing, emblemTexture, disposeDeep, SIDE_ACCENT, skinMat, clothMat, furMat, FLASH_HEX, FLASH_PEAK,
 } from '../core/pbr.js';
 import { getQuatTemplates, quatRoleFor, QuatUnitMesh, ensureQuatLoaded } from './gltf-cast.js';
 
@@ -1148,10 +1148,10 @@ export function UnitMesh(entity, ageIndex) {
   // pose once so the snap always returns to it.
   let armRx = null;
 
-  function setFlash(on) {
+  function setFlash(level) {
     for (const m of mats) {
-      if ('emissive' in m) m.emissive.setHex(on ? 0xffffff : 0x000000);
-      if ('emissiveIntensity' in m) m.emissiveIntensity = on ? 0.3 : 1;
+      if ('emissive' in m) m.emissive.setHex(level > 0 ? FLASH_HEX : 0x000000);
+      if ('emissiveIntensity' in m) m.emissiveIntensity = level > 0 ? level * FLASH_PEAK : 1;
     }
   }
 
@@ -1204,15 +1204,15 @@ export function UnitMesh(entity, ageIndex) {
       if (e.hitFlash > 0) {
         const pop = Math.min(1, e.hitFlash / 0.1);
         rig.body.scale.set(heroS * (1 + pop * 0.05), heroS * (1 - pop * 0.05), heroS * (1 + pop * 0.05));
+        setFlash(pop);
       } else {
         rig.body.scale.set(heroS, heroS, heroS);
+        setFlash(0);
       }
       if (rig.aura) {
         const s = 1 + Math.sin(performance.now() * 0.004) * 0.07;
         rig.aura.scale.set(s, s, 1);
       }
-
-      setFlash(e.hitFlash > 0);
 
       if (e.dying || !e.alive) {
         const raw = Math.min(1, (e.deathTimer || 0) / 0.35);

@@ -117,7 +117,10 @@
     "Castle brazier flame floating above stand (flame + glow seated to y=2.0, buried in cup; close-up verified)",
     "rune halo investigated: torus hugs menhir core (r=1.32 vs core ~1.28), no change needed",
     "unit upgrade pips never refreshing after purchase (87c3340: refresh .aow-pips in hud.js update loop; verified tier 1 + T1 tooltip)",
-    "phantom objects at player base investigated: blue banner/pole/ring + campfire + rubble composing oddly at glancing angles (projection-probe decoded every part to sim-backed base dressings + the 1 enemy turret); single canvas/renderer confirmed; no bug, no change"
+    "phantom objects at player base investigated: blue banner/pole/ring + campfire + rubble composing oddly at glancing angles (projection-probe decoded every part to sim-backed base dressings + the 1 enemy turret); single canvas/renderer confirmed; no bug, no change",
+    "walk-fluidity video verdicts PASS all 5 ages 2026-09-11 (tracking march videos, 0 errors; modern infantry via gallery walk close-up)",
+    "hit-flash blowout fixed 2026-09-11 (decaying warm pop FLASH_HEX/FLASH_PEAK in core/pbr.js; tests/hit-flash.test.js; numeric probe 0.18->0 ladder, fresh castle sheet zero white frames)",
+    "harness cache staleness fixed 2026-09-11 (screenshot/probe/videocap reload ignoreCache; static server sends Last-Modified only)"
   ],
   "graphics_upgrades": {
     "ground": "8720c45: instanced pebbles/tufts (per-age tints) + lane-wear decal, analytic height seating",
@@ -148,7 +151,8 @@
     "aaa12_future_units": "9f9b727: pauldron + power-pack helpers across all 5 future builders; war-machine skirts/lamp/antenna; titan charge cell",
     "aaa13_heroes": "f6fb477: heroes 1.18x scale, gold command ring, raised HP bar",
     "aaa14_buildings": "03415f8: mine mottled rock, adit lantern + bracing, cart tires; barracks tent guy-ropes + stakes",
-    "aaa15_projectiles": "9965b41: mottled rock/boulder shot, 3-vane arrows, shell fuse spark"
+    "aaa15_projectiles": "9965b41: mottled rock/boulder shot, 3-vane arrows, shell fuse spark",
+    "feel_flash": "hit-flash is a decaying warm pop (FLASH_HEX 0xfff2df, FLASH_PEAK 0.18 in core/pbr.js, all unit/turret paths); 426/426 asserts green, castle night sheet zero white frames"
   },
   "playthroughs": {
     "castle": "PASS: evolve->1, Swordsman/Archer/Knight/Paladin, Catapult/Fire/Oil (slots), mine+barracks, Arrow Volley fired; 0 errors",

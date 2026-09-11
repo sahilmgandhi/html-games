@@ -6,6 +6,12 @@ import { mulberry32 } from '../simulation/rng.js';
 // Cached materials are SHARED — a module that needs per-instance emissive
 // (hit flash) must call cloneMats() on its own root first.
 
+// Hit-flash shared tune: warm-white decaying pop. Peak stays below the
+// night tone-mapping clip so bright casts (castle horse, future mechs)
+// never burn to full white; decay (driven by hitFlash/0.1) keeps onset punch.
+export const FLASH_HEX = 0xfff2df;
+export const FLASH_PEAK = 0.18;
+
 const _cache = new Map();
 
 // Shared universal grit albedo: near-white detail (speckle + blotches +

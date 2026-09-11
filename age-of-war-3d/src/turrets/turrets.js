@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { toMeters } from '../simulation/config.js';
 import {
-  pbr, basic, glowMat, glowSprite, jitterGeo, mottleGeo, rockMat, solidify, cloneMats, makeHpBar, disposeDeep, SIDE_ACCENT,
+  pbr, basic, glowMat, glowSprite, jitterGeo, mottleGeo, rockMat, solidify, cloneMats, makeHpBar, disposeDeep, SIDE_ACCENT, FLASH_HEX, FLASH_PEAK,
 } from '../core/pbr.js';
 
 // Stone Age turrets (by turretIndex):
@@ -966,10 +966,10 @@ export function TurretMesh(turret, ageIndex, anchor) {
   let t = Math.random() * 10;
   const _v = new THREE.Vector3();
 
-  function setFlash(on) {
+  function setFlash(level) {
     for (const m of mats) {
-      if ('emissive' in m) m.emissive.setHex(on ? 0xffffff : 0x000000);
-      if ('emissiveIntensity' in m) m.emissiveIntensity = on ? 0.3 : 1;
+      if ('emissive' in m) m.emissive.setHex(level > 0 ? FLASH_HEX : 0x000000);
+      if ('emissiveIntensity' in m) m.emissiveIntensity = level > 0 ? level * FLASH_PEAK : 1;
     }
   }
 
@@ -1045,7 +1045,7 @@ export function TurretMesh(turret, ageIndex, anchor) {
           if (flashT <= 0) rig.flash2.visible = false;
         }
       }
-      setFlash(turret.hitFlash > 0);
+      setFlash(turret.hitFlash > 0 ? Math.min(1, turret.hitFlash / 0.1) : 0);
       const frac = turret.hp / turret.maxHp;
       bar.sprite.visible = frac < 0.999 && turret.alive;
       if (bar.sprite.visible) bar.set(frac);

@@ -53,6 +53,8 @@ page.on('console', (m) => {
 page.on('pageerror', (e) => consoleErrors.push(`pageerror: ${e.message}`));
 
 await page.goto(url.toString(), { waitUntil: 'load' });
+// See videocap.mjs: bypass the bridge profile's heuristic module cache.
+await page.reload({ waitUntil: 'load', ignoreCache: true });
 try {
   await page.waitForFunction(() => window.__ready === true, { timeout: 15000 });
 } catch {

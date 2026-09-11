@@ -20,6 +20,8 @@ const browser = await chromium.connectOverCDP(CDP_ENDPOINT);
 const context = browser.contexts()[0] || await browser.newContext();
 const page = context.pages()[0] || await context.newPage();
 await page.goto(url.toString(), { waitUntil: 'load' });
+// See videocap.mjs: bypass the bridge profile's heuristic module cache.
+await page.reload({ waitUntil: 'load', ignoreCache: true });
 try {
   await page.waitForFunction(() => window.__ready === true, { timeout: 15000 });
 } catch {

@@ -192,13 +192,20 @@
       "fixed": [
         "castle demo 1583 -> 1384 draw calls via solidify() skipping sub-0.22m casters (tests/shadow-budget.test.js, 2 asserts)",
         "hit-flash emissive 0.55/0.5 -> 0.3 (mid-flash still blows out to white in night stills; transient 0.1s, kept as game feel)",
-        "round soft-dot PointsMaterial map (close-range squares fixed)"
+        "round soft-dot PointsMaterial map (close-range squares fixed)",
+        "hit-flash is now a decaying warm pop (core/pbr.js FLASH_HEX 0xfff2df, FLASH_PEAK 0.18, driven by hitFlash/0.1 in units/gltf-cast/turrets; tests/hit-flash.test.js 4 tests): numeric probe shows 0.18->0 ladder, fresh 12-frame castle tracking sheet has zero white frames",
+        "harness cache staleness: screenshot/probe/videocap now reload ignoreCache (static python server sends only Last-Modified; stale binary-flash modules burned one verification round)"
       ],
+      "walkVerdicts_2026_09_11": {
+        "status": "PASS all 5 ages, no foot slide",
+        "verified": "tracking close-up march videos per age (track-*.mp4 + sheets, 0 errors, 59-61fps): stone dino strides, castle horse advances, ren pirates advance, future mechs advance, modern infantry walk clip cycles in gallery close-up; simDt bone-travel ratio test-proven",
+        "note": "modern demo opens mid-combat (tank vehicle, no stride); infantry verdict via gallery walk close-up on the shared simDt path"
+      },
       "openIssues": [
         "procedural low-poly cannot reach GTA/COD/Witcher photoreal; Quaternius CC0 casts ship for all 5 ages (best stylized coherent look per user)",
         "renaissance FX shipped: musket flash+tracer, cannon recoil+flash+smoke, barrel forward (renFX)",
         "modern props shipped: melee sword (no AK), forward tank gun, commander cap+baton+trim (modProps)",
-        "user-reported dino/knight walk fluidity: simDt speed fix test-proven, sheet shows no slide; motion verdict via videocap per age",
+        "user-reported dino/knight walk fluidity: VERDICT PASS 2026-09-11 (walkVerdicts: all 5 ages march with no slide; simDt bone-travel test-proven)",
         "spectate bot shipped: HUD BOT button, competent in-sim policy, manual takeover, restart preserves (spectateBot)"
       ]
     }
