@@ -1,6 +1,6 @@
 # Goal
 
-Push `age-of-war-3d/` from shipped five-age stylized (7–8/10) toward the photoreal bar (GTA/COD/Witcher at 10/10), keeping CR/CoC-at-a-glance readability as the floor. Priority order: visual polish first, then gameplay features, performance, audio. This file extends `PROMPT.md`; where the two conflict, this file wins.
+Push `age-of-war-3d/` from shipped five-age stylized (7–8/10) toward the photoreal bar (GTA/COD/Witcher at 10/10), keeping CR/CoC-at-a-glance readability as the floor. Priority order: net-new 3D-first presentation (animation/combat feel, then audio, then HUD), then gameplay features, performance. Balance numbers stay authoritative in `age-of-war/`; feel does not mirror 2D. This file extends `PROMPT.md`; where the two conflict, this file wins.
 
 # Starting State (read first)
 
@@ -132,7 +132,8 @@ screenshots).
 
 # Rules
 
-- Never edit `age-of-war/`. Balance numbers are read from it, never written.
+- Never edit `age-of-war/`. Balance numbers are read from it, never written;
+  presentation (motion, timing, audio, HUD) is 3D-first and never ported.
 - Never edit another module's folder. Core changes go through the integrator.
 - `npm test -w age-of-war` (156) and `npm test -w age-of-war-3d` (419 asserts)
   must pass before every commit.

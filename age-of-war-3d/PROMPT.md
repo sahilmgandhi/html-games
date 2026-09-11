@@ -36,6 +36,8 @@ The original `age-of-war/` Canvas 2D game must NEVER be modified or broken. Sub-
 
 **Shared world data model:** Import `CONFIG` values from the original game (balance numbers are authoritative there). The 3D variant reads them but never writes them.
 
+**Presentation is 3D-first, net-new.** Animation, combat feel, audio, and HUD are written for 3D, never ported from 2D timing, motion, or sound. The 2D game loans balance numbers and feature scope only. Deviations from 2D numbers are bugs; deviations from 2D feel are expected.
+
 **Asset policy:** External CC0 glTF/FBX skeletal casts with `License.txt` vendored, plus procedural weapons/props/scenery and PBR materials. Procedural fallback rigs stay so evolve never renders a missing mesh. No paid or unverified-license assets.
 
 ## 2. Verification loop before game polish
