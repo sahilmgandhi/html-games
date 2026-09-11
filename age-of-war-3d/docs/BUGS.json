@@ -1,0 +1,1 @@
+{"bugs":[],"sweeps":[{"date":"2026-09-11","kind":"combat","coverage":"all 5 ages: evolve chain, every unit card + hero, turret slots + all turrets, mine + barracks, special fire","result":"0 errors, 0 failures; spawned counts include enemy AI units as expected"}]}

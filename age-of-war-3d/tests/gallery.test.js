@@ -1,4 +1,5 @@
-import { galleryRoster, lineupX } from '../src/gallery/roster.js';
+import { galleryRoster, lineupX, GALLERY_CATEGORIES, galleryTurrets } from '../src/gallery/roster.js';
+import { CONFIG } from '../src/simulation/config.js';
 import { createPhasePlayer } from '../src/gallery/player.js';
 import { toGallery, toBattle } from '../src/gallery/nav.js';
 
@@ -69,6 +70,19 @@ export default [
       t.assert('drops showcase param', !b.includes('showcase'));
       const b2 = toBattle('http://x/game/?showcase=gallery&foo=1');
       t.assert('keeps other params', b2.includes('foo=1') && !b2.includes('showcase'));
+    },
+  },
+  {
+    name: 'four categories; every age lists its turrets',
+    run(t) {
+      t.assert('units/turrets/bases/world', GALLERY_CATEGORIES.join(',') === 'units,turrets,bases,world');
+      for (let a = 0; a < 5; a++) {
+        const tur = galleryTurrets(a);
+        t.assert(`age ${a} turret count matches config`, tur.length === CONFIG.AGES[a].turrets.length,
+          `got=${tur.length}`);
+        t.assert(`age ${a} labels match config`, tur.every((x, i) => x.label === CONFIG.AGES[a].turrets[i].name), '');
+      }
+      t.assert('out-of-range turrets empty', galleryTurrets(5).length === 0);
     },
   },
 ];

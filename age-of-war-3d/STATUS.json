@@ -156,7 +156,9 @@
     "perf_merge": "mergeStatic in core/pbr.js (world + bone-local modes, vertex-color baking): environment, all 5 base shells, all unit/turret rigs; draw calls stone 1346->811, castle 1860->1116, ren 1374->701, modern 3328->1327, future 1530->1223; all ages under 1500 budget, 60fps, pixel-identical screenshots",
     "feel_firelight": "lane braziers/pylons carry flickering point lights (castle/future); night readability castle 7->8, future 7->8; fixed pylon NaN lamp scale",
     "feel_audio": "positional battle mix (spatialMix + camera listener, UI/music global); sim passes kill-site positions",
-    "feel_hud": "base-danger pulsing red vignette below 33% base HP (hudState.base.frac)"
+    "feel_hud": "base-danger pulsing red vignette below 33% base HP (hudState.base.frac)",
+    "bugs_gallery": "gallery now parades units/turrets/bases/world per age (towers with seated firing guns, base damage cycler, age-following world, auto-orbit); muzzle fire + zero errors verified",
+    "bugs_audit": "combat sweep all 5 ages clean (23/23 smokes, spawn/turret/mine/evolve/special/pause/restart/gallery, 0 errors); no safe removals: all 24 quat files referenced, vendor/three.core.min.js is live (module wrapper re-exports it, restore verified), procedural rigs stay as loading fallback"
   },
   "playthroughs": {
     "castle": "PASS: evolve->1, Swordsman/Archer/Knight/Paladin, Catapult/Fire/Oil (slots), mine+barracks, Arrow Volley fired; 0 errors",
