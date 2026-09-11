@@ -201,6 +201,15 @@
         "verified": "tracking close-up march videos per age (track-*.mp4 + sheets, 0 errors, 59-61fps): stone dino strides, castle horse advances, ren pirates advance, future mechs advance, modern infantry walk clip cycles in gallery close-up; simDt bone-travel ratio test-proven",
         "note": "modern demo opens mid-combat (tank vehicle, no stride); infantry verdict via gallery walk close-up on the shared simDt path"
       },
+      "feelPass_2026_09_11": {
+        "status": "shipped: perf merge + firelight + positional audio + danger vignette",
+        "verified": "draw calls stone 811, castle 1116, ren 701, modern 1327, future 1223 (all <=1500, 60fps, pixel-identical base/prop close-ups); castle night 7->8 and future night 7->8 via brazier/pylon point lights (g5 sheets); positional mix test-proven (audio-mix.test.js) + live listener verified; vignette browser-verified at 20% base HP; 499/499 asserts + 156/156 original green",
+        "scores": { "stoneDay": 8, "castleNight": 8, "futureNight": 8 },
+        "openIssues": [
+          "modern is the heaviest age (1327, mostly tank/soldier skinned parts, unmergeable); watch on large battles",
+          "point-light GPU cost unmeasured headless (SwiftShader caps at 60); re-check on real hardware if night fps dips"
+        ]
+      },
       "openIssues": [
         "procedural low-poly cannot reach GTA/COD/Witcher photoreal; Quaternius CC0 casts ship for all 5 ages (best stylized coherent look per user)",
         "renaissance FX shipped: musket flash+tracer, cannon recoil+flash+smoke, barrel forward (renFX)",

@@ -427,6 +427,8 @@ export function attachBattleView(game, sim, fx, opts = {}) {
       dist,
     );
     lookGoal.set(THREE.MathUtils.clamp(midM, 5, 19), 1.5, 0);
+    // Positional battle mix follows the camera focus.
+    try { sim.audio?.setListener?.(lookGoal.x, 0); } catch { /* audio is cosmetic */ }
     const cam = game.camera;
     if (opts.lockCamera) {
       if (!camInit) { cam.lookAt(lookGoal); camInit = true; }

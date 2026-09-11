@@ -257,3 +257,19 @@
 }
 
 .aow-gallery .aow-btn { min-width: 0; font-size: 12px; padding: 5px 8px; }
+
+/* Base-danger vignette: red edge pulse while the player stronghold is
+   under a third HP. The .aow-hud root is a full-screen pointer-none layer,
+   so the overlay never intercepts clicks. */
+.aow-hud.aow-danger::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, transparent 52%, rgba(200, 30, 20, 0.5) 100%);
+  animation: aow-danger-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes aow-danger-pulse {
+  50% { opacity: 0.3; }
+}

@@ -22,6 +22,10 @@ const KEEP_STONE_DK = '#46464f';
 const KEEP_ROOF = '#33415e';
 const LEAF = ['#2e5b2e', '#3a6b34', '#274d28'];
 
+// Lane firelight base intensity (physical falloff): reads as a warm pool
+// ~4m out without flattening the night mood.
+const FIRE_BASE = 20;
+
 // Canopy tint jitter: lightness quantized to 5 steps so the shared pbr()
 // cache stays tiny across rebuilds (a continuous range would add dozens of
 // unique materials per setAge that the cache retains forever).
@@ -576,7 +580,7 @@ export function createEnvironment(scene, ageIndex) {
   const group = new THREE.Group();
   scene.add(group);
   const rng = mulberry32(1379);
-  const animated = { clouds: [], birds: [], smokes: [], fires: [] };
+  const animated = { clouds: [], birds: [], smokes: [], fires: [], lights: [] };
   let t = 0;
 
   function addSky(cloudColor, birdColor) {
@@ -785,6 +789,14 @@ export function createEnvironment(scene, ageIndex) {
     for (const b of animated.birds) skip.add(b.group);
     for (const f of animated.fires) skip.add(f);
     mergeStatic(group, skip);
+    // Lane firelight: one flickering point light per flame so night
+    // fighters pick up warm modeling as they pass the braziers/pylons.
+    for (const f of animated.fires) {
+      const l = new THREE.PointLight(f.material?.color ?? '#ff9a3a', FIRE_BASE, 13, 2);
+      l.position.copy(f.position);
+      f.parent.add(l);
+      animated.lights.push(l);
+    }
     // backdrop should not eat the shadow budget
     group.traverse((o) => { if (o.isMesh) o.castShadow = false; });
   }
@@ -800,6 +812,7 @@ export function createEnvironment(scene, ageIndex) {
       animated.birds.length = 0;
       animated.smokes.length = 0;
       animated.fires.length = 0;
+      animated.lights.length = 0;
       build(i);
       finalize();
     },
@@ -823,9 +836,11 @@ export function createEnvironment(scene, ageIndex) {
         s.position.y += dt * 0.4;
         if (s.position.y > 20) s.position.y = 10;
       }
-      for (const f of animated.fires) {
+      for (let i = 0; i < animated.fires.length; i++) {
+        const f = animated.fires[i];
         const s = 1 + Math.sin(t * 13 + f.userData.seed) * 0.18 + Math.sin(t * 29 + f.userData.seed) * 0.07;
         f.scale.set(1 / Math.sqrt(s), s, 1 / Math.sqrt(s));
+        if (animated.lights[i]) animated.lights[i].intensity = FIRE_BASE * (0.7 + 0.3 * s);
       }
     },
     dispose() {

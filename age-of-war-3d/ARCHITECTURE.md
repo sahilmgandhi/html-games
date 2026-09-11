@@ -48,7 +48,7 @@ Each gameplay module owns only its folder and exposes one factory or class:
 - `projectiles.ProjectileMesh(kind)` → `{ mesh, update(dt), dispose() }`
 - `particles.ParticleSystem3D(scene)` → `{ damageNumber(), goldNumber(), burst(), update(dt) }`
 - `hud.HUD(root, game)` → `{ update(state), on(action), dispose() }`
-- `audio.AudioManager` → `{ play(name), startMusic(age), updateMusicAge(age) }`
+- `audio.AudioManager` → `{ play(name, at?), startMusic(age), updateMusicAge(age), setListener(x, z) }` (positional battle mix: `at` in world metres, camera-driven listener; UI/music calls stay global)
 - `simulation.*` → pure classes, importable in Node for tests.
 - `demo-battle.runShowcase(game)` → scripted Stone Age match; `demo-battle/castle/showcase.js` `runShowcase(game)` → scripted Castle Age match (both sides evolved to age 1). Future ages follow the same `demo-battle/<slug>/showcase.js` pattern; the `?showcase=` loader resolves `<folder>/showcase.js` unchanged.
 

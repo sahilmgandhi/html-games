@@ -152,7 +152,11 @@
     "aaa13_heroes": "f6fb477: heroes 1.18x scale, gold command ring, raised HP bar",
     "aaa14_buildings": "03415f8: mine mottled rock, adit lantern + bracing, cart tires; barracks tent guy-ropes + stakes",
     "aaa15_projectiles": "9965b41: mottled rock/boulder shot, 3-vane arrows, shell fuse spark",
-    "feel_flash": "hit-flash is a decaying warm pop (FLASH_HEX 0xfff2df, FLASH_PEAK 0.18 in core/pbr.js, all unit/turret paths); 426/426 asserts green, castle night sheet zero white frames"
+    "feel_flash": "hit-flash is a decaying warm pop (FLASH_HEX 0xfff2df, FLASH_PEAK 0.18 in core/pbr.js, all unit/turret paths); 426/426 asserts green, castle night sheet zero white frames",
+    "perf_merge": "mergeStatic in core/pbr.js (world + bone-local modes, vertex-color baking): environment, all 5 base shells, all unit/turret rigs; draw calls stone 1346->811, castle 1860->1116, ren 1374->701, modern 3328->1327, future 1530->1223; all ages under 1500 budget, 60fps, pixel-identical screenshots",
+    "feel_firelight": "lane braziers/pylons carry flickering point lights (castle/future); night readability castle 7->8, future 7->8; fixed pylon NaN lamp scale",
+    "feel_audio": "positional battle mix (spatialMix + camera listener, UI/music global); sim passes kill-site positions",
+    "feel_hud": "base-danger pulsing red vignette below 33% base HP (hudState.base.frac)"
   },
   "playthroughs": {
     "castle": "PASS: evolve->1, Swordsman/Archer/Knight/Paladin, Catapult/Fire/Oil (slots), mine+barracks, Arrow Volley fired; 0 errors",

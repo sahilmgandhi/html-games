@@ -6,7 +6,7 @@
 // Slot math (turret/building x/y) is identical to the original so combat
 // distances match. Lane depth `z` is visual-only, dealt from the seeded RNG.
 
-import { CONFIG } from './config.js';
+import { CONFIG, toMeters } from './config.js';
 import {
   SpatialHash, Base, Unit, Turret, Building, ProjectilePool,
 } from './entities.js';
@@ -110,8 +110,12 @@ export class BattleSim {
     try { this.events?.emit(name, payload); } catch { /* render sink must never break sim */ }
   }
 
-  _sound(name) {
-    try { this.audio?.play(name); } catch { /* audio is cosmetic */ }
+  _sound(name, e = null) {
+    // Positional battle mix: entities carry sim px in x, metres in z.
+    const at = e && Number.isFinite(e.x)
+      ? { x: toMeters(e.x), z: e.z || 0 }
+      : null;
+    try { this.audio?.play(name, at); } catch { /* audio is cosmetic */ }
   }
 
   // ---- slots (identical math to the original) ----
@@ -171,7 +175,7 @@ export class BattleSim {
     this.units.push(u);
     if (isPlayer) {
       this.totalSpawned++;
-      this._sound('spawn');
+      this._sound('spawn', u);
       this._sound('ui_click');
     }
     this.emit('entity:spawn', u);
@@ -206,7 +210,7 @@ export class BattleSim {
     );
     if (!isPlayer) this.applyEnemyScaling(u, u.hp, u.damage);
     this.units.push(u);
-    this._sound('special');
+    this._sound('special', u);
     this.emit('entity:spawn', u);
     return u;
   }
@@ -243,7 +247,7 @@ export class BattleSim {
     t.z = pos.z;
     if (!isPlayer) this.applyEnemyScaling(t, data.hp, data.damage);
     this.turrets.push(t);
-    if (isPlayer) this._sound('spawn');
+    if (isPlayer) this._sound('spawn', t);
     this.emit('entity:spawn', t);
     return t;
   }
@@ -272,7 +276,7 @@ export class BattleSim {
     const b = new Building(px, CONFIG.GROUND_Y - CONFIG.BUILDING_Y_OFFSET, side, buildingIndex, slot);
     b.z = (slot - (CONFIG.MAX_BUILDINGS - 1) / 2) * 1.1 + (isPlayer ? -0.6 : 0.6);
     this.buildings.push(b);
-    if (isPlayer) this._sound('spawn');
+    if (isPlayer) this._sound('spawn', b);
     this.emit('entity:spawn', b);
     return b;
   }
@@ -557,7 +561,7 @@ export class BattleSim {
     this.gold += refund;
     t.alive = false;
     this.emit('gold:change', { side: 'player', amount: refund });
-    this._sound('gold');
+    this._sound('gold', t);
     return true;
   }
 
@@ -617,10 +621,10 @@ export class BattleSim {
         this.projectilePool, this.spatialHash);
       if (this.projectilePool.active.length > prevProj) {
         this.emit('projectile:fire', u);
-        this._sound('fire');
+        this._sound('fire', u);
       } else if (result === 'melee') {
         this.emit('projectile:hit', { entity: null, melee: true, attacker: u });
-        this._sound('hit');
+        this._sound('hit', u);
       }
     }
 
@@ -629,7 +633,7 @@ export class BattleSim {
       t.update(dt, this.projectilePool, this.spatialHash);
       if (this.projectilePool.active.length > prevProj) {
         this.emit('projectile:fire', t);
-        this._sound('fire');
+        this._sound('fire', t);
       }
     }
 
@@ -641,7 +645,7 @@ export class BattleSim {
         const clang = hits.some((h) => h.entity && (!(h.entity instanceof Unit) ||
           h.entity.isHero || h.entity.type === 'armored' ||
           h.entity.type === 'siege' || h.entity.type === 'elite'));
-        this._sound(clang ? 'clang' : 'hit');
+        this._sound(clang ? 'clang' : 'hit', hits.find((h) => h.entity)?.entity ?? p);
         for (const hit of hits) this.emit('projectile:hit', hit);
       }
     }
@@ -670,8 +674,8 @@ export class BattleSim {
             this.xp += u.xpReward;
             this.emit('xp:change', this.xp);
           }
-          this._sound(u.maxHp >= 1200 ? 'thud' : 'death');
-          this._sound('gold');
+          this._sound(u.maxHp >= 1200 ? 'thud' : 'death', u);
+          this._sound('gold', u);
           this.emit('entity:death', u);
         } else {
           this.units[write++] = u;
@@ -685,7 +689,7 @@ export class BattleSim {
       for (let i = 0; i < this.turrets.length; i++) {
         const t = this.turrets[i];
         if (!t.alive) {
-          this._sound('thud'); // structural collapse, not a body drop
+          this._sound('thud', t); // structural collapse, not a body drop
           this.emit('entity:death', t);
         } else {
           this.turrets[write++] = t;
@@ -803,6 +807,7 @@ export class BattleSim {
       },
       bot: this.autoPlayer,
       paused: this.paused,
+      base: { frac: this.playerBase.hp / this.playerBase.maxHp },
       over: this.gameOver ? {
         winner: this.winner,
         title: this.winner === 'player' ? 'VICTORY!' : 'DEFEAT!',

@@ -309,6 +309,9 @@ export class HUD {
         ov.innerHTML = '';
       }
     }
+    // Base-danger vignette: the 3D stronghold already shows damage states;
+    // the HUD escalates below a third so a gate fight reads at a glance.
+    this.el.classList.toggle('aow-danger', (state.base?.frac ?? 1) < 0.33 && !state.over);
     const pauseBtn = this.el.querySelector('[data-act="pause"]');
     if (pauseBtn) {
       pauseBtn.textContent = state.paused ? 'RESUME' : 'PAUSE';
