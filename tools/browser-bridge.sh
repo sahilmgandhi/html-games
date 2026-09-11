@@ -4,7 +4,7 @@
 # Agents in `opencode-decoupled` (container, --network none) reach these via
 # chrome-devtools MCP (host) and file reads — never by running servers inside
 # the container. Run this OUTSIDE the sandbox, from a normal shell.
-# Usage: bash tools/browser-bridge.sh [start|stop|status|logs|restart]
+# Usage: bash tools/browser-bridge.sh [start|stop|status|logs|restart|tabs|quiet [--yes]]
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -76,15 +76,44 @@ stop_one() {
   fi
 }
 
+stop_all() {
+  stop_one "$VITE_PID" vite; stop_one "$SERVE_PID" serve; stop_one "$CHROME_PID" chrome
+}
+
+list_tabs() {
+  if ! chrome_up; then echo "tabs: chrome :9222 DOWN (no tab list)"; return 0; fi
+  curl -sf --max-time 2 http://127.0.0.1:9222/json/list 2>/dev/null | python3 -c \
+    'import json,sys
+try: tabs = json.load(sys.stdin)
+except Exception: sys.exit("tabs: could not parse tab list")
+pages = [t for t in tabs if t.get("type") == "page"]
+print("tabs: " + str(len(pages)) + " page(s)")
+for t in pages: print("- " + str(t.get("title", "?")) + " :: " + str(t.get("url", "?")))'
+}
+
+cmd_status() {
+  chrome_up && echo "chrome :9222 OK" || echo "chrome :9222 DOWN"
+  serve_up && echo "serve  :8081 OK" || echo "serve  :8081 DOWN"
+  vite_up && echo "vite   :3001 OK" || echo "vite   :3001 DOWN"
+}
+
+cmd_quiet() {
+  cmd_status
+  list_tabs
+  if [[ "${1:-}" != "--yes" && "${1:-}" != "-y" ]]; then
+    read -r -p "Close bridge (chrome+serve+vite)? [y/N] " ans || ans=""
+    [[ "$ans" == [Yy]* ]] || { echo "kept bridge up"; return 0; }
+  fi
+  stop_all
+}
+
 cmd="${1:-status}"
 case "$cmd" in
   start) start_chrome; start_serve; start_vite ;;
-  stop) stop_one "$VITE_PID" vite; stop_one "$SERVE_PID" serve; stop_one "$CHROME_PID" chrome ;;
+  stop) stop_all ;;
   restart) "$0" stop || true; "$0" start ;;
   logs) tail -n 50 /tmp/game-bridge-chrome.log /tmp/game-bridge-8081.log /tmp/game-bridge-3001.log 2>/dev/null || true ;;
-  status|*)
-    chrome_up && echo "chrome :9222 OK" || echo "chrome :9222 DOWN"
-    serve_up && echo "serve  :8081 OK" || echo "serve  :8081 DOWN"
-    vite_up && echo "vite   :3001 OK" || echo "vite   :3001 DOWN"
-    ;;
+  tabs) cmd_status; list_tabs ;;
+  quiet) shift; cmd_quiet "${1:-}" ;;
+  status|*) cmd_status ;;
 esac
