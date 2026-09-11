@@ -107,7 +107,28 @@ cmd_quiet() {
   stop_all
 }
 
-cmd="${1:-status}"
+usage() {
+  cat <<'EOF'
+Usage: browser-bridge.sh [command] [options]
+
+Commands:
+  start          Start chrome, serve, and vite
+  stop           Stop chrome, serve, and vite
+  restart        Stop, then start
+  status         Show whether each service is up
+  logs           Show recent log output
+  tabs           Show status plus open browser tabs
+  quiet [--yes]  Show status and tabs, then stop (skip prompt with --yes)
+  help           Show this help
+
+Examples:
+  browser-bridge.sh start
+  browser-bridge.sh tabs
+  browser-bridge.sh quiet --yes
+EOF
+}
+
+cmd="${1:-help}"
 case "$cmd" in
   start) start_chrome; start_serve; start_vite ;;
   stop) stop_all ;;
@@ -115,5 +136,7 @@ case "$cmd" in
   logs) tail -n 50 /tmp/game-bridge-chrome.log /tmp/game-bridge-8081.log /tmp/game-bridge-3001.log 2>/dev/null || true ;;
   tabs) cmd_status; list_tabs ;;
   quiet) shift; cmd_quiet "${1:-}" ;;
-  status|*) cmd_status ;;
+  status) cmd_status ;;
+  help|--help|-h) usage ;;
+  *) echo "Error: unknown command '$cmd'" >&2; usage >&2; exit 1 ;;
 esac

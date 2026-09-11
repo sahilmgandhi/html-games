@@ -29,7 +29,25 @@ function copyTree(from, to, slug, name) {
   }
 }
 
+function usage() {
+  console.log(`Usage: npm run new-game <slug> "<Display Name>"
+   or: node tools/new-game.js <slug> "<Display Name>"
+
+Arguments:
+  slug           lowercase-kebab-case directory name (e.g. my-game)
+  "Display Name" quoted game title (e.g. "My Game")
+
+Examples:
+  npm run new-game my-game "My Game"
+  node tools/new-game.js my-game "My Game"`);
+}
+
 const [slug, name] = process.argv.slice(2);
+
+if (slug === 'help' || slug === '--help' || slug === '-h') {
+  usage();
+  process.exit(0);
+}
 
 if (!slug || !name) fail('usage: npm run new-game <slug> "<Display Name>"');
 if (!SLUG_PATTERN.test(slug)) fail(`slug must be lowercase-kebab-case, got "${slug}"`);
