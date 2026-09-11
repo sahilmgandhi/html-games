@@ -10,7 +10,7 @@ import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
 import { toMeters } from '../simulation/config.js';
 import {
   solidify, cloneMats, makeHpBar, teamRing, disposeDeep, SIDE_ACCENT,
-  pbr, basic, glowMat, glowSprite, FLASH_HEX, FLASH_PEAK,
+  pbr, basic, glowMat, glowSprite, FLASH_HEX, FLASH_PEAK, mergeStatic,
 } from '../core/pbr.js';
 
 // entity.type (or hero) -> template role, per age.
@@ -585,6 +585,9 @@ export function QuatUnitMesh(entity, role, templates) {
     riderAttack = comp.attack;
   }
 
+  // Rigid prop parts fuse per joint (local mode) so hand guns, shields and
+  // crew-served mounts cost a few calls but keep articulating with bones.
+  mergeStatic(mesh, new Set(), { local: true });
   const bar = makeHpBar(entity.isHero ? 1.8 : 1.3);
   bar.sprite.position.y = height * heroS + 0.35;
   bar.sprite.visible = false;

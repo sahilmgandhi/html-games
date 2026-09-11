@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import {
-  pbr, basic, glowMat, glowSprite, jitterGeo, mottleGeo, rockMat, solidify, cloneMats, makeHpBar, makeCloth, bannerMat, teamRing, disposeDeep, SIDE_ACCENT,
+  pbr, basic, glowMat, glowSprite, jitterGeo, mottleGeo, rockMat, solidify, cloneMats, makeHpBar, makeCloth, bannerMat, teamRing, disposeDeep, mergeStatic, SIDE_ACCENT,
 } from '../core/pbr.js';
 
 // Strongholds, one per age: Stone is a great-menhir core ringed by a timber
@@ -127,6 +127,9 @@ function buildStoneHold(accent, mirror, side) {
   dmg1.visible = false;
 
   // HP bar, shadows and facing are owned by the BaseMesh dispatcher below.
+  // Static shell merges into a few draw calls; cloth, fire, rune, damage
+  // overlays and the tilting core stay live.
+  mergeStatic(mesh, new Set([core, flag, flame, ember, rune, dmg2, dmg1]));
   let t = Math.random() * 10;
   return {
     group: mesh,
@@ -336,6 +339,10 @@ function buildCastleKeep(accent, mirror) {
   dmg2.visible = false;
   dmg1.visible = false;
 
+  // Static shell merges; banner, windows, brazier fire and damage overlays stay live.
+  const live = new Set([flag, dmg2, dmg1, ...windows]);
+  for (const br of braziers) { live.add(br.flame); live.add(br.ember); }
+  mergeStatic(mesh, live);
   let t = Math.random() * 10;
   return {
     group: mesh,
@@ -463,6 +470,10 @@ function buildRenaissancePalazzo(accent, mirror) {
   dmg2.visible = false;
   dmg1.visible = false;
 
+  // Static shell merges; banner, windows, torch fire and damage overlays stay live.
+  const live = new Set([flag, dmg2, dmg1, ...windows]);
+  for (const br of torches) { live.add(br.flame); live.add(br.ember); }
+  mergeStatic(mesh, live);
   let t = Math.random() * 10;
   return {
     group: mesh,
@@ -576,6 +587,8 @@ function buildModernBunker(accent, mirror) {
   dmg2.visible = false;
   dmg1.visible = false;
 
+  // Static shell merges; pennant, slit, mast, dish and damage overlays stay live.
+  mergeStatic(mesh, new Set([flag, slit, mast, dish, dmg2, dmg1]));
   let t = Math.random() * 10;
   return {
     group: mesh,
@@ -682,6 +695,8 @@ function buildFutureCitadel(accent, mirror) {
   dmg2.visible = false;
   dmg1.visible = false;
 
+  // Static shell merges; banner, strips, crown, beacon, mast and damage overlays stay live.
+  mergeStatic(mesh, new Set([flag, crown, beacon, mast, dmg2, dmg1, ...strips]));
   let t = Math.random() * 10;
   return {
     group: mesh,

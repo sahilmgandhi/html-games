@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { mulberry32 } from '../simulation/rng.js';
 
 // Shared procedural-PBR helpers (integrator-owned). Every gameplay module builds
@@ -522,4 +523,99 @@ export function disposeDeep(root) {  root.traverse((o) => {
       else m?.dispose?.();
     }
   });
+}
+
+// Bake static meshes into one mesh per compatible bucket: identical pixels,
+// a fraction of the draw calls. Buckets match material class and flags;
+// differing flat colors bake into a shared vertex-colored material, so
+// per-call fresh materials (rockMat, tints) merge as well as cached ones.
+// Only plain single-material Meshes merge; skinned/sprite/points/
+// multi-material/morphed parts stay. Anything in `skip` (or under it) stays
+// too — callers pass animated subtrees. With { local: true } parts merge per
+// parent in bone-local space, so joint-attached props keep articulating;
+// otherwise parts merge in world space. Source geometries are disposed (they
+// leave the graph); shared materials are never touched.
+// Returns { merged, kept } for tests and STATUS.
+export function mergeStatic(root, skip = new Set(), opts = {}) {
+  const local = !!opts.local;
+  const buckets = new Map();
+  const parts = [];
+  root.updateWorldMatrix(true, true);
+  root.traverse((o) => {
+    if (!o.isMesh || o.isSkinnedMesh) return;
+    if (Array.isArray(o.material) || !o.material) return;
+    if (o.visible === false) return; // off-state parts (dropped weapons, flashes) stay off
+    if (o.morphTargetInfluences || o.geometry.morphAttributes?.position?.length) return;
+    for (let p = o; p && p !== root; p = p.parent) {
+      if (skip.has(p)) return;
+    }
+    parts.push(o);
+  });
+  const bake = new THREE.Matrix4();
+  for (const o of parts) {
+    const g = o.geometry;
+    const m = o.material;
+    const attrs = Object.keys(g.attributes).filter((a) => a !== 'color').sort().join(',');
+    const idx = g.index ? 'i' : 'n';
+    // Local mode partitions by parent so bone-attached props merge within
+    // their joint and keep articulating; world mode merges across the root.
+    const scope = local ? o.parent.uuid : '';
+    const key = [scope, m.type, m.map?.uuid ?? '', m.roughness ?? '', m.metalness ?? '',
+      !!m.flatShading, !!m.transparent, m.opacity ?? 1, m.side ?? 0, !!m.fog,
+      m.alphaTest ?? 0, m.emissive?.getHex() ?? '', m.emissiveIntensity ?? '',
+      attrs, idx, o.castShadow, o.receiveShadow].join('|');
+    let b = buckets.get(key);
+    if (!b) {
+      b = { mat: m, cast: o.castShadow, receive: o.receiveShadow, geos: [], sources: [], home: local ? o.parent : root };
+      buckets.set(key, b);
+    }
+    if (local) {
+      bake.copy(o.parent.matrixWorld).invert().multiply(o.matrixWorld);
+    } else {
+      bake.copy(o.matrixWorld);
+    }
+    const baked = g.clone().applyMatrix4(bake);
+    bakeColor(baked, m.color);
+    b.geos.push(baked);
+    b.sources.push(o);
+  }
+  let merged = 0;
+  const consumed = new Set();
+  for (const b of buckets.values()) {
+    if (b.geos.length < 2) {
+      for (const g of b.geos) g.dispose();
+      continue;
+    }
+    const mergedGeo = mergeGeometries(b.geos, false);
+    for (const g of b.geos) g.dispose();
+    if (!mergedGeo) continue;
+    const mat = b.mat.clone();
+    mat.color.set('#ffffff');
+    mat.vertexColors = true;
+    const mesh = new THREE.Mesh(mergedGeo, mat);
+    mesh.castShadow = b.cast;
+    mesh.receiveShadow = b.receive;
+    b.home.add(mesh);
+    merged += b.geos.length;
+    for (const o of b.sources) consumed.add(o);
+  }
+  for (const o of consumed) {
+    o.removeFromParent();
+    o.geometry?.dispose?.();
+  }
+  return { merged, kept: parts.length - merged };
+}
+
+// Multiply material color into the geometry 'color' attribute (over any
+// mottle tint), so merged buckets render the same pixels vertex-colored.
+function bakeColor(geo, color) {
+  const pos = geo.attributes.position;
+  const prev = geo.attributes.color;
+  const col = new Float32Array(pos.count * 3);
+  for (let i = 0; i < pos.count; i++) {
+    col[i * 3] = (prev ? prev.getX(i) : 1) * color.r;
+    col[i * 3 + 1] = (prev ? prev.getY(i) : 1) * color.g;
+    col[i * 3 + 2] = (prev ? prev.getZ(i) : 1) * color.b;
+  }
+  geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
 }

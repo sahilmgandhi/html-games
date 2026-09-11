@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { toMeters } from '../simulation/config.js';
 import {
-  pbr, basic, glowMat, glowSprite, jitterGeo, mottleGeo, rockMat, solidify, cloneMats, makeHpBar, disposeDeep, SIDE_ACCENT, FLASH_HEX, FLASH_PEAK,
+  pbr, basic, glowMat, glowSprite, jitterGeo, mottleGeo, rockMat, solidify, cloneMats, makeHpBar, disposeDeep, SIDE_ACCENT, FLASH_HEX, FLASH_PEAK, mergeStatic,
 } from '../core/pbr.js';
 
 // Stone Age turrets (by turretIndex):
@@ -945,6 +945,9 @@ export function TurretMesh(turret, ageIndex, anchor) {
   const mesh = new THREE.Group();
   rig.root.scale.setScalar(TURRET_SCALE);
   mesh.add(rig.root);
+  // Rigid frame parts fuse per joint so braced timber and barrels cost a
+  // few calls but keep aiming, recoiling and spinning with their groups.
+  mergeStatic(mesh, new Set(), { local: true });
   const bar = makeHpBar(1.4);
   bar.sprite.position.y = rig.height * TURRET_SCALE + 0.5;
   bar.sprite.visible = false;

@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { mulberry32 } from '../simulation/rng.js';
-import { pbr, glowMat, glowSprite, solidify, disposeDeep, jitterGeo, rockMat, mottleGeo } from '../core/pbr.js';
+import { pbr, glowMat, glowSprite, solidify, disposeDeep, jitterGeo, rockMat, mottleGeo, mergeStatic } from '../core/pbr.js';
 
 // Castle Age backdrop: a moonlit fortress on the horizon, rolling dark
 // hills, broadleaf trees, braziers along the lane, grey boulders, grass
@@ -777,9 +777,17 @@ export function createEnvironment(scene, ageIndex) {
   }
 
   build(ageIndex || 0);
-  solidify(group);
-  // backdrop should not eat the shadow budget
-  group.traverse((o) => { if (o.isMesh) o.castShadow = false; });
+  finalize();
+
+  function finalize() {
+    solidify(group);
+    const skip = new Set(animated.clouds);
+    for (const b of animated.birds) skip.add(b.group);
+    for (const f of animated.fires) skip.add(f);
+    mergeStatic(group, skip);
+    // backdrop should not eat the shadow budget
+    group.traverse((o) => { if (o.isMesh) o.castShadow = false; });
+  }
 
   return {
     group,
@@ -793,8 +801,7 @@ export function createEnvironment(scene, ageIndex) {
       animated.smokes.length = 0;
       animated.fires.length = 0;
       build(i);
-      solidify(group);
-      group.traverse((o) => { if (o.isMesh) o.castShadow = false; });
+      finalize();
     },
     update(dt) {
       t += dt;

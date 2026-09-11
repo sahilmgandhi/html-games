@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { toMeters } from '../simulation/config.js';
 import {
-  pbr, basic, glowMat, solidify, cloneMats, makeHpBar, teamRing, emblemTexture, disposeDeep, SIDE_ACCENT, skinMat, clothMat, furMat, FLASH_HEX, FLASH_PEAK,
+  pbr, basic, glowMat, solidify, cloneMats, makeHpBar, teamRing, emblemTexture, disposeDeep, SIDE_ACCENT, skinMat, clothMat, furMat, FLASH_HEX, FLASH_PEAK, mergeStatic,
 } from '../core/pbr.js';
 import { getQuatTemplates, quatRoleFor, QuatUnitMesh, ensureQuatLoaded } from './gltf-cast.js';
 
@@ -1129,6 +1129,9 @@ export function UnitMesh(entity, ageIndex) {
   // heroes stand taller than line troops and carry a gold ring so they read
   // as heroes at lane distance; heroS rides every body-scale write below.
   const heroS = entity.isHero ? 1.18 : 1;
+  // Rigid rig parts fuse per joint so chunky procedural limbs cost a few
+  // calls but keep swinging with their groups.
+  mergeStatic(mesh, new Set(), { local: true });
   const bar = makeHpBar(entity.isHero ? 1.8 : 1.3);
   bar.sprite.position.y = rig.height * heroS + 0.35;
   bar.sprite.visible = false;
