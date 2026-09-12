@@ -309,7 +309,7 @@ const LEATHER = '#5a3d26';
 const GOLD = '#c9a13a';
 const PLUME = '#a83a3a';
 
-function sword(len = 1.0) {
+function sword(len = 0.72) {
   const g = new THREE.Group();
   const blade = new THREE.Mesh(new THREE.BoxGeometry(0.07, len, 0.11), pbr(STEEL, 0.35, 0.85));
   blade.position.y = -len / 2 - 0.1; g.add(blade);

@@ -28,13 +28,13 @@ export const FUTURE_ROLES = { melee: 'godsblade', ranged: 'blaster', armored: 'w
 // hide: authored weapon meshes to switch off per role (musketeer drops the
 // cutlass for a rifle, the cannoneer crew drops the lute for a cannon).
 const ROLE_SPEC = {
-  clubman: { file: 'Viking_Male', kind: 'gltf', targetH: 2.1, walk: 'Walk', attack: 'SwordSlash', death: 'Death', idle: 'Idle', handProp: 'club' },
+  clubman: { file: 'Viking_Male', kind: 'gltf', targetH: 2.1, walk: 'Walk', attack: 'SwordSlash', death: 'Death', idle: 'Idle', handProp: 'club', propTiltX: Math.PI / 2 },
   slinger: { file: 'Goblin_Male', kind: 'gltf', targetH: 1.95, walk: 'Walk', attack: 'Shoot_OneHanded', death: 'Death', idle: 'Idle', handProp: 'sling' },
-  hero: { file: 'Wizard', kind: 'gltf', targetH: 2.4 * 1.18, walk: 'Walk', attack: 'SwordSlash', death: 'Death', idle: 'Idle', heroModel: true, handProp: 'staff' },
+  hero: { file: 'Wizard', kind: 'gltf', targetH: 2.4 * 1.18, walk: 'Walk', attack: 'SwordSlash', death: 'Death', idle: 'Idle', heroModel: true, handProp: 'staff', propTiltX: Math.PI / 2 },
   dino: { file: 'Velociraptor', kind: 'fbx', targetH: 3.1, walk: 'Velociraptor_Walk', attack: 'Velociraptor_Attack', death: 'Velociraptor_Death', idle: 'Velociraptor_Idle', lift: 5.0 },
-  swordsman: { file: 'Knight_Male', kind: 'gltf', targetH: 2.15, walk: 'Walk', attack: 'SwordSlash', death: 'Death', idle: 'Idle', handProp: 'sword' },
+  swordsman: { file: 'Knight_Male', kind: 'gltf', targetH: 2.15, walk: 'Walk', attack: 'SwordSlash', death: 'Death', idle: 'Idle', handProp: 'sword', propTiltX: Math.PI / 2 },
   archer: { file: 'Elf', kind: 'gltf', targetH: 2.0, walk: 'Walk', attack: 'Shoot_OneHanded', death: 'Death', idle: 'Idle', bow: true },
-  paladin: { file: 'Knight_Golden_Male', kind: 'gltf', targetH: 2.5 * 1.18, walk: 'Walk', attack: 'SwordSlash', death: 'Death', idle: 'Idle', heroModel: true, handProp: 'sword', armProp: 'shield' },
+  paladin: { file: 'Knight_Golden_Male', kind: 'gltf', targetH: 2.5 * 1.18, walk: 'Walk', attack: 'SwordSlash', death: 'Death', idle: 'Idle', heroModel: true, handProp: 'sword', armProp: 'shield', propTiltX: Math.PI / 2 },
   knight: { file: 'Horse', kind: 'fbx', targetH: 2.9, walk: 'Walk', attack: 'Run', death: 'Death', idle: 'Idle', lift: 5.0 },
   knightRider: { file: 'Knight_Male', kind: 'gltf', targetH: 1.5, walk: 'Walk', attack: 'SwordSlash', death: 'Death', idle: 'Idle', handProp: 'sword' },
   dueler: { file: 'Pirate_Barbarossa', kind: 'gltf', targetH: 2.1, walk: 'Walk', attack: 'Sword', death: 'Death', idle: 'Idle' },
@@ -532,6 +532,9 @@ export function QuatUnitMesh(entity, role, templates) {
     const grip = body.getObjectByName(useBone);
     const prop = make(k);
     prop.name = name;
+    // Fist-hung blades point down the hanging arm straight through the
+    // floor; tip them forward out of the knuckles like the rifle idiom.
+    if (tpl.spec.propTiltX && key === tpl.spec.handProp) prop.rotation.x = tpl.spec.propTiltX;
     // the blaster barrel is built along +Z but the alien's fingers run
     // along the palm bone's +Y; tip the gun onto the finger line so the
     // grip reads instead of pointing back down the wrist.
@@ -549,6 +552,10 @@ export function QuatUnitMesh(entity, role, templates) {
     prop.rotation.y = Math.PI;
     prop.scale.setScalar(templates[mount.tpl].scale * mount.scale);
     prop.position.set(0, 0, mount.side);
+    // Seat the mount on the dirt: the authored cannon origin hangs its
+    // wheels below grade.
+    prop.updateMatrixWorld(true);
+    prop.position.y -= new THREE.Box3().setFromObject(prop).min.y;
     mesh.add(prop);
     cannonProp = prop;
   }
