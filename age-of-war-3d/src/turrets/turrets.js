@@ -3,7 +3,7 @@ import { toMeters } from '../simulation/config.js';
 import {
   pbr, basic, glowMat, glowSprite, jitterGeo, mottleGeo, rockMat, solidify, cloneMats, makeHpBar, disposeDeep, SIDE_ACCENT, FLASH_HEX, FLASH_PEAK, mergeStatic,
 } from '../core/pbr.js';
-import { createEnvMesh, ensureEnvLoaded } from './env-cast.js';
+import { createEnvMesh, ensureEnvLoaded, getEnvTemplate } from './env-cast.js';
 
 // Stone Age turrets (by turretIndex):
 //   0 Rock Slingshot — timber A-frame with a swinging sling arm (rock)
@@ -1063,50 +1063,94 @@ const BUILDERS = {
 // TurretMesh(turret, ageIndex, anchor?) takes an optional tower mount anchor:
 // when given, the mesh follows the anchor; otherwise it parks at sim coords
 // (standalone showcase / tests).
+// Sync contract: returns a usable handle immediately on a procedural rig,
+// then swaps in the env-cast model in the background once loaded, so the
+// per-frame callers (battle-view syncMap, gallery, showcases) never see a
+// Promise. A failed fetch simply keeps the procedural rig.
 const TURRET_SCALE = 0.55;
 const _anchorV = new THREE.Vector3();
 
-export async function TurretMesh(turret, ageIndex, anchor) {
+export function TurretMesh(turret, ageIndex, anchor) {
   const accent = SIDE_ACCENT[turret.side] || SIDE_ACCENT.player;
-  
-  // Try env-cast model first
-  await ensureEnvLoaded();
   const role = TURRET_ROLES[ageIndex]?.[turret.turretIndex];
-  const envMesh = role ? createEnvMesh(role, accent) : null;
-  
-  let rig;
-  let useEnvMesh = false;
-  
-  if (envMesh) {
-    useEnvMesh = true;
-    rig = envMesh;
-  } else {
-    // Fallback to procedural builder
-    const row = BUILDERS[ageIndex] || BUILDERS[0];
-    rig = (row[turret.turretIndex] || BUILDERS[0][0])(accent);
-  }
 
   const mesh = new THREE.Group();
-  if (useEnvMesh) {
-    mesh.add(envMesh.mesh);
-    // Scale down the env mesh to turret scale
-    envMesh.mesh.scale.setScalar(TURRET_SCALE);
-  } else {
-    rig.root.scale.setScalar(TURRET_SCALE);
-    mesh.add(rig.root);
-  }
-  
-  // Rigid frame parts fuse per joint so braced timber and barrels cost a
-  // few calls but keep aiming, recoiling and spinning with their groups.
-  mergeStatic(mesh, new Set(), { local: true });
   const bar = makeHpBar(1.4);
-  bar.sprite.position.y = (rig.height || 4) * TURRET_SCALE + 0.5;
   bar.sprite.visible = false;
   mesh.add(bar.sprite);
-  solidify(mesh);
-  const mats = cloneMats(mesh);
-  for (const m of mats) {
-    if ('emissive' in m) { m.emissive = new THREE.Color('#000000'); m.transparent = true; }
+
+  let rig = null;
+  let envMesh = null;
+  let useEnvMesh = false;
+  let muzzleFlash = null;
+  let mats = [];
+  let disposed = false;
+
+  // Fuse one rig into the shared outer mesh; the HP bar rides along.
+  function seat(node, height) {
+    mesh.remove(bar.sprite);
+    node.scale.setScalar(TURRET_SCALE);
+    mesh.add(node);
+    // Rigid frame parts fuse per joint so braced timber and barrels cost a
+    // few calls but keep aiming, recoiling and spinning with their groups.
+    mergeStatic(mesh, new Set(), { local: true });
+    bar.sprite.position.y = (height || 4) * TURRET_SCALE + 0.5;
+    mesh.add(bar.sprite);
+    solidify(mesh);
+    mats = cloneMats(mesh);
+    for (const m of mats) {
+      if ('emissive' in m) { m.emissive = new THREE.Color('#000000'); m.transparent = true; }
+    }
+  }
+
+  function clearRig() {
+    for (let i = mesh.children.length - 1; i >= 0; i--) {
+      const c = mesh.children[i];
+      if (c === bar.sprite) continue;
+      mesh.remove(c);
+    }
+    if (envMesh) {
+      try { envMesh.dispose(); } catch { /* cosmetic */ }
+      envMesh = null;
+    } else if (rig && rig.root) {
+      try { disposeDeep(rig.root); } catch { /* cosmetic */ }
+    }
+    rig = null;
+    muzzleFlash = null;
+    mats = [];
+    handle.muzzle = null;
+  }
+
+  function seatProcedural() {
+    const row = BUILDERS[ageIndex] || BUILDERS[0];
+    rig = (row[turret.turretIndex] || BUILDERS[0][0])(accent);
+    useEnvMesh = false;
+    envMesh = null;
+    seat(rig.root, rig.height);
+    const muzzle = rig.muzzle;
+    muzzleFlash = createMuzzleFlash(rig, muzzle, 1);
+    handle.muzzle = muzzle;
+  }
+
+  function seatEnv() {
+    const em = role ? createEnvMesh(role, accent) : null;
+    if (!em) return false;
+    envMesh = em;
+    rig = null;
+    useEnvMesh = true;
+    seat(envMesh.mesh, envMesh.height);
+    const muzzle = envMesh.getMuzzle();
+    muzzleFlash = createMuzzleFlash({ root: envMesh.mesh, muzzle }, muzzle, 1);
+    handle.muzzle = muzzle;
+    return true;
+  }
+
+  // A model template is usable only once the env cast has loaded; before
+  // that (or for roles without models) the procedural rig is the look.
+  function modelReady() {
+    if (!role) return false;
+    const tpl = getEnvTemplate(role);
+    return !!tpl && !tpl.procedural;
   }
 
   if (!anchor) mesh.position.set(toMeters(turret.x), 0, turret.z || 0);
@@ -1127,14 +1171,10 @@ export async function TurretMesh(turret, ageIndex, anchor) {
     }
   }
 
-  // Enhanced muzzle flash system
-  const muzzle = useEnvMesh ? envMesh.getMuzzle() : rig.muzzle;
-  const muzzleFlash = createMuzzleFlash(useEnvMesh ? { root: envMesh.mesh, muzzle } : rig, muzzle, 1);
-
-  return {
+  const handle = {
     mesh,
     kind: ((TURRET_PROJECTILE[ageIndex] || TURRET_PROJECTILE[0])[turret.turretIndex]) || 'rock',
-    muzzle,
+    muzzle: null,
     aimAt(x, y, z) {
       if (useEnvMesh) {
         envMesh.mesh.rotation.y = x; // simplified for env mesh
@@ -1223,6 +1263,7 @@ export async function TurretMesh(turret, ageIndex, anchor) {
       mesh.visible = turret.alive;
     },
     dispose() {
+      disposed = true;
       if (useEnvMesh) {
         envMesh.dispose();
       } else {
@@ -1232,4 +1273,13 @@ export async function TurretMesh(turret, ageIndex, anchor) {
       bar.sprite.material.dispose?.();
     },
   };
+  if (!modelReady() || !seatEnv()) seatProcedural();
+  if (role && !useEnvMesh) {
+    ensureEnvLoaded().then(() => {
+      if (disposed || useEnvMesh || !modelReady()) return;
+      clearRig();
+      if (!seatEnv()) seatProcedural();
+    }).catch(() => {});
+  }
+  return handle;
 }

@@ -120,7 +120,8 @@
     "phantom objects at player base investigated: blue banner/pole/ring + campfire + rubble composing oddly at glancing angles (projection-probe decoded every part to sim-backed base dressings + the 1 enemy turret); single canvas/renderer confirmed; no bug, no change",
     "walk-fluidity video verdicts PASS all 5 ages 2026-09-11 (tracking march videos, 0 errors; modern infantry via gallery walk close-up)",
     "hit-flash blowout fixed 2026-09-11 (decaying warm pop FLASH_HEX/FLASH_PEAK in core/pbr.js; tests/hit-flash.test.js; numeric probe 0.18->0 ladder, fresh castle sheet zero white frames)",
-    "harness cache staleness fixed 2026-09-11 (screenshot/probe/videocap reload ignoreCache; static server sends Last-Modified only)"
+    "harness cache staleness fixed 2026-09-11 (screenshot/probe/videocap reload ignoreCache; static server sends Last-Modified only)",
+    "turret-sync crash fixed 2026-09-12 (hybrid-turret commit made TurretMesh async; sync callers got a Promise -> tm.update TypeError + frozen battle; TurretMesh sync again with procedural-now/env-upgrade-in-background; tests/turret-sync.test.js; all 5 ages + turrets + gallery --strict clean, 610+156 green)"
   ],
   "graphics_upgrades": {
     "ground": "8720c45: instanced pebbles/tufts (per-age tints) + lane-wear decal, analytic height seating",
