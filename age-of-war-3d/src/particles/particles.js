@@ -149,8 +149,8 @@ export class ParticleSystem3D {
     this._ringCursor = (this._ringCursor + 1) % this._rings.length;
     r.mesh.position.set(x, Math.max(0.08, y), z);
     r.mesh.material.color.set(opts.color ?? 0xffcc88);
-    r.max = 0.45;
-    r.ttl = 0.45;
+    r.max = opts.ttl ?? 0.45;
+    r.ttl = opts.ttl ?? 0.45;
     r.maxR = opts.shockR ?? 3.2;
     r.mesh.visible = true;
   }

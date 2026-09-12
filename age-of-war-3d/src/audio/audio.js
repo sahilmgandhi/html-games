@@ -755,6 +755,29 @@ export class AudioManager {
           osc2.stop(now + 0.14);
           break;
         }
+
+        case 'horn': {
+          // Special announcement: detuned low brass swell, no throttle.
+          for (const detune of [0, 4]) {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            const filter = this.ctx.createBiquadFilter();
+            filter.type = 'lowpass';
+            filter.frequency.setValueAtTime(900, now);
+            osc.connect(gain);
+            gain.connect(filter);
+            filter.connect(out);
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(110 + detune, now);
+            osc.frequency.linearRampToValueAtTime(165 + detune, now + 0.5);
+            gain.gain.setValueAtTime(0.001, now);
+            gain.gain.exponentialRampToValueAtTime(0.14, now + 0.15);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.7);
+            osc.start(now);
+            osc.stop(now + 0.7);
+          }
+          break;
+        }
       }
     } catch (e) {
       // silent fail

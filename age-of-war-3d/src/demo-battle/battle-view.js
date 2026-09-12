@@ -215,6 +215,18 @@ export function attachBattleView(game, sim, fx, opts = {}) {
       const sfx = SPECIAL_FX[ageIndex] || SPECIAL_FX[0];
       shake(0.45, 0.7);
       const enemyHalf = side === 'player';
+      // Telegraph: warning rings over the strike zone plus a horn, then the
+      // staggered impacts pay off. Damage timing is untouched (sim-side).
+      const zone = enemyHalf ? [0.62, 0.75, 0.88] : [0.38, 0.25, 0.12];
+      if (fx && fx.shockwave) {
+        for (const f of zone) {
+          fx.shockwave(toMeters(CONFIG.WORLD.WIDTH * f), 0.1, 0,
+            { color: sfx.colors[0], shockR: 7, ttl: 1.4 });
+        }
+      }
+      try {
+        sim.audio?.play('horn', { x: toMeters(CONFIG.WORLD.WIDTH * zone[1]), z: 0 });
+      } catch { /* audio is cosmetic */ }
       for (let i = 0; i < sfx.n; i++) {
         const px = enemyHalf
           ? CONFIG.WORLD.WIDTH * (0.55 + Math.random() * 0.4)

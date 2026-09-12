@@ -101,4 +101,16 @@ export default [
       t.assert('ui clicks stay global', ui.every(([, at]) => at == null), JSON.stringify(ui.slice(0, 2)));
     },
   },
+  {
+    name: 'horn announces specials without throttling',
+    run(t) {
+      const mgr = new AudioManager();
+      mgr.ctx = fakeCtx();
+      mgr.initialized = true;
+      t.assert('horn plays', mgr.play('horn') === true, '');
+      const oscs = mgr.ctx.nodes.filter((n) => n.kind === 'osc');
+      t.assert('brass stack built', oscs.length >= 2, `oscs=${oscs.length}`);
+      t.assert('no throttle on horn', mgr.play('horn') === true, '');
+    },
+  },
 ];
