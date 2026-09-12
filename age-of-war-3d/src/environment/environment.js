@@ -409,6 +409,22 @@ function ruinTower(rng) {
   return g;
 }
 
+// Knee-high rubble for the modern mid-field: broken slab + rebar stub,
+// shared materials so the static merge folds the whole scatter into a
+// couple of draw calls.
+function rubbleChunk(rng) {
+  const g = new THREE.Group();
+  const slab = new THREE.Mesh(new THREE.BoxGeometry(0.7 + rng() * 0.7, 0.35 + rng() * 0.3, 0.6 + rng() * 0.5), pbr(CONCRETE, 0.95));
+  slab.position.y = 0.2;
+  slab.rotation.set((rng() - 0.5) * 0.4, rng() * Math.PI, (rng() - 0.5) * 0.4);
+  g.add(slab);
+  const bar = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.8, 5), pbr(RUST, 0.8));
+  bar.position.set((rng() - 0.5) * 0.4, 0.5, (rng() - 0.5) * 0.4);
+  bar.rotation.set(0.4 + rng() * 0.5, 0, (rng() - 0.5) * 0.6);
+  g.add(bar);
+  return g;
+}
+
 function ruinedWall(rng) {
   const g = new THREE.Group();
   const w = 3 + rng() * 3;
@@ -706,6 +722,13 @@ export function createEnvironment(scene, ageIndex) {
       }
       addRocks();
       addSky('#4a5248', '#1c1c20');
+      // rubble drift across the mid-field so the churned dirt is not bare
+      for (const [x, z] of scatter(rng, 14, -10, 34, [[-9, -4.5], [4.5, 9]], true)) {
+        const r = rubbleChunk(rng);
+        r.position.set(x, 0, z);
+        r.rotation.y = rng() * Math.PI * 2;
+        group.add(r);
+      }
       return;
     }
     if (age === 2) {

@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import {
   pbr, glowMat, glowSprite, solidify, disposeDeep, teamRing, SIDE_ACCENT,
+  makeCloth, mergeStatic,
 } from '../core/pbr.js';
 
 // One shared outpost tower per side. All four turret slots of a side seat on
@@ -16,13 +17,19 @@ import {
 
 const DECK_TOP = 4.675;
 
+// Per-age palettes for the shared silhouette: the stone takes its mood
+// from the age's stronghold so towers read native in every era.
+const AGE_STONE = ['#8d8d94', '#6e6e76', '#c8a878', '#7a7a72', '#1c2940'];
+const AGE_STONE_DK = ['#5e5e66', '#46464f', '#a85a3a', '#54544e', '#0d1522'];
+
 export function TowerMesh(side, ageIndex) {
   const accent = SIDE_ACCENT[side] || SIDE_ACCENT.player;
-  void ageIndex;
+  const skin = AGE_STONE[ageIndex] || AGE_STONE[0];
+  const skinDk = AGE_STONE_DK[ageIndex] || AGE_STONE_DK[0];
 
   const mesh = new THREE.Group();
-  const stone = pbr('#8d8d94', 0.95);
-  const stoneDk = pbr('#5e5e66', 0.95);
+  const stone = pbr(skin, 0.95);
+  const stoneDk = pbr(skinDk, 0.95);
 
   // stepped plinth
   const plinth = new THREE.Mesh(new THREE.BoxGeometry(3.6, 0.5, 3.6), stoneDk);
@@ -49,6 +56,12 @@ export function TowerMesh(side, ageIndex) {
   const deck = new THREE.Mesh(new THREE.BoxGeometry(4.4, 0.35, 4.4), stone);
   deck.position.y = DECK_TOP - 0.175;
   mesh.add(deck);
+  // plank seams across the deck so guns don't sit on bare slab
+  for (let i = -3; i <= 3; i++) {
+    const seam = new THREE.Mesh(new THREE.BoxGeometry(4.4, 0.02, 0.05), stoneDk);
+    seam.position.set(0, DECK_TOP + 0.005, i * 0.6);
+    mesh.add(seam);
+  }
   const trimM = pbr(accent, 0.6);
   for (const s of [-1, 1]) {
     for (const horiz of [true, false]) {
@@ -77,7 +90,9 @@ export function TowerMesh(side, ageIndex) {
   const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.08, 2.4, 8), pbr('#4c3018', 0.9));
   pole.position.set(-1.7, DECK_TOP + 1.2, -1.7);
   mesh.add(pole);
-  const pennant = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.5, 0.06), pbr(accent, 0.7));
+  // rippling pennant on the pole, hoist pinned: flat quads do not ship.
+  const cloth = makeCloth(0.9, 0.5, 6, pbr(accent, 0.7));
+  const pennant = cloth.mesh;
   pennant.position.set(-1.2, DECK_TOP + 2.0, -1.7);
   mesh.add(pennant);
   const beacon = new THREE.Mesh(new THREE.SphereGeometry(0.14, 8, 6), glowMat('#ffd23a', 1));
@@ -87,12 +102,17 @@ export function TowerMesh(side, ageIndex) {
   halo.position.copy(beacon.position);
   mesh.add(halo);
 
-  // four weapon mounts: 2x2 grid on the deck top
+  // four weapon mounts: 2x2 grid on the deck top, each seated in a
+  // visible iron cradle so guns sit IN hardware, not on bare deck.
+  const cradleM = pbr('#2e2e36', 0.6, 0.6);
   const mounts = [];
   for (const mx of [-0.7, 0.7]) {
     for (const mz of [-0.95, 0.95]) {
       const anchor = new THREE.Object3D();
       anchor.position.set(mx, DECK_TOP, mz);
+      const cradle = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.5, 0.3, 10), cradleM);
+      cradle.position.y = -0.12;
+      anchor.add(cradle);
       mesh.add(anchor);
       mounts.push(anchor);
     }
@@ -100,6 +120,8 @@ export function TowerMesh(side, ageIndex) {
 
   mesh.add(teamRing(3.4, accent));
   solidify(mesh);
+  // Static shell merges; the pulsing beacon and rippling pennant stay live.
+  mergeStatic(mesh, new Set([beacon, pennant]));
   mesh.rotation.y = side === 'player' ? 0 : Math.PI;
 
   let t = Math.random() * 10;
@@ -115,6 +137,7 @@ export function TowerMesh(side, ageIndex) {
       const k = 0.75 + Math.sin(t * 3.1) * 0.25;
       halo.material.opacity = 0.35 + k * 0.25;
       beacon.scale.setScalar(0.9 + k * 0.2);
+      cloth.update(t);
     },
     dispose() {
       disposeDeep(mesh);

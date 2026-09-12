@@ -158,7 +158,9 @@
     "feel_audio": "positional battle mix (spatialMix + camera listener, UI/music global); sim passes kill-site positions",
     "feel_hud": "base-danger pulsing red vignette below 33% base HP (hudState.base.frac)",
     "bugs_gallery": "gallery now parades units/turrets/bases/world per age (towers with seated firing guns, base damage cycler, age-following world, auto-orbit); muzzle fire + zero errors verified",
-    "bugs_001_004": "BUG-001 stacking fixed by seeded muster jitter; BUG-003/004 fixed by stronghold body radii (BASE_BODY_PX) with gate spawns and wall engagement; BUG-002 fixed by propTiltX forward-carry, seated cannon, shorter procedural sword; BUG-005 (tracer dip, low) open; 584+156 green",    "bugs_audit": "combat sweep all 5 ages clean (23/23 smokes, spawn/turret/mine/evolve/special/pause/restart/gallery, 0 errors); no safe removals: all 24 quat files referenced, vendor/three.core.min.js is live (module wrapper re-exports it, restore verified), procedural rigs stay as loading fallback"
+    "bugs_001_004": "BUG-001 stacking fixed by seeded muster jitter; BUG-003/004 fixed by stronghold body radii (BASE_BODY_PX) with gate spawns and wall engagement; BUG-002 fixed by propTiltX forward-carry, seated cannon, shorter procedural sword; BUG-005 tracer-dip fixed by leveled FX line; 596+156 green",
+    "art_towers": "per-age tower skins (stronghold palettes), rippling pennant (veto cleared), deck plank seams, iron mount cradles; shell merged",
+    "art_modern_bg": "mid-field rubble drift (slabs + rebar, merged); modern battle reads as firefight at 1284 calls",    "bugs_audit": "combat sweep all 5 ages clean (23/23 smokes, spawn/turret/mine/evolve/special/pause/restart/gallery, 0 errors); no safe removals: all 24 quat files referenced, vendor/three.core.min.js is live (module wrapper re-exports it, restore verified), procedural rigs stay as loading fallback"
   },
   "playthroughs": {
     "castle": "PASS: evolve->1, Swordsman/Archer/Knight/Paladin, Catapult/Fire/Oil (slots), mine+barracks, Arrow Volley fired; 0 errors",
