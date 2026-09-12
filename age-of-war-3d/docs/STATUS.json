@@ -1,222 +1,182 @@
 {
-  "project": "age-of-war-3d",
-  "updated": "2026-09-08",
-  "scale": "0-10 per module; 8+ to continue, 9+ original-game regression",
-  "originalRegression": {
-    "score": 10,
-    "detail": "npm test -w age-of-war: 156 passed, 0 failed; age-of-war/ untouched (read-only)"
-  },
-  "waves": {
-    "wave1": {
-      "status": "complete",
-      "verified": "sim-smoke 15/15 PASS; shot --strict clean (0 console errors, 0 app errors)",
-      "modules": {
-        "simulation": 8,
-        "terrain": 6,
-        "lighting": 6,
-        "hud": 7,
-        "audio": 7,
-        "particles": 6
-      },
-      "note": "Foundation only: empty battlefield, no units/scenery yet. Visual scores expected to rise in Wave 2 (units, bases, turrets, buildings, projectiles, environment)."
+  "a_b_gates": {
+    "castle": {
+      "date": "2026-09-07",
+      "enemy_half_volley": "pale-gold impacts + damage/gold labels read at gameplay distance",
+      "result": "PASS",
+      "stone_vs_castle": [
+        "distinct mood (day mesas vs moonlit fortress)",
+        "unit/turret readability at parity",
+        "base readability Castle > Stone",
+        "HUD fully age-driven both"
+      ],
+      "verdict": "night darkness acceptable; 2D original Castle is night too; mid-field combat readable"
     },
-    "wave2": {
-      "status": "complete",
-      "verified": "6 showcases shot --strict clean (0 console errors, 0 app errors); 60fps; 297-774 draw calls (budget 1500); 17-51k tris",
-      "modules": {
-        "units": 7,
-        "bases": 7,
-        "turrets": 7,
-        "buildings": 7,
-        "projectiles": 7,
-        "environment": 7
-      },
-      "issuesFixed": [
-        "foreground trees occluded the lane (moved behind only)",
-        "Sprite+MeshBasicMaterial rendered glow as hard quads (new glowSprite w/ radial SpriteMaterial)",
-        "mesas read as cooling towers (vertex jitter + strata bands + inset caps)",
-        "dark Lambert clouds (unlit cream), square smoke sprites (soft radial puffs)",
-        "bases near-black (lightened palette), floating HP bar (rides menhir)",
-        "mine mouth buried in mound (reworked layout), stray pickaxe (embedded in crown)",
-        "slingshot frame read as rack (true A-frame legs)"
+    "future": {
+      "date": "2026-09-08",
+      "modern_vs_future": [
+        "distinct mood (dark olive overcast vs neon-blue night)",
+        "unit readability at parity (tank+dmg vs war-machine+600s)",
+        "bases both strong (bunker+pennant vs citadel+crown ring)",
+        "HUD fully age-driven both"
       ],
-      "openIssues": [
-        "units: limbs are simple cylinders; death fade can camouflage on dirt",
-        "bases: menhir slab-like up close; flags are flat quads",
-        "turrets: egg-thrower post is plain; sling arm simple",
-        "environment: mesas still geometric; pines cone-stacked",
-        "no module at 8.5 pass mark yet — gauntlet rounds continue after Wave 3 integration"
-      ],
-      "note": "All Wave 2 contracts per ARCHITECTURE.md verified live (walk/attack/death/HP bars, aim/recoil/flash, banner/fire, trails/impacts, clouds/birds). Core gained shared pbr helpers + window.__world ambient reuse."
+      "result": "PASS",
+      "verdict": "matched 8s fresh shots; zero errors both"
     },
-    "wave3": {
-      "status": "complete",
-      "verified": "10 showcases shot --strict clean (0 console errors, 0 app errors); 60-61fps; 300-1119 draw calls (budget 1500); battle-smoke 15/15; sim-smoke OK; npm test -w age-of-war 156/156",
-      "modules": {
-        "battle-sim": 8,
-        "demo-battle": 7,
-        "integration": 7
-      },
-      "proven": [
-        "full match loop: HUD spawn/hero/evolve/special vs seeded enemy AI, kill gold+XP economy, base-HP damage states, win/lose hint",
-        "mesh sync keyed by sim id (walk/attack/death, turret aim+recoil+flash, banner/fire, projectile trails, HP bars)",
-        "combat FX: hit bursts, damage numbers, kill gold numbers, Meteor Shower volley, death bursts",
-        "camera follows action midpoint with spread-based distance",
-        "demo match resolves (10-min smoke: enemy base destroyed); determinism per seed verified",
-        "projectile kinds flow sim->render (rock/egg/boulder)"
+    "modern": {
+      "date": "2026-09-08",
+      "renaissance_vs_modern": [
+        "distinct mood (golden-amber dusk vs dark olive overcast)",
+        "unit readability at parity",
+        "bases both strong (palazzo+dome vs pillbox+bunker+ruins)",
+        "HUD fully age-driven both"
       ],
-      "openIssues": [
-        "no game-over overlay (HUD hint only); no screen shake on impacts/special",
-        "demo special gated to 30s+; interactive pacing faithful to original (22s to first contact at base spawns)",
-        "Wave 2 visuals carry over: menhirs read pillar-like, flags flat quads, mesas silo-like",
-        "particles showcase framing looks into the tree line",
-        "contract deviation: demo-battle exposes runShowcase (matches all module showcases + main.js loader), not runDemoBattle as ARCHITECTURE.md sketches"
-      ],
-      "note": "Stone Age MVP is a complete playable 3D battle. No module at 8.5 pass mark yet; gauntlet rounds continue as art polish."
+      "result": "PASS",
+      "verdict": "matched 8s fresh shots; zero errors both"
     },
-    "parity": {
-      "status": "complete",
-      "verified": "14-step live playthrough driven in host Chrome via tools/probe.mjs (click every control, assert sim state): spawn, upgrade, buy-slot, place turret, sell turret, mine+barracks, 2x speed, formation, pause overlay, resume, VICTORY overlay, restart reset. battle-smoke 23/23. 10 showcases --strict clean. npm test -w age-of-war 156/156.",
-      "shipped": [
-        "unit upgrade tiers + costs + pips + stat tooltips",
-        "turret slot purchase, 3 turret cards, per-turret sell/refund",
-        "gold mine + barracks cards (B/N hotkeys)",
-        "1x/2x/3x speed (T), Scatter/Line/Wedge formation",
-        "hero cooldown readout, special XP-cost/READY/countdown status",
-        "pause (P/Esc/button) with overlay, game-over overlay with stats + restart",
-        "BattleSim: buySlot, sellTurret, upgradeUnit, formation spread, paused, gameSpeed, restart"
+    "renaissance": {
+      "castle_vs_renaissance": [
+        "distinct mood (moonlit blue night vs golden-amber dusk)",
+        "unit readability at parity (combat + labels both)",
+        "bases both strong (keep mass vs palazzo + domelets + campanile)",
+        "HUD fully age-driven both"
       ],
-      "score": 8,
-      "acceptedDeviations": [
-        "no manual camera pan (auto-follow by design); no minimap",
-        "no save/load, achievements, difficulty select (out of MVP scope)",
-        "evolve sim-correct into Castle Age with Stone Age visuals until age assets land"
-      ],
-      "note": "Feature parity for the Stone Age loop is done; next ages add per-age visuals."
-    },
-    "gauntlet10_2026_09_09": {
-      "status": "failed - 10/10 not reached, no inflated scores",
-      "verified": "6 fresh shots (units close/side/face, stone battle wide, castle wide x3, future wide); 0 console errors, 0 page errors; 60-61fps; npm test 100/100",
-      "vsCRCoC": {
-        "stoneDayBattle": 8,
-        "castleNightBattle": 7,
-        "futureNightBattle": 7,
-        "unitsCloseUp": 7.5
-      },
-      "vsPhotoreal": 4,
-      "quatPilot": {
-        "status": "working end-to-end, verdict: coherent stylized cast, still not AAA",
-        "verified": "units showcase 49 skinned meshes + live battle 11 skinned, 0 console/page errors; 174/174 tests; Vite-less vendor addons + import map",
-        "cast": "Quaternius CC0 (verified License.txt): Viking=clubman, Goblin=slinger+rider, Wizard=Shaman hero, Velociraptor FBX=dino",
-      "galleryVerdict_2026_09_10": {
-        "status": "user walkthrough found 12 of 14 claims true; stone + castle fixed and video-verified, ren/modern/future TODO",
-        "verified": "castle lineup video (238 frames, 0 errors, 470 calls, 61fps): swordsman sword, fuller archer bow, seated knight rider, paladin sword + red shield; stone batch committed as cephradine (374/374)",
-        "stoneFixed": [
-          "battle-view passed raw dt to skeletal mixers while sim ran at gameSpeed: simDt to units/turrets/projectiles (tests/battle-speed.test.js, skeletal bone-travel ratio)",
-          "tools/videocap.mjs: CDP screencast to mp4 + contact-sheet PNG (permanent repo tool)",
-          "procedural club/slingshot/staff on quat FistR (HAND_PROPS idiom)",
-          "dino rider floated 0.7m (seat targeted crest Box3-top 2.79): seatFrac 0.68, feet on back ~1.91",
-          "blaster gun rendered 34m: alien FBX has internal x100 node (AlienArmature 100,100,100); gripK derives prop k from grip world scale (all k-built props)"
-        ],
-        "castleFixed": [
-          "buildSword + buildShield (sword FistR, shield LowerArmL via armProp loop); swordsman/paladin/knightRider armed",
-          "longbow fullered (arc tube 0.03->0.055, radius 0.42, grip wrap)"
-        ]
-      },
-      "fixed": [
-          "showcase units staged before async cast load stayed procedural: added quatSwap to units showcase (mirrors battle-view)",
-          "raptor multi-material broke cloneMats mid-swap (o.material.clone is not a function): array support + tests/clone-mats.test.js",
-          "browser heuristic cache hid the fix behind stale modules: verify with cache-ignoring reload",
-          "rider sunk into spine (beige blob): mid-back seat, feet on back line (rider test)",
-          "ghost-pale raptor: FBX white phong specular washed dark paint; specular tied to diffuse (spec test)",
-          "silhouette-black raptor: authored browns lifted 5x at template prep, stripes stay black"
-        ],
-        "tests": "179/179"
-      },
-      "renPilot": {
-        "status": "working end-to-end, verdict: coherent pirate cast, cannon + rifle verified",
-        "verified": "renaissance battle close-ups (dueler bandana+cutlass, shark musketeer with rifle, cannoneer crew beside cannon with muzzle+wheels), 0 console/page errors; 249/249 asserts",
-        "cast": "Quaternius Pirate Kit CC0 (pack page https://quaternius.com/packs/piratekit.html, no License.txt in folder): Barbarossa=dueler, Mako=musketeer (sword hidden, rifle on Middle1R), Henry=cannoneer (lute hidden, static cannon beside), Anne=engineer hero",
-        "notes": [
-          "pirate glTFs embed BasisU atlas: node test shim strips images/textures (geometry identical)",
-          "pirate rig has no FistL: rifle parents to Middle1R finger joint, rotation.z=PI/2",
-          "no shoot clip in pirate set: musketeer/cannoneer attack on Punch"
-        ]
-      },
-      "renFX": {
-        "status": "shipped, video-verified: musketeer fires (flash + tracer), cannon fires (recoil + flash + smoke), barrel points forward",
-        "verified": "renaissance gallery video (311 calls, 60fps, 0 console/page errors): dueler sword swings, musketeer rifle in hands, cannoneer crew beside forward-facing cannon, engineer axe over shoulder; flash/tracer presence+expiry test-proven (0.12s too brief for sheet sampling); 383/383 asserts",
-        "fixed": [
-          "cannon mount rotY PI/2 aimed the barrel sideways (+Z): rotY PI so prop-local -X muzzle maps to mesh-local +X forward; recoil runs prop-local +X (mesh-backward), spring-back exp decay",
-          "muzzle-flash (additive glowSprite) + gold tracer box at rifle muzzle (+2.04,0,0) on attack rising edge, 0.12-0.15s",
-          "cannon flash + rising grey smoke + kick=1 recoil on attack rising edge; fx list decayed in update, materials disposed on expiry (disposeDeep skips Sprites)"
-        ]
-      },
-      "modPilot": {
-        "status": "working end-to-end, verdict: coherent modern cast, AK + tank verified",
-        "verified": "modern battle wide (40 skinned, soldiers+tanks both sides, 0 errors) + close-up (hazmat commander, AKs held, tank with turret+gun, team rings, HP bar); 273/273 asserts",
-        "cast": "Quaternius Toon Shooter CC0 (Characters+Guns glTF) + Animated Tanks CC0 FBX (License.txt vendored): Soldier=meleeinf, Enemy=infantry, Hazmat=commander hero, Tank=vehicle",
-        "notes": [
-          "shooter rig has Middle1R gun hand like pirate set: AK parents there, rotation.z=PI/2",
-          "tank is a vehicle branch: Tank_Forward drive clip for walk/attack/idle, no death clip",
-          "rifle spec generalized from boolean to template key (rifleProp vs akProp)"
-        ]
-      },
-      "modProps": {
-        "status": "shipped, video-verified: melee blade, forward tank gun, commander trim",
-        "verified": "modern gallery video (861 calls wide, 385 zoomed, 0 console/page errors): meleeinf sword in hand no-AK bulk, commander gold cap+baton+collar bars; tank gun proven forward numerically (dot 0.997 vs facing); 390/390 asserts",
-        "fixed": [
-          "meleeinf carried the same AK as infantry: rifle keys removed, HAND_PROPS sword on Middle1R (shooter rig has no Fist bones: LowerArmR straight into fingers)",
-          "tank gun aimed sideways (+Z): per-role turn override (spec.turn ?? PI/2), tank turn PI maps muzzle -X to mesh-local +X forward",
-          "commander was a plain hazmat: procedural cap (dome+gold band+brim) on Head_M, baton (shaft+gold pommel) on Middle1R, gold collar bars on Head_M; prop loop extended to headProp/trimProp keys"
-        ]
-      },
-      "spectateBot": {
-        "status": "shipped, browser-verified: HUD BOT button toggles competent in-sim bot; manual play takes over; restart preserves",
-        "verified": "live interaction (0 errors): init off/Bot, toggle on/BOT ON, manual spawn-unit click takes over to off/Bot, restart preserves on/BOT ON; tests/bot.test.js (5 tests) incl bot-driven competent sim winning on Easy; 419/419 asserts",
-        "notes": [
-          "_demoPlayer upgraded to competent policy (mine, barracks, melee upgrade, hero, special, evolve); takeovers classified by takesOverBot in main.js (showcase bots untouched); bot survives restart, dies only on gameOver guard"
-        ]
-      },
-      "futPilot": {
-        "status": "working end-to-end, verdict: all 5 roles verified, all ages now animated",
-        "verified": "future battle close-up (sage Titan with antennae+glowing eyes, golden Mike, red Stan, robot with cyan eyes, energy-blade arc correct) + bot full-match playthrough (blue wins on Easy, t=251); 321/321 asserts",
-        "cast": "Quaternius Animated Mech CC0 glTF (George=titan hero, Stan=warmachine, Mike=supersoldier golden-tinted) + Animated Robot CC0 FBX (godsblade + procedural energy blade) + Animated Alien CC0 FBX (blaster + procedural gun); robot License.txt vendored",
-        "notes": [
-          "nightPrep lifts Main/Accent/Grey/LightGrey panels + emissive eyes (white mechs, cyan alien/robot)",
-          "alien fingers run along PalmR +Y: blaster gun gets rotX -PI/2 so barrel tracks fingers (barrel-tracks-fingers test, was 101deg)",
-          "robot HandR has no finger bones: blade orientation visual-only, confirmed in close-up",
-          "castle-night warbands fixed: CASTLE_PANELS nightPrep lift 4x on knight/golden/elf/horse (Skin/Armor_Dark/Brown/Detail/Red/Material.006); horses read chestnut, riders+trim visible, foot troops olive-readable (castle-night.png); lighting raise proved unnecessary, night mood kept"
-        ]
-      },
-      "fixed": [
-        "castle demo 1583 -> 1384 draw calls via solidify() skipping sub-0.22m casters (tests/shadow-budget.test.js, 2 asserts)",
-        "hit-flash emissive 0.55/0.5 -> 0.3 (mid-flash still blows out to white in night stills; transient 0.1s, kept as game feel)",
-        "round soft-dot PointsMaterial map (close-range squares fixed)",
-        "hit-flash is now a decaying warm pop (core/pbr.js FLASH_HEX 0xfff2df, FLASH_PEAK 0.18, driven by hitFlash/0.1 in units/gltf-cast/turrets; tests/hit-flash.test.js 4 tests): numeric probe shows 0.18->0 ladder, fresh 12-frame castle tracking sheet has zero white frames",
-        "harness cache staleness: screenshot/probe/videocap now reload ignoreCache (static python server sends only Last-Modified; stale binary-flash modules burned one verification round)"
-      ],
-      "walkVerdicts_2026_09_11": {
-        "status": "PASS all 5 ages, no foot slide",
-        "verified": "tracking close-up march videos per age (track-*.mp4 + sheets, 0 errors, 59-61fps): stone dino strides, castle horse advances, ren pirates advance, future mechs advance, modern infantry walk clip cycles in gallery close-up; simDt bone-travel ratio test-proven",
-        "note": "modern demo opens mid-combat (tank vehicle, no stride); infantry verdict via gallery walk close-up on the shared simDt path"
-      },
-      "feelPass_2026_09_11": {
-        "status": "shipped: perf merge + firelight + positional audio + danger vignette",
-        "verified": "draw calls stone 811, castle 1116, ren 701, modern 1327, future 1223 (all <=1500, 60fps, pixel-identical base/prop close-ups); castle night 7->8 and future night 7->8 via brazier/pylon point lights (g5 sheets); positional mix test-proven (audio-mix.test.js) + live listener verified; vignette browser-verified at 20% base HP; 499/499 asserts + 156/156 original green",
-        "scores": { "stoneDay": 8, "castleNight": 8, "futureNight": 8 },
-        "openIssues": [
-          "modern is the heaviest age (1327, mostly tank/soldier skinned parts, unmergeable); watch on large battles",
-          "point-light GPU cost unmeasured headless (SwiftShader caps at 60); re-check on real hardware if night fps dips"
-        ]
-      },
-      "openIssues": [
-        "procedural low-poly cannot reach GTA/COD/Witcher photoreal; Quaternius CC0 casts ship for all 5 ages (best stylized coherent look per user)",
-        "renaissance FX shipped: musket flash+tracer, cannon recoil+flash+smoke, barrel forward (renFX)",
-        "modern props shipped: melee sword (no AK), forward tank gun, commander cap+baton+trim (modProps)",
-        "user-reported dino/knight walk fluidity: VERDICT PASS 2026-09-11 (walkVerdicts: all 5 ages march with no slide; simDt bone-travel test-proven)",
-        "spectate bot shipped: HUD BOT button, competent in-sim policy, manual takeover, restart preserves (spectateBot)"
-      ]
+      "date": "2026-09-08",
+      "result": "PASS",
+      "verdict": "matched 8s fresh shots; camera framing variance is pre-existing camera behavior"
     }
-  }
+  },
+  "completed_ages": {
+    "castle": {
+      "commits": [
+        "69e7c75",
+        "495bf06",
+        "4aad384",
+        "157bd5f"
+      ],
+      "waves": {
+        "a": "terrain/lighting/environment + Castle ambient audio beds",
+        "b": "units/bases/turrets/projectiles + sim kind tables + sim-kinds tests (10 asserts)",
+        "c": "Arrow Volley FX + age:evolve wiring in battle-view + demo-battle/castle/showcase.js"
+      }
+    },
+    "future": {
+      "commits": [
+        "9b58cb6",
+        "b555522",
+        "cd49548"
+      ],
+      "waves": {
+        "a": "neon-dusk skyline backdrop (spires/dome habs/pylons/dark steel mounds)",
+        "b": "gods-blade/blaster/war-machine/super-soldier/titan + citadel + tech-pad turrets + laser/plasma + sim routing + 6 tests (36/36)",
+        "c": "Orbital Laser FX (SPECIAL_FX row) + demo-battle/future/showcase.js + main.js nested line"
+      }
+    },
+    "modern": {
+      "commits": [
+        "bf57c9b",
+        "c0930bc",
+        "c4169b5"
+      ],
+      "waves": {
+        "a": "ruined-city backdrop (ruin towers/walls, bunker, sandbags, poles, olive mounds); lighting already overcast",
+        "b": "melee/infantry/tank/commander + bunker + gun turrets + bullet/rocket/shell + sim routing + 5 tests",
+        "c": "Airstrike FX + demo-battle/modern/showcase.js + main.js nested line"
+      }
+    },
+    "renaissance": {
+      "commits": [
+        "f914581",
+        "98e33c5",
+        "7a2c00f"
+      ],
+      "waves": {
+        "a": "golden-dusk town backdrop (villa/campanile/cypress/amber hills)",
+        "b": "dueler/musketeer/cannoneer/engineer + palazzo + gun redoubts + musketball/cannonball/shell + sim routing + 4 tests",
+        "c": "Artillery Strike FX + demo-battle/renaissance/showcase.js + main.js nested line"
+      }
+    },
+    "stone": {
+      "note": "pre-existing MVP; banner retrofitted to shared makeCloth helper during Castle work; showcase slimmed onto stageShowcase helper during Renaissance close-out"
+    }
+  },
+  "current_age": 4,
+  "deviations": [
+    "single agent acted as builder/critic/integrator (protocol asks one builder per folder + separate critic); critic screenshots were always fresh takes at new angles, never builder reuses"
+  ],
+  "next_age": null,
+  "open_issues": [],
+  "resolved_issues": [
+    "showcase-mode HUD stub 'undefined' texts (61fbd93: full stubState shape + shared CONFIG.HINT)",
+    "Stone menhir pale column (8e1b022: dark basalt + strata bands)",
+    "player turrets sharing x=140 visually (5005903: render-side SLOT_OFF stagger by slotIndex)",
+    "camera parking at base mid-battle (2032059: combat-focus camera, hit/death-anchored, hot lerp + jump snap)",
+    "HUD hint/top-bar mismatch (61fbd93: single CONFIG.HINT everywhere)",
+    "opening camera parked inside enemy base (idle one-sided action now frames wide mid-field vista; verified cam 12,11,26)",
+    "camera clipping into base geometry at gates (near-base keep-out: rise to y>=9, pull back to dist>=20)",
+    "Castle brazier flame floating above stand (flame + glow seated to y=2.0, buried in cup; close-up verified)",
+    "rune halo investigated: torus hugs menhir core (r=1.32 vs core ~1.28), no change needed",
+    "unit upgrade pips never refreshing after purchase (87c3340: refresh .aow-pips in hud.js update loop; verified tier 1 + T1 tooltip)",
+    "phantom objects at player base investigated: blue banner/pole/ring + campfire + rubble composing oddly at glancing angles (projection-probe decoded every part to sim-backed base dressings + the 1 enemy turret); single canvas/renderer confirmed; no bug, no change",
+    "walk-fluidity video verdicts PASS all 5 ages 2026-09-11 (tracking march videos, 0 errors; modern infantry via gallery walk close-up)",
+    "hit-flash blowout fixed 2026-09-11 (decaying warm pop FLASH_HEX/FLASH_PEAK in core/pbr.js; tests/hit-flash.test.js; numeric probe 0.18->0 ladder, fresh castle sheet zero white frames)",
+    "harness cache staleness fixed 2026-09-11 (screenshot/probe/videocap reload ignoreCache; static server sends Last-Modified only)"
+  ],
+  "graphics_upgrades": {
+    "ground": "8720c45: instanced pebbles/tufts (per-age tints) + lane-wear decal, analytic height seating",
+    "sky": "4075e86: moon + 350 stars on night ages (Castle/Future); crows replace pterodactyls on ages 1-4",
+    "team_rings": "4b61971: shared teamRing() helper; unit/turret/base ground rings in side colors",
+    "combat_fx": "247cebd: camera shake, melee sparks, heavy-death thump, special scorch decals",
+    "grit_hp_bars": "b63804f: 256x32 segmented iron-border HP sprites (was 64x10 smear)",
+    "grit_ground": "9f49969: 1024 ground texture + 14000 grain speckle + 260 cracks + aniso 8",
+    "grit_metals": "2ffdc79: selective metalness on weapons/armor/vehicles (steel 0.85, gold trim 0.7)",
+    "grit_rim": "a409d59: shadowless counter-directional rim light per age mood (Castle 0x5a76c8/0.65)",
+    "grit_emblems": "6425788: painted canvas emblems: bannerMat device per age on all 5 cloth banners + swordsman shield sigil; verified blue disc banner + white shield device, 60.1fps, 156+36 tests green",
+    "fill_light": "3bd9b6d: raised hemi/rim per age (Stone hemi 0.55->0.7, rim 0.45->0.85) so backlit faces keep modeled detail; player menhir shadow side now reads basalt+bands instead of black cutout",
+    "phase1_env": "84332b1: craggier mesas (jitter 0.1/0.08->0.16/0.14, 3 strata bands), jittered araucaria/cypress tiers + darker under-tier",
+    "phase2_units": "d728ac8: bigger signature weapons (sword 0.85->1.0, musket/rifle/blaster +15%), eye catchlight glints, dark shield rim ring; verified swordsman sigil+blade, archer quiver+bow, 60.3fps",
+    "surface_pass": "263cec4: rockMat fresh flatShading+vertexColors + mottleGeo seeded per-vertex jitter on mesas/volcano/boulders, jitterGeo 2nd high-freq octave + y wobble, canopy tint jitter \u00b18pct on araucaria/cypress/broadleaf; faceted mesas + varied pines verified, 156+36 tests green",
+    "hud_styles": "11cc9d8: CSS-only HUD restyle \u2014 uppercase gold age pill, bottom dark scrim, affordable-card golden lift vs muted disabled, 16px outlined damage numbers; verified live battle 0 errors, 156+36 tests green",
+    "aaa1_grit_juice": "dd9f0dc: shared seeded grit albedo on all pbr() mats; attack windup+snap+lunge, hit squash pop, eased death settle; turret yaw ease + spring recoil + flash pop; hit-stop, melee dust, muzzle smoke, siege smoke",
+    "aaa2_keep_thrust": "934e598: knight lance thrust + musketeer level-fire (no overhead swings); keep quoins, curtain merlons + arrow slits, jittered mound, dirt skirt",
+    "aaa3_oil_crane": "9a13267: oil tower battered base, course bands, pilasters, yoke posts, crane (king post/jib/brace/chains/ember oil); catapult X-braces, pivot ropes, jittered shot",
+    "aaa4_stone_turrets": "feb9808: slingshot tie-beams + axle lashings + stone pile; egg nest straw lining + spare pile; prim. catapult X-braces + boulder pile",
+    "aaa5_combat_depth": "b1ceec5: turret target priority (heroes/siege over chaff); flesh blood-mist vs armor spark vs structure debris hit FX; clang/thud impact audio",
+    "aaa6_ren_cannons": "ef8ba49: spoked wheels, tube-group barrels with swell+cascabel, true muzzle anchors (fixed floating bands + high flashes), keg hoops",
+    "aaa7_thrust_palazzo": "0a5528a: thrust anim for 6 gun/polearm rigs; palazzo architraves, shutters, string course, lesene",
+    "aaa8_bunker_citadel": "9b9ed46: bunker sandbag courses, wing walls, vault clutter; citadel spire collars, corner guards, pad ring, annex ribs",
+    "aaa9_turrets_mod_fut": "c993e11/cd3f8d3: modern pit variance, muzzle brake, rack frame, twin flashes; future pad studs, rail insulators, lazer cell, ion halo, steady recoil",
+    "aaa10_ren_infantry": "ad6fb65: dueler baldric/cup-hilt/puffs; musketeer crossbelts/cuffs/cartridges; field-gun reinforce bands",
+    "aaa11_modern_units": "418cfa9: infantry webbing kits; tank skirts/lamp/antenna; commander crossbelt/ribbons/visor",
+    "aaa12_future_units": "9f9b727: pauldron + power-pack helpers across all 5 future builders; war-machine skirts/lamp/antenna; titan charge cell",
+    "aaa13_heroes": "f6fb477: heroes 1.18x scale, gold command ring, raised HP bar",
+    "aaa14_buildings": "03415f8: mine mottled rock, adit lantern + bracing, cart tires; barracks tent guy-ropes + stakes",
+    "aaa15_projectiles": "9965b41: mottled rock/boulder shot, 3-vane arrows, shell fuse spark",
+    "feel_flash": "hit-flash is a decaying warm pop (FLASH_HEX 0xfff2df, FLASH_PEAK 0.18 in core/pbr.js, all unit/turret paths); 426/426 asserts green, castle night sheet zero white frames",
+    "perf_merge": "mergeStatic in core/pbr.js (world + bone-local modes, vertex-color baking): environment, all 5 base shells, all unit/turret rigs; draw calls stone 1346->811, castle 1860->1116, ren 1374->701, modern 3328->1327, future 1530->1223; all ages under 1500 budget, 60fps, pixel-identical screenshots",
+    "feel_firelight": "lane braziers/pylons carry flickering point lights (castle/future); night readability castle 7->8, future 7->8; fixed pylon NaN lamp scale",
+    "feel_audio": "positional battle mix (spatialMix + camera listener, UI/music global); sim passes kill-site positions",
+    "feel_hud": "base-danger pulsing red vignette below 33% base HP (hudState.base.frac)",
+    "art_towers": "per-age tower skins (stronghold palettes), rippling pennant (veto cleared), deck plank seams, iron mount cradles; shell merged",
+    "art_modern_bg": "mid-field rubble drift (slabs + rebar, merged); modern battle reads as firefight at 1284 calls",
+    "art_turrets": "hybrid model+procedural system (renaissance: pirate cannon, modern: quat tank, others procedural); muzzle flash FX with smoke/sparks; TURRET_SCALE applied; 605/605 green",
+    "bugs_gallery": "gallery now parades units/turrets/bases/world per age (towers with seated firing guns, base damage cycler, age-following world, auto-orbit); muzzle fire + zero errors verified",
+    "bugs_001_004": "BUG-001 stacking fixed by seeded muster jitter; BUG-003/004 fixed by stronghold body radii (BASE_BODY_PX) with gate spawns and wall engagement; BUG-002 fixed by propTiltX forward-carry, seated cannon, shorter procedural sword; BUG-005 tracer-dip fixed by leveled FX line; 605+156 green",    "bugs_audit": "combat sweep all 5 ages clean (23/23 smokes, spawn/turret/mine/evolve/special/pause/restart/gallery, 0 errors); no safe removals: all 24 quat files referenced, vendor/three.core.min.js is live (module wrapper re-exports it, restore verified), procedural rigs stay as loading fallback"
+  },
+  "playthroughs": {
+    "castle": "PASS: evolve->1, Swordsman/Archer/Knight/Paladin, Catapult/Fire/Oil (slots), mine+barracks, Arrow Volley fired; 0 errors",
+    "renaissance": "PASS: evolve x2->2, Dueler/Musketeer/Cannoneer/War Engineer, Small/Large/Explosive (slots), mine+barracks, Artillery fired; 0 errors",
+    "modern": "PASS: evolve x3->3, Melee/Infantry('2 Infantry' disambiguation)/Tank/Commander, Single/Rocket/Double (slots), mine+barracks, Airstrike fired; 0 errors",
+    "future": "PASS: evolve x4->4, God's Blade/Blaster/War Machine/Super Soldier/Titan, Titanium/Lazer/Ion (slots), mine+barracks, Orbital Laser fired; 0 errors",
+    "note": "all purchases/actions via real button clicks (whitespace-normalized matchers, 900ms re-render waits after XP/gold grants to avoid stale-disabled buttons); XP/gold grants are harness setup only; Stone victory/defeat/restart proven in earlier audits; sim win/lose path is age-agnostic"
+  },
+  "dependencies": {
+    "note": "audited 2026-09-08 after user asked if libraries are latest; game source fixes never touched deps",
+    "three": "0.185.1 installed = latest, no change",
+    "playwright": "1.63.0 installed = latest, no change",
+    "canvas_2d": "3.2.3 installed = latest, no change",
+    "vite": "upgraded 6.4.3 -> 8.2.2; trivial config (no plugins) so zero code changes; verified via vite build (1.47s) + dev on :3002 (click-spawn 2 units, 61fps, 0 errors) + suites 156+36 green"
+  },
+  "parity_score": 9,
+  "pending": []
 }
