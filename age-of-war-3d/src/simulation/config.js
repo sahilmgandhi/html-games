@@ -35,6 +35,11 @@ export const CONFIG = {
   BASE_WIDTH: 80,
   BASE_HEIGHT: 120,
 
+  // 3D-only (not balance): stronghold body half-widths in px, matching the
+  // rendered stronghold per age. Combat measures to the wall, never the
+  // flagpole, so melee engages outside the masonry and spawns clear the gate.
+  BASE_BODY_PX: [340, 380, 260, 340, 350],
+
   STARTING_GOLD: 200,
   STARTING_XP: 0,
 

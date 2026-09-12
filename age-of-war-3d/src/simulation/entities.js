@@ -10,6 +10,13 @@ import { dist } from './utils.js';
 let _nextId = 1;
 const allocId = () => _nextId++;
 
+// Stronghold body half-width in px for the base's age: combat measures to
+// the wall, never to the flagpole at the center.
+export function baseBodyPx(base) {
+  const row = CONFIG.BASE_BODY_PX || [];
+  return row[base?.ageIndex ?? 0] ?? 340;
+}
+
 // Projectile kind routing, sim-side: render only builds the mesh for the kind
 // string it receives. Unknown ages fall back to the Stone Age row so evolve
 // never produces an unrenderable kind.
@@ -120,12 +127,13 @@ export class SpatialHash {
 }
 
 export class Base {
-  constructor(x, y, side) {
+  constructor(x, y, side, ageIndex = 0) {
     this.id = allocId();
     this.x = x;
     this.y = y;
     this.z = 0;
     this.side = side;
+    this.ageIndex = ageIndex;
     this.width = CONFIG.BASE_WIDTH;
     this.height = CONFIG.BASE_HEIGHT;
     this.reset();
@@ -209,7 +217,7 @@ export class Unit {
       }
     }
 
-    const baseDist = dist(this.x, this.y, enemyBase.x, enemyBase.y);
+    const baseDist = Math.max(0, dist(this.x, this.y, enemyBase.x, enemyBase.y) - baseBodyPx(enemyBase));
     if (baseDist < closestDist) {
       return { target: enemyBase, dist: baseDist, type: 'base' };
     }
@@ -501,7 +509,9 @@ export class Projectile {
     if (bases) {
       for (const b of bases) {
         if (b.side !== this.side) {
-          if (dist(this.x, this.y, b.x, b.y) < 25) {
+          // Shells explode on the masonry: the wall stands a body radius
+          // out from the base center.
+          if (dist(this.x, this.y, b.x, b.y) < baseBodyPx(b) + 25) {
             b.takeDamage(this.damage);
             hits.push({ entity: b, damage: this.damage });
             this.alive = false;

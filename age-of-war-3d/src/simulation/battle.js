@@ -8,7 +8,7 @@
 
 import { CONFIG, toMeters } from './config.js';
 import {
-  SpatialHash, Base, Unit, Turret, Building, ProjectilePool,
+  SpatialHash, Base, Unit, Turret, Building, ProjectilePool, baseBodyPx,
 } from './entities.js';
 import { AI } from './ai.js';
 import { mulberry32 } from './rng.js';
@@ -31,8 +31,8 @@ export class BattleSim {
     this.autoAI = opts.autoAI ?? true; // enemy AI driver
     this.autoPlayer = opts.autoPlayer ?? false; // scripted player for demo mode
 
-    this.playerBase = new Base(CONFIG.BASE_X_OFFSET, CONFIG.GROUND_Y, 'player');
-    this.enemyBase = new Base(CONFIG.WORLD.WIDTH - CONFIG.BASE_X_OFFSET, CONFIG.GROUND_Y, 'enemy');
+    this.playerBase = new Base(CONFIG.BASE_X_OFFSET, CONFIG.GROUND_Y, 'player', 0);
+    this.enemyBase = new Base(CONFIG.WORLD.WIDTH - CONFIG.BASE_X_OFFSET, CONFIG.GROUND_Y, 'enemy', 0);
     this.turretSlotPositions = this.computeSlotPositions(CONFIG.BASE_X_OFFSET, 1);
     this.enemyTurretSlotPositions = this.computeSlotPositions(
       CONFIG.WORLD.WIDTH - CONFIG.BASE_X_OFFSET, -1,
@@ -50,7 +50,6 @@ export class BattleSim {
     this.enemyGold = CONFIG.STARTING_GOLD;
     this.enemyXp = CONFIG.STARTING_XP;
     this.enemyAge = 0;
-
     this.specialCooldown = 0;
     this.enemySpecialCooldown = 0;
     this.specialAnim = null;
@@ -59,6 +58,8 @@ export class BattleSim {
 
     this.playerBase.reset();
     this.enemyBase.reset();
+    this.playerBase.ageIndex = 0;
+    this.enemyBase.ageIndex = 0;
 
     this.units = [];
     this.turrets = [];
@@ -162,9 +163,10 @@ export class BattleSim {
       this.enemyGold -= data.cost;
     }
 
-    let spawnX = isPlayer
-      ? CONFIG.BASE_X_OFFSET + 30
-      : CONFIG.WORLD.WIDTH - CONFIG.BASE_X_OFFSET - 30;
+    // Muster at the gate, clear of the masonry: the stronghold is a volume.
+    const home = isPlayer ? this.playerBase : this.enemyBase;
+    const dir = isPlayer ? 1 : -1;
+    const spawnX = home.x + dir * (baseBodyPx(home) + 80);
 
     const u = new Unit(
       spawnX, CONFIG.GROUND_Y, side,
@@ -201,9 +203,9 @@ export class BattleSim {
       this.enemyGold -= age.hero.cost;
       this.enemyHeroCooldown = CONFIG.HERO_COOLDOWN;
     }
-    const spawnX = isPlayer
-      ? CONFIG.BASE_X_OFFSET + 30
-      : CONFIG.WORLD.WIDTH - CONFIG.BASE_X_OFFSET - 30;
+    const home = isPlayer ? this.playerBase : this.enemyBase;
+    const dir = isPlayer ? 1 : -1;
+    const spawnX = home.x + dir * (baseBodyPx(home) + 80);
     const u = new Unit(
       spawnX, CONFIG.GROUND_Y, side,
       isPlayer ? this.currentAge : this.enemyAge, 0, 0, true, this.laneZ(),
@@ -305,12 +307,14 @@ export class BattleSim {
       this.xp -= cost;
       this.currentAge++;
       this.playerBase.healFraction(CONFIG.EVOLVE_HEAL);
+      this.playerBase.ageIndex = this.currentAge;
       this._sound('evolve');
       try { this.audio?.updateMusicAge?.(this.currentAge); } catch { /* audio is cosmetic */ }
     } else {
       this.enemyXp -= cost;
       this.enemyAge++;
       this.enemyBase.healFraction(CONFIG.EVOLVE_HEAL);
+      this.enemyBase.ageIndex = this.enemyAge;
     }
     this.emit('age:evolve', { side, ageIndex: isPlayer ? this.currentAge : this.enemyAge });
     return true;
