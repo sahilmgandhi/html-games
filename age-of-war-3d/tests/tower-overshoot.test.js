@@ -29,13 +29,14 @@ export default [
     },
   },
   {
-    name: 'spawn X is constant (no formation offsets)',
+    name: 'spawns jitter around the gate (no formation offsets)',
     run(t) {
       const sim = rich(makeSim());
       t.assert('formationMode removed', sim.formationMode === undefined, `got ${sim.formationMode}`);
       const xs = [];
       for (let i = 0; i < 5; i++) xs.push(sim.spawnUnitForSide('player', 0).x);
-      t.assert('all spawns share one X', xs.every((x) => x === xs[0]), xs.join(','));
+      t.assert('spawns spread (no stacking)', new Set(xs).size > 1, xs.join(','));
+      t.assert('spread stays near the gate', xs.every((x) => Math.abs(x - xs[0]) < 80), xs.join(','));
       t.assert('hud has no formation', sim.hudState().formation === undefined, String(sim.hudState().formation));
     },
   },

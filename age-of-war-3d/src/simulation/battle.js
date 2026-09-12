@@ -164,9 +164,10 @@ export class BattleSim {
     }
 
     // Muster at the gate, clear of the masonry: the stronghold is a volume.
+    // Seeded jitter spreads rapid spawns so stacks don't share every hit.
     const home = isPlayer ? this.playerBase : this.enemyBase;
     const dir = isPlayer ? 1 : -1;
-    const spawnX = home.x + dir * (baseBodyPx(home) + 80);
+    const spawnX = home.x + dir * (baseBodyPx(home) + 80) + (this.rng() * 2 - 1) * 30;
 
     const u = new Unit(
       spawnX, CONFIG.GROUND_Y, side,
@@ -205,7 +206,7 @@ export class BattleSim {
     }
     const home = isPlayer ? this.playerBase : this.enemyBase;
     const dir = isPlayer ? 1 : -1;
-    const spawnX = home.x + dir * (baseBodyPx(home) + 80);
+    const spawnX = home.x + dir * (baseBodyPx(home) + 80) + (this.rng() * 2 - 1) * 30;
     const u = new Unit(
       spawnX, CONFIG.GROUND_Y, side,
       isPlayer ? this.currentAge : this.enemyAge, 0, 0, true, this.laneZ(),
