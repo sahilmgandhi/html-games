@@ -29,9 +29,9 @@ function fakeUnit(over = {}) {
 export default [
   {
     name: 'procedural flash peaks at onset',
-    run(t) {
+    async run(t) {
       const e = fakeUnit({ hitFlash: 0.1 });
-      const um = UnitMesh(e, 0);
+      const um = await TurretMesh(e, 0);
       um.update(0.016, e);
       const lv = flashLevels(um.mesh);
       t.assert('mats found', lv.length > 0, JSON.stringify(lv.length));
@@ -41,9 +41,9 @@ export default [
   },
   {
     name: 'procedural flash decays before the window ends',
-    run(t) {
+    async run(t) {
       const e = fakeUnit({ hitFlash: 0.02 });
-      const um = UnitMesh(e, 0);
+      const um = await TurretMesh(e, 0);
       um.update(0.016, e);
       const lv = flashLevels(um.mesh);
       t.assert('still flashing', lv.every((v) => v > 0), JSON.stringify(lv.slice(0, 4)));
@@ -53,9 +53,9 @@ export default [
   },
   {
     name: 'procedural flash clears when the window ends',
-    run(t) {
+    async run(t) {
       const e = fakeUnit({ hitFlash: 0.1 });
-      const um = UnitMesh(e, 0);
+      const um = await TurretMesh(e, 0);
       um.update(0.016, e);
       e.hitFlash = 0;
       um.update(0.016, e);
@@ -66,9 +66,9 @@ export default [
   },
   {
     name: 'turret flash decays before the window ends',
-    run(t) {
+    async run(t) {
       const tur = { side: 'player', turretIndex: 0, x: 0, z: 0, hp: 100, maxHp: 100, alive: true, hitFlash: 0.02 };
-      const tm = TurretMesh(tur, 0);
+      const tm = await TurretMesh(tur, 0);
       tm.update(0.016);
       const lv = flashLevels(tm.mesh);
       t.assert('mats found', lv.length > 0, JSON.stringify(lv.length));

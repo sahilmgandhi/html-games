@@ -6,7 +6,7 @@ import { CONFIG } from '../src/simulation/config.js';
 export default [
   {
     name: 'every unit type of every age damages the enemy base solo',
-    run(t) {
+    async run(t) {
       for (let age = 0; age < 5; age++) {
         for (let i = 0; i < CONFIG.AGES[age].units.length; i++) {
           const sim = new BattleSim({ seed: 11, autoAI: false });

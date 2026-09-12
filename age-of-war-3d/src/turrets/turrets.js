@@ -3,6 +3,7 @@ import { toMeters } from '../simulation/config.js';
 import {
   pbr, basic, glowMat, glowSprite, jitterGeo, mottleGeo, rockMat, solidify, cloneMats, makeHpBar, disposeDeep, SIDE_ACCENT, FLASH_HEX, FLASH_PEAK, mergeStatic,
 } from '../core/pbr.js';
+import { createEnvMesh, ensureEnvLoaded } from './env-cast.js';
 
 // Stone Age turrets (by turretIndex):
 //   0 Rock Slingshot — timber A-frame with a swinging sling arm (rock)
@@ -69,6 +70,125 @@ function flashSprite(scale = 1) {
   const s = glowSprite('#ffcf5a', 0.95, 1.4 * scale);
   s.visible = false;
   return s;
+}
+
+// Enhanced multi-layer muzzle flash with smoke and sparks
+function createMuzzleFlash(rig, muzzle, scale = 1) {
+  const flashGroup = new THREE.Group();
+  
+  // Primary bright flash
+  const flash = glowSprite('#fff8d0', 0.95, 1.8 * scale);
+  flash.visible = false;
+  flashGroup.add(flash);
+  
+  // Secondary wider glow
+  const glow = glowSprite('#ff9900', 0.6, 2.5 * scale);
+  glow.visible = false;
+  flashGroup.add(glow);
+  
+  // Muzzle smoke puff
+  const smoke = new THREE.Mesh(
+    new THREE.SphereGeometry(0.3 * scale, 8, 6),
+    glowMat('#8a8a8a', 0.4)
+  );
+  smoke.visible = false;
+  flashGroup.add(smoke);
+  
+  // Spark particles
+  const sparkGeo = new THREE.BufferGeometry();
+  const sparkCount = 12;
+  const sparkPos = new Float32Array(sparkCount * 3);
+  const sparkVel = new Float32Array(sparkCount * 3);
+  for (let i = 0; i < sparkCount; i++) {
+    sparkPos[i * 3] = 0;
+    sparkPos[i * 3 + 1] = 0;
+    sparkPos[i * 3 + 2] = 0;
+  }
+  sparkGeo.setAttribute('position', new THREE.BufferAttribute(sparkPos, 3));
+  const sparkMat = new THREE.PointsMaterial({
+    size: 0.08 * scale,
+    color: 0xffcc00,
+    transparent: true,
+    opacity: 0.9,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+    sizeAttenuation: true,
+  });
+  const sparks = new THREE.Points(sparkGeo, sparkMat);
+  sparks.visible = false;
+  flashGroup.add(sparks);
+  
+  // Position the group at muzzle
+  muzzle.getWorldPosition(flashGroup.position);
+  rig.root.add(flashGroup);
+  
+  return {
+    group: flashGroup,
+    flash,
+    glow,
+    smoke,
+    sparks,
+    sparkVel,
+    show() {
+      this.group.visible = true;
+      this.flash.visible = true;
+      this.glow.visible = true;
+      this.smoke.visible = true;
+      this.sparks.visible = true;
+      // Initialize spark velocities
+      const pos = this.sparks.geometry.attributes.position;
+      const vel = this.sparkVel;
+      for (let i = 0; i < pos.count; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = 8 + Math.random() * 12;
+        const elevation = (Math.random() - 0.5) * 0.8;
+        vel[i * 3] = Math.cos(angle) * speed;
+        vel[i * 3 + 1] = speed * elevation + 3;
+        vel[i * 3 + 2] = Math.sin(angle) * speed;
+        pos.setXYZ(i, 0, 0, 0);
+      }
+      pos.needsUpdate = true;
+      this.flash.material.opacity = 1;
+      this.glow.material.opacity = 0.8;
+      this.smoke.material.opacity = 0.6;
+      this.smoke.scale.setScalar(0.5);
+      this.sparks.material.opacity = 1;
+    },
+    update(dt) {
+      if (!this.group.visible) return;
+      // Expand flash and glow
+      const flashScale = 1 + (1 - this.flash.material.opacity) * 4;
+      this.flash.scale.setScalar(flashScale);
+      this.glow.scale.setScalar(flashScale * 1.5);
+      this.flash.material.opacity = Math.max(0, this.flash.material.opacity - dt * 8);
+      this.glow.material.opacity = Math.max(0, this.glow.material.opacity - dt * 6);
+      
+      // Expand and fade smoke
+      this.smoke.scale.addScalar(dt * 2);
+      this.smoke.material.opacity = Math.max(0, this.smoke.material.opacity - dt * 2);
+      
+      // Update sparks
+      const pos = this.sparks.geometry.attributes.position;
+      const vel = this.sparkVel;
+      this.sparks.material.opacity = Math.max(0, this.sparks.material.opacity - dt * 2);
+      for (let i = 0; i < pos.count; i++) {
+        pos.setXYZ(i,
+          pos.getX(i) + this.sparkVel[i * 3] * dt,
+          pos.getY(i) + this.sparkVel[i * 3 + 1] * dt - dt * 9.8,
+          pos.getZ(i) + this.sparkVel[i * 3 + 2] * dt
+        );
+      }
+      pos.needsUpdate = true;
+      
+      // Hide when fully faded
+      if (this.flash.material.opacity <= 0) {
+        this.group.visible = false;
+      }
+    },
+    hide() {
+      this.group.visible = false;
+    }
+  };
 }
 
 // 0 — Rock Slingshot
@@ -921,6 +1041,15 @@ function buildIonRay(accent) {
   return { root, head, arm, muzzle, flash, height: 4.6, restArmZ: 0, armAxis: 'steady' };
 }
 
+// Map turret type to env-cast role
+const TURRET_ROLES = {
+  0: { 0: 'stone_slingshot', 1: 'stone_egg', 2: 'stone_catapult' },
+  1: { 0: 'castle_catapult', 1: 'castle_fire_catapult', 2: 'castle_oil_tower' },
+  2: { 0: 'renaissance_small_cannon', 1: 'renaissance_large_cannon', 2: 'renaissance_explosive_cannon' },
+  3: { 0: 'modern_single_turret', 1: 'modern_rocket_turret', 2: 'modern_double_turret' },
+  4: { 0: 'future_titanium_shooter', 1: 'future_lazer_cannon', 2: 'future_ion_ray' },
+};
+
 const BUILDERS = {
   0: [buildSlingshot, buildEgg, buildCatapult],
   1: [buildMilCatapult, buildFireCatapult, buildOilTower],
@@ -937,19 +1066,41 @@ const BUILDERS = {
 const TURRET_SCALE = 0.55;
 const _anchorV = new THREE.Vector3();
 
-export function TurretMesh(turret, ageIndex, anchor) {
+export async function TurretMesh(turret, ageIndex, anchor) {
   const accent = SIDE_ACCENT[turret.side] || SIDE_ACCENT.player;
-  const row = BUILDERS[ageIndex] || BUILDERS[0];
-  const rig = (row[turret.turretIndex] || BUILDERS[0][0])(accent);
+  
+  // Try env-cast model first
+  await ensureEnvLoaded();
+  const role = TURRET_ROLES[ageIndex]?.[turret.turretIndex];
+  const envMesh = role ? createEnvMesh(role, accent) : null;
+  
+  let rig;
+  let useEnvMesh = false;
+  
+  if (envMesh) {
+    useEnvMesh = true;
+    rig = envMesh;
+  } else {
+    // Fallback to procedural builder
+    const row = BUILDERS[ageIndex] || BUILDERS[0];
+    rig = (row[turret.turretIndex] || BUILDERS[0][0])(accent);
+  }
 
   const mesh = new THREE.Group();
-  rig.root.scale.setScalar(TURRET_SCALE);
-  mesh.add(rig.root);
+  if (useEnvMesh) {
+    mesh.add(envMesh.mesh);
+    // Scale down the env mesh to turret scale
+    envMesh.mesh.scale.setScalar(TURRET_SCALE);
+  } else {
+    rig.root.scale.setScalar(TURRET_SCALE);
+    mesh.add(rig.root);
+  }
+  
   // Rigid frame parts fuse per joint so braced timber and barrels cost a
   // few calls but keep aiming, recoiling and spinning with their groups.
   mergeStatic(mesh, new Set(), { local: true });
   const bar = makeHpBar(1.4);
-  bar.sprite.position.y = rig.height * TURRET_SCALE + 0.5;
+  bar.sprite.position.y = (rig.height || 4) * TURRET_SCALE + 0.5;
   bar.sprite.visible = false;
   mesh.add(bar.sprite);
   solidify(mesh);
@@ -976,36 +1127,48 @@ export function TurretMesh(turret, ageIndex, anchor) {
     }
   }
 
+  // Enhanced muzzle flash system
+  const muzzle = useEnvMesh ? envMesh.getMuzzle() : rig.muzzle;
+  const muzzleFlash = createMuzzleFlash(useEnvMesh ? { root: envMesh.mesh, muzzle } : rig, muzzle, 1);
+
   return {
     mesh,
     kind: ((TURRET_PROJECTILE[ageIndex] || TURRET_PROJECTILE[0])[turret.turretIndex]) || 'rock',
-    muzzle: rig.muzzle,
+    muzzle,
     aimAt(x, y, z) {
-      rig.muzzle.getWorldPosition(_v);
-      _v.set(x - _v.x, 0, z - _v.z);
-      if (_v.lengthSq() < 1e-6) return;
-      const target = Math.atan2(-_v.z, _v.x)
-        - (turret.side === 'player' ? 0 : Math.PI);
-      if (!yawInit) { yaw = target; yawInit = true; }
-      else {
-        // shortest-arc ease so barrels swing instead of snapping.
-        let d = target - yaw;
-        while (d > Math.PI) d -= Math.PI * 2;
-        while (d < -Math.PI) d += Math.PI * 2;
-        yaw += d * 0.35;
+      if (useEnvMesh) {
+        envMesh.mesh.rotation.y = x; // simplified for env mesh
+      } else {
+        rig.muzzle.getWorldPosition(_v);
+        _v.set(x - _v.x, 0, z - _v.z);
+        if (_v.lengthSq() < 1e-6) return;
+        const target = Math.atan2(-_v.z, _v.x)
+          - (turret.side === 'player' ? 0 : Math.PI);
+        if (!yawInit) { yaw = target; yawInit = true; }
+        else {
+          let d = target - yaw;
+          while (d > Math.PI) d -= Math.PI * 2;
+          while (d < -Math.PI) d += Math.PI * 2;
+          yaw += d * 0.35;
+        }
+        rig.head.rotation.y = yaw;
       }
-      rig.head.rotation.y = yaw;
     },
     fire() {
       recoilV += 7;
       flashT = 0.12;
-      rig.flash.visible = true;
-      const s = 1.1 + Math.random() * 0.5;
-      rig.flash.scale.set(s, s, 1);
-      if (rig.flash2) {
-        rig.flash2.visible = true;
-        rig.flash2.scale.set(s, s, 1);
+      if (useEnvMesh) {
+        if (envMesh.playAction) envMesh.playAction('fire', THREE.LoopOnce);
+      } else {
+        rig.flash.visible = true;
+        const s = 1.1 + Math.random() * 0.5;
+        rig.flash.scale.set(s, s, 1);
+        if (rig.flash2) {
+          rig.flash2.visible = true;
+          rig.flash2.scale.set(s, s, 1);
+        }
       }
+      muzzleFlash.show();
     },
     update(dt) {
       if (anchor) {
@@ -1015,39 +1178,44 @@ export function TurretMesh(turret, ageIndex, anchor) {
         mesh.position.set(toMeters(turret.x), 0, turret.z || 0);
       }
       t += dt;
-      if (rig.flame) {
-        const f = 1 + Math.sin(t * 13) * 0.15 + Math.sin(t * 29) * 0.08;
-        rig.flame.scale.set(1 / Math.sqrt(f), f, 1 / Math.sqrt(f));
-        if (rig.glow) rig.glow.material.opacity = 0.55 + Math.sin(t * 17) * 0.15;
-      }
-      // spring recoil: sharp kick then a settled return.
-      recoilV += (-recoil * 90 - recoilV * 12) * dt;
-      recoil = THREE.MathUtils.clamp(recoil + recoilV * dt, -0.2, 1.2);
-      if (Math.abs(recoil) > 0.001 || Math.abs(recoilV) > 0.001) {
-        const k = Math.sin(THREE.MathUtils.clamp(recoil, 0, 1) * Math.PI * 0.5);
-        if (rig.arm) {
-          if (rig.armAxis === 'throw') rig.arm.rotation.z = rig.restArmZ + k * 1.1;
-          else if (rig.spin) rig.arm.rotation.y = (rig.arm.rotation.y || 0) + dt * 2;
-          // 'steady' beam rigs hold aim; the head kick below carries the shot.
-          else if (rig.armAxis !== 'steady') rig.arm.rotation.z = k * -0.7;
-        }
-        rig.head.position.x = -k * 0.28;
+      if (useEnvMesh) {
+        envMesh.update(dt);
       } else {
-        recoil = 0;
-        rig.head.position.x = 0;
-        if (rig.arm && rig.armAxis === 'throw') rig.arm.rotation.z = rig.restArmZ;
-        if (rig.arm && !rig.armAxis && !rig.spin) rig.arm.rotation.z = 0;
-        if (rig.spin && rig.arm) rig.arm.rotation.y += dt * 0.6; // idle crank
-      }
-      if (flashT > 0) {
-        flashT -= dt;
-        rig.flash.material.opacity = Math.max(0, flashT / 0.12) * 0.95;
-        if (flashT <= 0) rig.flash.visible = false;
-        if (rig.flash2) {
-          rig.flash2.material.opacity = Math.max(0, flashT / 0.12) * 0.95;
-          if (flashT <= 0) rig.flash2.visible = false;
+        if (rig.flame) {
+          const f = 1 + Math.sin(t * 13) * 0.15 + Math.sin(t * 29) * 0.08;
+          rig.flame.scale.set(1 / Math.sqrt(f), f, 1 / Math.sqrt(f));
+          if (rig.glow) rig.glow.material.opacity = 0.55 + Math.sin(t * 17) * 0.15;
+        }
+        // spring recoil: sharp kick then a settled return.
+        recoilV += (-recoil * 90 - recoilV * 12) * dt;
+        recoil = THREE.MathUtils.clamp(recoil + recoilV * dt, -0.2, 1.2);
+        if (Math.abs(recoil) > 0.001 || Math.abs(recoilV) > 0.001) {
+          const k = Math.sin(THREE.MathUtils.clamp(recoil, 0, 1) * Math.PI * 0.5);
+          if (rig.arm) {
+            if (rig.armAxis === 'throw') rig.arm.rotation.z = rig.restArmZ + k * 1.1;
+            else if (rig.spin) rig.arm.rotation.y = (rig.arm.rotation.y || 0) + dt * 2;
+            else if (rig.armAxis !== 'steady') rig.arm.rotation.z = k * -0.7;
+          }
+          rig.head.position.x = -k * 0.28;
+        } else {
+          recoil = 0;
+          rig.head.position.x = 0;
+          if (rig.arm && rig.armAxis === 'throw') rig.arm.rotation.z = rig.restArmZ;
+          if (rig.arm && !rig.armAxis && !rig.spin) rig.arm.rotation.z = 0;
+          if (rig.spin && rig.arm) rig.arm.rotation.y += dt * 0.6;
+        }
+        if (flashT > 0) {
+          flashT -= dt;
+          rig.flash.material.opacity = Math.max(0, flashT / 0.12) * 0.95;
+          if (flashT <= 0) rig.flash.visible = false;
+          if (rig.flash2) {
+            rig.flash2.material.opacity = Math.max(0, flashT / 0.12) * 0.95;
+            if (flashT <= 0) rig.flash2.visible = false;
+          }
         }
       }
+      // Update enhanced muzzle flash
+      muzzleFlash.update(dt);
       setFlash(turret.hitFlash > 0 ? Math.min(1, turret.hitFlash / 0.1) : 0);
       const frac = turret.hp / turret.maxHp;
       bar.sprite.visible = frac < 0.999 && turret.alive;
@@ -1055,7 +1223,11 @@ export function TurretMesh(turret, ageIndex, anchor) {
       mesh.visible = turret.alive;
     },
     dispose() {
-      disposeDeep(mesh);
+      if (useEnvMesh) {
+        envMesh.dispose();
+      } else {
+        disposeDeep(mesh);
+      }
       bar.sprite.material.map?.dispose?.();
       bar.sprite.material.dispose?.();
     },

@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import {
-  pbr, glowMat, glowSprite, solidify, disposeDeep, teamRing, SIDE_ACCENT,
+  pbr, basic, glowMat, glowSprite, solidify, disposeDeep, teamRing, SIDE_ACCENT,
   makeCloth, mergeStatic,
 } from '../core/pbr.js';
 
@@ -52,6 +52,27 @@ export function TowerMesh(side, ageIndex) {
     mesh.add(band);
   }
 
+  // corner quoins - alternating proud blocks so the tower reads as laid masonry
+  for (let qi = 0; qi < 5; qi++) {
+    const qy = 1.15 + qi * 0.95;
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
+      const q = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.5, 0.36), (qi % 2 ? stone : stoneDk));
+      q.position.set(sx * 1.62, qy, sz * 1.62);
+      mesh.add(q);
+    }
+  }
+
+  // arrow slit windows on the battlefield face, darkened as the tower falls
+  const slitMat = basic('#14141c');
+  for (let i = -2; i <= 2; i++) {
+    if (i === 0) continue;
+    const a = (i / 2) * 0.55;
+    const slit = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.55, 0.14), slitMat);
+    slit.position.set(1.62 * Math.cos(a), 1.9, Math.sin(a) * 1.7);
+    slit.rotation.y = -a;
+    mesh.add(slit);
+  }
+
   // deck plate + side-color trim
   const deck = new THREE.Mesh(new THREE.BoxGeometry(4.4, 0.35, 4.4), stone);
   deck.position.y = DECK_TOP - 0.175;
@@ -86,10 +107,27 @@ export function TowerMesh(side, ageIndex) {
     mesh.add(m);
   }
 
+  // corner turrets on the crenellations
+  for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
+    const turret = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.35, 0.8, 8), stoneDk);
+    turret.position.set(sx * 2.1, DECK_TOP + 0.6, sz * 2.2);
+    mesh.add(turret);
+    const cap = new THREE.Mesh(new THREE.ConeGeometry(0.35, 0.45, 8), pbr(accent, 0.7));
+    cap.position.set(sx * 2.1, DECK_TOP + 1.0, sz * 2.2);
+    mesh.add(cap);
+  }
+
   // banner pole + pennant + beacon at the rear corner
   const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.08, 2.4, 8), pbr('#4c3018', 0.9));
   pole.position.set(-1.7, DECK_TOP + 1.2, -1.7);
   mesh.add(pole);
+  // pole guy-wires for stability
+  for (const s of [-1, 1]) {
+    const guy = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 2.5, 4), pbr('#3a2a1a', 0.7));
+    guy.position.set(-1.7 + s * 0.15, DECK_TOP + 2.5, -1.7 + s * 0.15);
+    guy.rotation.set(s * 0.3, 0, s * 0.3);
+    mesh.add(guy);
+  }
   // rippling pennant on the pole, hoist pinned: flat quads do not ship.
   const cloth = makeCloth(0.9, 0.5, 6, pbr(accent, 0.7));
   const pennant = cloth.mesh;
@@ -101,6 +139,10 @@ export function TowerMesh(side, ageIndex) {
   const halo = glowSprite('#ffd23a', 0.5, 1.4);
   halo.position.copy(beacon.position);
   mesh.add(halo);
+  // beacon pulse light
+  const beaconLight = new THREE.PointLight('#ffd23a', 1.2, 15, 2);
+  beaconLight.position.copy(beacon.position);
+  mesh.add(beaconLight);
 
   // four weapon mounts: 2x2 grid on the deck top, each seated in a
   // visible iron cradle so guns sit IN hardware, not on bare deck.
@@ -112,7 +154,11 @@ export function TowerMesh(side, ageIndex) {
       anchor.position.set(mx, DECK_TOP, mz);
       const cradle = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.5, 0.3, 10), cradleM);
       cradle.position.y = -0.12;
+      // cradle detail: recessed socket for the gun trunnion
+      const socket = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.32, 0.15, 8), pbr('#1a1a1a', 0.5));
+      socket.position.y = 0.02;
       anchor.add(cradle);
+      anchor.add(socket);
       mesh.add(anchor);
       mounts.push(anchor);
     }
@@ -137,6 +183,8 @@ export function TowerMesh(side, ageIndex) {
       const k = 0.75 + Math.sin(t * 3.1) * 0.25;
       halo.material.opacity = 0.35 + k * 0.25;
       beacon.scale.setScalar(0.9 + k * 0.2);
+      // Pulsing beacon light
+      beaconLight.intensity = 0.8 + k * 0.5;
       cloth.update(t);
     },
     dispose() {

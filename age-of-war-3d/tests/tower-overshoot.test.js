@@ -55,7 +55,7 @@ export default [
       t.assert('tower has 4 mounts', tower.mounts?.length === 4, String(tower.mounts?.length));
       const { TurretMesh } = await import('../src/turrets/turrets.js');
       const fake = { x: 140, z: 0, side: 'player', turretIndex: 0, slotIndex: 0, hp: 150, maxHp: 150, alive: true, hitFlash: 0 };
-      const tm = TurretMesh(fake, 0);
+      const tm = await TurretMesh(fake, 0);
       const box = new (await import('three')).Box3().setFromObject(tm.mesh);
       const size = new (await import('three')).Vector3();
       box.getSize(size);
