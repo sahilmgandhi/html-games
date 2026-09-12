@@ -651,13 +651,16 @@ export function QuatUnitMesh(entity, role, templates) {
       addFx(smoke, 0.8, new THREE.Vector3(0, 1.2, 0));
     } else if (gunProp) {
       const m = muzzleMeshLocal(gunProp, new THREE.Vector3(2.04, 0, 0));
+      // The shot line stays level and above the dirt even when the firing
+      // clip dips the rifle: clamp the FX height, keep the beam horizontal.
+      const fy = Math.max(m.y, 0.45);
       const flash = glowSprite('#ffe9a3', 0.95, 0.8);
       flash.name = 'muzzleflash';
-      flash.position.copy(m);
+      flash.position.set(m.x, fy, m.z);
       addFx(flash, 0.12);
       const beam = new THREE.Mesh(new THREE.BoxGeometry(3, 0.06, 0.06), glowMat('#ffd23a', 0.8));
       beam.name = 'tracer';
-      beam.position.set(m.x + 1.5, m.y, m.z);
+      beam.position.set(m.x + 1.5, fy, m.z);
       addFx(beam, 0.15);
     }
   }
