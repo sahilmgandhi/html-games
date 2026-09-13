@@ -71,4 +71,49 @@ export default [
         `pHP=${Math.round(sim.playerBaseHp)} eHP=${Math.round(sim.enemyBaseHp)}`);
     },
   },
+  {
+    name: 'bot fields varied unit types, not slot-0 spam',
+    run(t) {
+      const sim = new BattleSim({ seed: 7, autoAI: false, autoPlayer: false });
+      const seen = new Set();
+      const orig = sim.spawnUnit.bind(sim);
+      sim.spawnUnit = (i) => { seen.add(i); return orig(i); };
+      for (let i = 0; i < 120; i++) {
+        sim.gold = 1e6;
+        sim.xp = 1e6;
+        sim.playerAI.decide();
+      }
+      t.assert('bot mixes unit types', seen.size >= 2, `indices=${[...seen]}`);
+    },
+  },
+  {
+    name: 'bot buys turret slots/turrets like a full player',
+    run(t) {
+      const sim = new BattleSim({ seed: 7, autoAI: false, autoPlayer: false });
+      for (let i = 0; i < 120; i++) {
+        sim.gold = 1e6;
+        sim.xp = 1e6;
+        sim.playerAI.decide();
+      }
+      const turreted = sim.playerSlotsBought > 1 || sim.playerTurrets().length > 0;
+      t.assert('bot invests in turrets', turreted,
+        `slots=${sim.playerSlotsBought} turrets=${sim.playerTurrets().length}`);
+    },
+  },
+  {
+    name: 'bot-vs-AI resolves on every difficulty',
+    run(t) {
+      for (let d = 0; d < 4; d++) {
+        for (const seed of [7, 99]) {
+          const sim = new BattleSim({ seed, difficulty: d, autoAI: true, autoPlayer: true });
+          let secs = 0;
+          while (!sim.gameOver && secs < 1500) {
+            sim.update(0.5);
+            secs += 0.5;
+          }
+          t.assert(`d${d} seed${seed} resolves`, sim.gameOver, `t=${Math.round(secs)}s`);
+        }
+      }
+    },
+  },
 ];

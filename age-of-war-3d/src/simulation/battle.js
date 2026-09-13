@@ -19,6 +19,9 @@ const SPECIAL_DURATIONS = [2.0, 1.5, 2.0, 2.5, 1.5];
 // Distinct stream for lane jitter/AI so seeded gameplay randomness and AI
 // decisions do not share one sequence.
 const AI_SEED_XOR = 0x9e3779b9;
+// Own stream for the blue spectate bot so its draws never shift the red AI's
+// sequence (enemy-only replays stay identical with the bot on or off).
+const PLAYER_AI_XOR = 0x51ed270b;
 
 export class BattleSim {
   constructor(opts = {}) {
@@ -26,6 +29,7 @@ export class BattleSim {
     this.seed = opts.seed ?? 1;
     this.rng = opts.rng || mulberry32(this.seed);
     this.aiRng = opts.aiRng || mulberry32((this.seed ^ AI_SEED_XOR) >>> 0);
+    this.playerAiRng = opts.playerAiRng || mulberry32((this.seed ^ PLAYER_AI_XOR) >>> 0);
     this.events = opts.events || null; // EventBus-like { emit(name, payload) }
     this.audio = opts.audio || null; // { play(name) }, optional
     this.autoAI = opts.autoAI ?? true; // enemy AI driver
@@ -38,6 +42,7 @@ export class BattleSim {
       CONFIG.WORLD.WIDTH - CONFIG.BASE_X_OFFSET, -1,
     );
     this.ai = new AI(this, this.aiRng);
+    this.playerAI = new AI(this, this.playerAiRng, 'player');
     this.balance = new BalanceTracker();
 
     this.resetState();
@@ -79,7 +84,6 @@ export class BattleSim {
     this.totalSpawned = 0;
     this.totalGoldSpent = 0;
     this.playerLowestHp = CONFIG.BASE_HP;
-    this._demoTimer = 0;
     this.balance?.reset();
   }
 
@@ -98,7 +102,9 @@ export class BattleSim {
     // Reseed both streams so a seeded match replays identically.
     this.rng = mulberry32(this.seed);
     this.aiRng = mulberry32((this.seed ^ AI_SEED_XOR) >>> 0);
+    this.playerAiRng = mulberry32((this.seed ^ PLAYER_AI_XOR) >>> 0);
     this.ai = new AI(this, this.aiRng);
+    this.playerAI = new AI(this, this.playerAiRng, 'player');
     // Same music restart as the original; no evolve jingle.
     try { this.audio?.setSuspended?.(false); } catch { /* audio is cosmetic */ }
     try { this.audio?.stopMusic?.(); } catch { /* audio is cosmetic */ }
@@ -731,20 +737,11 @@ export class BattleSim {
     this.balance.update(this);
   }
 
-  // Scripted player for the spectate bot: the same competent policy as the
-  // winnability bar (mine, barracks, melee upgrades, hero, special, evolve,
-  // mass melee), once per second. Every call is internally gold-gated.
+  // Spectate bot: the same brain as the red AI, mirrored to the blue side
+  // (varied units, turrets, heroes, specials, evolves, upgrades). Constant
+  // think rate on every difficulty so the difficulty curve shows in results.
   _demoPlayer(dt) {
-    this._demoTimer += dt;
-    if (this._demoTimer < 1) return;
-    this._demoTimer = 0;
-    this.buyBuilding(0); // Gold Mine when affordable (no-op otherwise)
-    this.buyBuilding(1); // Barracks when affordable
-    this.upgradeUnit(0); // melee tiers when affordable
-    this.spawnHero('player');
-    this.useSpecial();
-    this.evolve();
-    this.spawnUnit(0);
+    this.playerAI.update(dt);
   }
 
   // HUD state (matches hud.js contract).
