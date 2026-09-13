@@ -1,1 +1,89 @@
-{"bugs":[{"actual":"4 instantly-spawned clubmen share identical x (probe xs); 15px AoE then damages the whole stack on every hit","expected":"spawned units separate so single-target attacks usually hit one unit","id":"BUG-001","severity":"high","shot":"shots/bug1-fixed.png","status":"fixed-verified","steps":"full battle, click Clubman x4 as fast as possible","title":"instant spawns stack on one x, every attack splashes them all","verify":"seeded +-30px muster jitter; instant x4 lands spread, muster clears the gate"},{"actual":"probe minima: stone melee -0.23, castle melee -0.51, ren siege -0.47; motion sweep: club -0.35, staff -1.05, sword -0.58, cannon -0.47","expected":"feet planted at y=0, hand props and mounts never breach the ground plane","id":"BUG-002","severity":"high","shot":"shots/bug2-cannon.png","status":"fixed-verified","steps":"gallery any age; tests/unit-seating.test.js","title":"feet, weapon tips and cannon breach below ground","verify":"propTiltX forward-carry, seated cannon, procedural sword 0.72; sweep green; close-ups verified"},{"actual":"spawnX was base center +30px while strongholds are 6-8m wide; clubmen emerged from inside the menhir","expected":"units appear at the gate, clear of base geometry","id":"BUG-003","severity":"high","shot":"shots/bug34-fixed.png","status":"fixed-verified","steps":"spawn any unit, watch the player gate","title":"units spawn inside their own castle","verify":"spawn gaps body+80px; gate screenshot shows muster clear"},{"actual":"clubmen walked to base center (melee range 28px) and fought inside the rock; HP dropped with no visible fight","expected":"melee engages at the wall, shells explode on it, fight stays visible","id":"BUG-004","severity":"high","shot":"shots/bug34-gate-sheet.png","status":"fixed-verified","steps":"5 clubmen at enemyBase.x-300, wait 9s","title":"units clip inside the enemy castle to attack its center","verify":"minGap over 200 in tests; tracking video shows the gate fight outside with damage numbers"},{"actual":"0.15s beam follows the dipping rifle during the Punch clip","expected":"tracer leaves level","id":"BUG-005","severity":"low","shot":"shots/bug5-fixed.png","status":"fixed-verified","steps":"renaissance battle, watch musketeer fire","title":"musketeer tracer stabs dirt on Punch clip","verify":"FX height clamped to 0.45m with level beam; muzzle-fx.test.js green; ren battle 0 errors"}],"sweeps":[{"coverage":"all 5 ages: evolve chain, every unit card + hero, turret slots + all turrets, mine + barracks, special fire","date":"2026-09-11","kind":"combat","result":"0 errors, 0 failures"}]}
+{
+  "bugs": [
+    {
+      "actual": "4 instantly-spawned clubmen share identical x (probe xs); 15px AoE then damages the whole stack on every hit",
+      "expected": "spawned units separate so single-target attacks usually hit one unit",
+      "id": "BUG-001",
+      "severity": "high",
+      "shot": "shots/bug1-fixed.png",
+      "status": "fixed-verified",
+      "steps": "full battle, click Clubman x4 as fast as possible",
+      "title": "instant spawns stack on one x, every attack splashes them all",
+      "verify": "seeded +-30px muster jitter; instant x4 lands spread, muster clears the gate"
+    },
+    {
+      "actual": "probe minima: stone melee -0.23, castle melee -0.51, ren siege -0.47; motion sweep: club -0.35, staff -1.05, sword -0.58, cannon -0.47",
+      "expected": "feet planted at y=0, hand props and mounts never breach the ground plane",
+      "id": "BUG-002",
+      "severity": "high",
+      "shot": "shots/bug2-cannon.png",
+      "status": "fixed-verified",
+      "steps": "gallery any age; tests/unit-seating.test.js",
+      "title": "feet, weapon tips and cannon breach below ground",
+      "verify": "propTiltX forward-carry, seated cannon, procedural sword 0.72; sweep green; close-ups verified"
+    },
+    {
+      "actual": "spawnX was base center +30px while strongholds are 6-8m wide; clubmen emerged from inside the menhir",
+      "expected": "units appear at the gate, clear of base geometry",
+      "id": "BUG-003",
+      "severity": "high",
+      "shot": "shots/bug34-fixed.png",
+      "status": "fixed-verified",
+      "steps": "spawn any unit, watch the player gate",
+      "title": "units spawn inside their own castle",
+      "verify": "spawn gaps body+80px; gate screenshot shows muster clear"
+    },
+    {
+      "actual": "clubmen walked to base center (melee range 28px) and fought inside the rock; HP dropped with no visible fight",
+      "expected": "melee engages at the wall, shells explode on it, fight stays visible",
+      "id": "BUG-004",
+      "severity": "high",
+      "shot": "shots/bug34-gate-sheet.png",
+      "status": "fixed-verified",
+      "steps": "5 clubmen at enemyBase.x-300, wait 9s",
+      "title": "units clip inside the enemy castle to attack its center",
+      "verify": "minGap over 200 in tests; tracking video shows the gate fight outside with damage numbers"
+    },
+    {
+      "actual": "0.15s beam follows the dipping rifle during the Punch clip",
+      "expected": "tracer leaves level",
+      "id": "BUG-005",
+      "severity": "low",
+      "shot": "shots/bug5-fixed.png",
+      "status": "fixed-verified",
+      "steps": "renaissance battle, watch musketeer fire",
+      "title": "musketeer tracer stabs dirt on Punch clip",
+      "verify": "FX height clamped to 0.45m with level beam; muzzle-fx.test.js green; ren battle 0 errors"
+    },
+    {
+      "id": "BUG-006",
+      "severity": "high",
+      "title": "dino rider parks behind the mount, floating off the back",
+      "steps": "gallery stone age, look at the Dino Rider (or battle)",
+      "expected": "goblin straddles the raptor mid-back",
+      "actual": "rider stands on the dirt ~2m behind the tail, above ground: seat used box mid-X (tail-skewed) and box-top fraction (head crest)",
+      "status": "fixed-verified",
+      "shot": "shots/dino-solo4.png",
+      "verify": "seat anchored to Hips/Shoulders bones (rideH); rider straddles mid-back in dino-solo4.png; tests/mount-walk.test.js + gltf-cast dino seat green; stone battle 0 errors"
+    },
+    {
+      "id": "BUG-007",
+      "severity": "high",
+      "title": "mounted (and foot) walks skate: 2 steps then slide",
+      "steps": "watch any quat unit march in battle or gallery walk",
+      "expected": "planted feet stay planted through stance",
+      "actual": "authored walk clips leave thighs/hips rigid (legs freeze ~60% of each loop); feet skate at ~100%+ slip; riders also popped 0.5m for first frames (bind-fade)",
+      "status": "fixed-verified",
+      "shot": "shots/dino-walk-fixed-sheet.png",
+      "verify": "procedural legs (foot sawtooth stride + thigh follow + bob, settle at build) in src/units/gltf-cast.js; tests/mount-walk.test.js 18 asserts green; 636+156 green; gallery sheets show striding"
+    }
+  ],
+  "sweeps": [
+    {
+      "coverage": "all 5 ages: evolve chain, every unit card + hero, turret slots + all turrets, mine + barracks, special fire",
+      "date": "2026-09-11",
+      "kind": "combat",
+      "result": "0 errors, 0 failures"
+    }
+  ]
+}

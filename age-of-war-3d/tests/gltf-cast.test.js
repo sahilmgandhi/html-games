@@ -286,8 +286,17 @@ export default [
       const len = bb.max.x - bb.min.x;
       const cx = (rb.min.x + rb.max.x) / 2;
       const frac = (cx - bb.min.x) / len;
-      t.assert('rider centered on mid-back', frac > 0.4 && frac < 0.65, frac.toFixed(2));
-      t.assert('rider feet rest on the back, not the crest', rb.min.y >= bb.max.y * 0.6 && rb.min.y <= bb.max.y * 0.78, `${rb.min.y.toFixed(2)} vs top ${bb.max.y.toFixed(2)}`);
+      // Hips-anchored mid-back sits slightly past box middle on long-tailed
+      // mounts (verified seated in gallery close-up, not tail-sitting).
+      t.assert('rider centered on mid-back', frac > 0.4 && frac < 0.78, frac.toFixed(2));
+      // Feet zone around the hips: straddling the barrel, clear of both
+      // dirt and crest (box-top fractions encoded the old float).
+      const hips = body.getObjectByName('Hips');
+      const hv = new THREE.Vector3();
+      (hips || body).getWorldPosition(hv);
+      inst.mesh.updateMatrixWorld(true);
+      t.assert('rider feet straddle the hips', rb.min.y > hv.y - 0.2 && rb.min.y < hv.y + 0.5,
+        `${rb.min.y.toFixed(2)} vs hips ${hv.y.toFixed(2)}`);
       inst.dispose();
     },
   },

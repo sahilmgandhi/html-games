@@ -55,12 +55,11 @@ const ROLE_SPEC = {
   titan: { file: 'Future_George', kind: 'gltf', targetH: 3.0 * 1.18, walk: 'Walk', attack: 'Shoot', death: 'Death', idle: 'Idle', heroModel: true },
 };
 
-// Mounted roles: rider template, rider attack clip, how far the feet hang
-// below the mount's back line (dangle: raptor rider sits tall, knight's
-// feet hang past the barrel).
+// Mounted roles: rider template, rider attack clip, rider feet height
+// relative to the mount's hips (straddle above, dangle below).
 const COMPOSITES = {
-  dino: { rider: 'rider', attack: 'Punch', seatDrop: 0.18, seatFrac: 0.68 },
-  knight: { rider: 'knightRider', attack: 'SwordSlash', seatDrop: 0.55 },
+  dino: { rider: 'rider', attack: 'Punch', rideH: 0.05 },
+  knight: { rider: 'knightRider', attack: 'SwordSlash', rideH: -0.15 },
 };
 
 // Foot roles with a static mount beside them: template name, scale factor
@@ -560,6 +559,89 @@ export function QuatUnitMesh(entity, role, templates) {
     cannonProp = prop;
   }
   const holder = { mixer: new THREE.AnimationMixer(body), actions: new Map(), clips: tpl.clips, current: null, currentName: null };
+  // Procedural legs for the march. Authored walk clips swing shins but
+  // leave thighs/hips rigid (legs freeze ~60% of each loop), and the rigs
+  // are flat (bones are armature siblings), so rotating one bone cannot
+  // translate the hoof. Each leg chain (thigh/foot, matched by name) is
+  // posed outright while walking, driven by walkPhase (already
+  // speed-coupled in sim and gallery): the foot bone carries a sawtooth
+  // stride retreating through stance at body speed, the thigh follows to
+  // keep the knee connected, the body bobs twice per stride. Riders ride
+  // mesh.position so they follow for free.
+  const hindOnly = role === 'dino'; // raptor arms stay out
+  const legs = [];
+  mesh.updateMatrixWorld(true);
+  body.traverse((o) => {
+    if (!(o.isBone && /(upleg|upperleg|thigh)/i.test(o.name) && !/end/i.test(o.name))) return;
+    if (hindOnly && /^front/i.test(o.name)) return;
+    const side = o.name.endsWith('L') ? 'L' : (o.name.endsWith('R') ? 'R' : null);
+    const fb = /^front/i.test(o.name) ? 'front' : (/^back/i.test(o.name) ? 'back' : null);
+    const sib = (re) => {
+      let found = null;
+      body.traverse((oo) => {
+        if (found || !oo.isBone || !re.test(oo.name) || /end/i.test(oo.name)) return;
+        if (side && !oo.name.endsWith(side)) return;
+        if (fb === 'front' && !/^front/i.test(oo.name)) return;
+        if (fb === 'back' && !/^back/i.test(oo.name)) return;
+        if (hindOnly && /^front/i.test(oo.name)) return;
+        found = oo;
+      });
+      return found;
+    };
+    const shin = sib(/(lowleg|lowerleg|shin|knee)/i);
+    const foot = sib(/foot/i);
+    if (!foot) return;
+    // Swing axis: perturb each local axis, keep the one that carries the
+    // knee along facing (restored after). Signed against the knee (shin
+    // origin) so the thigh provably follows the ankle, even on mirrored
+    // frames where rotation direction flips.
+    const knee = shin || foot;
+    const kv0 = new THREE.Vector3();
+    knee.getWorldPosition(kv0);
+    let axis = 'x';
+    let sign = 1;
+    let bestD = -1;
+    for (const ax of ['x', 'y', 'z']) {
+      const save = o.rotation[ax];
+      o.rotation[ax] = save + 0.25;
+      mesh.updateMatrixWorld(true);
+      const kv1 = new THREE.Vector3();
+      knee.getWorldPosition(kv1);
+      o.rotation[ax] = save;
+      const dx = kv1.x - kv0.x;
+      if (Math.abs(dx) > bestD) { bestD = Math.abs(dx); axis = ax; sign = dx < 0 ? -1 : 1; }
+    }
+    mesh.updateMatrixWorld(true);
+    const trest = o.rotation[axis];
+    // Foot travel vector in the foot's parent frame. Matrix-derived, never
+    // quaternion-derived: mirrored limb frames make quaternion inverses
+    // garbage. Gain-calibrated so STEP meters land in world X.
+    const fdir = new THREE.Vector3(1, 0, 0).transformDirection(foot.parent.matrixWorld.clone().invert());
+    const fp0 = foot.position.clone();
+    const fw0 = new THREE.Vector3();
+    foot.getWorldPosition(fw0);
+    foot.position.copy(fp0).addScaledVector(fdir, 0.25);
+    mesh.updateMatrixWorld(true);
+    const fw1 = new THREE.Vector3();
+    foot.getWorldPosition(fw1);
+    foot.position.copy(fp0);
+    mesh.updateMatrixWorld(true);
+    const fgain = ((fw1.x - fw0.x) / 0.25) || 1;
+    const hipW = new THREE.Vector3();
+    o.getWorldPosition(hipW);
+    const ankW = new THREE.Vector3();
+    foot.getWorldPosition(ankW);
+    const legLen = Math.max(0.3, hipW.distanceTo(ankW));
+    const leg = { thigh: o, tax: axis, tsign: sign, trest,
+      foot, fdir, fgain, fprest: fp0, legLen,
+      off: (side === 'R' ? Math.PI : 0) + (fb === 'back' ? Math.PI : 0) };
+    legs.push(leg);
+  });
+  // Half foot travel per step. walkPhase cadence scales with speed, so one
+  // STEP serves every role: stance travel matches ground speed.
+  const STEP = 0.28;
+  const BOB = 0.045;
+  let walkBlend = 0;
 
   let riderHolder = null;
   let riderAttack = 'Punch';
@@ -569,14 +651,23 @@ export function QuatUnitMesh(entity, role, templates) {
     const rider = SkeletonUtils.clone(riderTpl.object);
     rider.rotation.y = Math.PI / 2;
     rider.scale.setScalar(riderTpl.scale);
-    // seat on the mount's back: mid-back, feet resting near (dino) or
-    // dangling past (knight) the back line.
-    const box = new THREE.Box3().setFromObject(body);
-    rider.position.set(box.min.x + (box.max.x - box.min.x) * 0.5, 0, 0);
+    // Seat on the skeleton, not the bounding box: box mid-X drifts over
+    // long tails and box top rides the head crest, both of which parked
+    // riders behind and above the back. Hips carry the load; mid-back sits
+    // a third of the way to the shoulders; feet straddle (dino) or dangle
+    // (knight) from there.
+    mesh.updateMatrixWorld(true);
+    const hips = body.getObjectByName('Hips');
+    const shoulders = body.getObjectByName('Shoulders') || body.getObjectByName('Torso');
+    const hv = new THREE.Vector3();
+    (hips || body).getWorldPosition(hv);
+    const sv = new THREE.Vector3();
+    (shoulders || hips || body).getWorldPosition(sv);
+    rider.position.set(hv.x + (sv.x - hv.x) * 0.35, 0, (hv.z + sv.z) / 2);
     mesh.add(rider);
     mesh.updateMatrixWorld(true);
     const rb = new THREE.Box3().setFromObject(rider);
-    rider.position.y += box.max.y * (comp.seatFrac ?? 0.92) - rb.min.y - comp.seatDrop;
+    rider.position.y += hv.y + (comp.rideH ?? 0) - rb.min.y;
     // riders fight armed too: hang their hand prop off the rider's fist
     // (the seat-block clone above is raw, like the dino rider).
     if (riderTpl.spec.handProp && HAND_PROPS[riderTpl.spec.handProp]) {
@@ -665,6 +756,35 @@ export function QuatUnitMesh(entity, role, templates) {
     }
   }
 
+  // Walk clip with leg tracks stripped: while marching, legs are fully
+  // procedural (below), so the authored shin snap cannot fight them. Arms,
+  // torso and head keep the authored motion. Central position tracks go
+  // too: the clip's body-bob runs on the clip clock and would beat against
+  // the stride (the mesh-level bob below replaces it). Cached per template.
+  // The public clip contract still reports base names ('Walk').
+  let walkPlay = tpl.spec.walk;
+  if (legs.length) {
+    if (!tpl.walkNoLegs) {
+      const src = tpl.clips.get(tpl.spec.walk);
+      const legNames = new Set();
+      for (const leg of legs) {
+        legNames.add(leg.thigh.name);
+        if (leg.shin) legNames.add(leg.shin.name);
+        legNames.add(leg.foot.name);
+      }
+      const central = /^(body|root|hips|torso|pelvis)$/i;
+      const tracks = src ? src.tracks.filter((tr) => {
+        const [node, prop] = tr.name.split('.');
+        if (legNames.has(node)) return false;
+        if (prop === 'position' && central.test(node)) return false;
+        return true;
+      }) : [];
+      tpl.walkNoLegs = new THREE.AnimationClip(`${tpl.spec.walk}_nolegs`, src ? src.duration : 1, tracks);
+      tpl.clips.set(`${tpl.spec.walk}_nolegs`, tpl.walkNoLegs);
+    }
+    walkPlay = `${tpl.spec.walk}_nolegs`;
+  }
+
   const inst = {
     mesh,
     get currentClip() { return currentClip; },
@@ -684,7 +804,7 @@ export function QuatUnitMesh(entity, role, templates) {
       else if (attacking) want = tpl.spec.attack;
       else if (moving) want = tpl.spec.walk;
       if (want !== currentClip || (attacking && !wasAttacking)) {
-        playAction(holder, want);
+        playAction(holder, want === tpl.spec.walk ? walkPlay : want);
         currentClip = want;
       }
       if (attacking && !wasAttacking) fireFx();
@@ -695,6 +815,24 @@ export function QuatUnitMesh(entity, role, templates) {
       }
       holder.mixer.update(dt);
       if (riderHolder) riderHolder.mixer.update(dt);
+      // Procedural legs: absolute poses from walkPhase, eased in/out so
+      // walk/idle/attack transitions never snap. Diagonal pairs alternate;
+      // sawtooth stride retreats through stance at body speed with a quick
+      // lifted return, so one STEP serves every role.
+      walkBlend = THREE.MathUtils.clamp(walkBlend + ((want === tpl.spec.walk && moving) ? dt : -dt) / 0.15, 0, 1);
+      if (walkBlend > 0 && legs.length) {
+        for (const leg of legs) {
+          const cyc = (e.walkPhase + leg.off) / (Math.PI * 2);
+          const f01 = cyc - Math.floor(cyc);
+          const s = (f01 < 0.6 ? 1 - (f01 / 0.6) * 2 : -1 + ((f01 - 0.6) / 0.4) * 2) * walkBlend;
+          leg.foot.position.copy(leg.fprest).addScaledVector(leg.fdir, (STEP * s) / leg.fgain);
+          const bend = (STEP / leg.legLen) * s;
+          leg.thigh.rotation[leg.tax] = leg.trest + leg.tsign * bend;
+        }
+        mesh.position.y = BOB * Math.abs(Math.sin(e.walkPhase)) * walkBlend;
+      } else {
+        mesh.position.y = 0;
+      }
 
       // recoil spring-back + transient fx expiry (dt is sim-scaled here).
       // the firing frame keeps full kick; decay starts the next frame.
@@ -750,8 +888,15 @@ export function QuatUnitMesh(entity, role, templates) {
       bar.sprite.material.dispose?.();
     },
   };
-  // start in the idle pose so the first frame is never a T-pose flash.
+  // Start settled in the idle pose so the first frame is never a T-pose
+  // flash: play idle on both mixers and advance past the fade-in. Without
+  // this riders pop ~0.5m high for the first frames of every spawn.
   playAction(holder, tpl.spec.idle);
+  holder.mixer.update(0.15);
+  if (riderHolder) {
+    playAction(riderHolder, 'Idle');
+    riderHolder.mixer.update(0.15);
+  }
   currentClip = tpl.spec.idle;
   return inst;
 }
