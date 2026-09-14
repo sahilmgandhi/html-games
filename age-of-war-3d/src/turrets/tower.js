@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import {
   pbr, basic, glowMat, glowSprite, solidify, disposeDeep, SIDE_ACCENT,
-  makeCloth, mergeStatic,
+  makeCloth, mergeStatic, emblemTexture,
 } from '../core/pbr.js';
 
 // One shared outpost tower per side. All four turret slots of a side seat on
@@ -61,6 +61,26 @@ export function TowerMesh(side, ageIndex) {
       mesh.add(q);
     }
   }
+
+  // timber bond-beams binding the shaft courses, so the masonry reads
+  // as laid work rather than one extruded box.
+  const bondM = pbr('#4c3018', 0.9);
+  for (const by of [2.2, 3.1]) {
+    const bond = new THREE.Mesh(new THREE.BoxGeometry(2.7, 0.18, 2.7), bondM);
+    bond.position.y = by;
+    bond.rotation.y = Math.PI / 4;
+    mesh.add(bond);
+  }
+
+  // painted heater shield with the owner's device on the battlefield face.
+  const shield = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.55, 0.4, 0.15, 3),
+    new THREE.MeshStandardMaterial({
+      map: emblemTexture(accent, '#e8e2d4', 'disc'), roughness: 0.6,
+    }));
+  shield.rotation.z = Math.PI / 2;
+  shield.position.set(1.0, 3.0, 0);
+  mesh.add(shield);
 
   // arrow slit windows on the battlefield face, darkened as the tower falls
   const slitMat = basic('#14141c');
