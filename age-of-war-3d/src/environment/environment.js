@@ -54,6 +54,13 @@ function araucaria(rng) {
   const top = new THREE.Mesh(new THREE.ConeGeometry(0.5, 1.2, 8), canopyTint(PINE, rng));
   top.position.y = h * 0.55 + tiers * 0.85;
   g.add(top);
+  // dark under-skirt: low branches break the single-cone read from the lane.
+  const skirtGeo = new THREE.ConeGeometry(1.5, 1.1, 8);
+  jitterGeo(skirtGeo, 0.07, 3, h * 13);
+  const skirt = new THREE.Mesh(skirtGeo, canopyTint(PINE_DK, rng));
+  skirt.position.y = 0.7;
+  g.add(skirt);
+  g.userData.detail = 'skirt-tree';
   return g;
 }
 
@@ -105,6 +112,15 @@ function mesa(w, h, d) {
     band.rotation.y = f * 3;
     g.add(band);
   }
+  // talus skirt: fallen broken rock so the mesa sits into the plain
+  // instead of ending in a cut cylinder foot.
+  const talusGeo = new THREE.CylinderGeometry(w * 0.72, w * 0.95, h * 0.16, 9);
+  jitterGeo(talusGeo, 0.12, 2.0, w + 11);
+  mottleGeo(talusGeo, 0.14, w + 11);
+  const talus = new THREE.Mesh(talusGeo, rockMat('#4a3428', 0.98));
+  talus.position.y = h * 0.02;
+  g.add(talus);
+  g.userData.detail = 'mesa-talus';
   return g;
 }
 
@@ -265,6 +281,12 @@ function broadleaf(rng) {
     c.position.set((rng() - 0.5) * 1.6, h + (rng() - 0.2) * 0.9, (rng() - 0.5) * 1.6);
     g.add(c);
   }
+  // shaded underbrush so the trunk never meets the crown in one bare pole.
+  const under = new THREE.Mesh(new THREE.IcosahedronGeometry(0.9, 1), canopyTint(LEAF[2], rng));
+  under.scale.set(1.3, 0.7, 1.3);
+  under.position.y = 0.5;
+  g.add(under);
+  g.userData.detail = 'skirt-tree';
   return g;
 }
 
@@ -308,6 +330,13 @@ function cypress(rng) {
     c.position.y = h * y;
     g.add(c);
   }
+  // dark root flare so the cypress grounds instead of spiking from dirt.
+  const flareGeo = new THREE.ConeGeometry(0.85, 1.1, 7);
+  jitterGeo(flareGeo, 0.05, 3, h * 5);
+  const flare = new THREE.Mesh(flareGeo, canopyTint('#243a20', rng));
+  flare.position.y = 0.6;
+  g.add(flare);
+  g.userData.detail = 'skirt-tree';
   return g;
 }
 

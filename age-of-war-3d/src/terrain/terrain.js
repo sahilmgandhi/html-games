@@ -245,14 +245,33 @@ export function createTerrain(scene, ageIndex = 0) {
     group.add(wear);
     owned.push(wear);
 
+    // Packed-earth borders seat the lane into the field so its painted
+    // edge never reads as a floating decal strip.
+    for (const s of [-1, 1]) {
+      const edge = new THREE.Mesh(
+        new THREE.PlaneGeometry(48, 0.5),
+        new THREE.MeshStandardMaterial({
+          color: '#3a2c1e', roughness: 1.0, metalness: 0.0,
+          transparent: true, opacity: 0.8,
+          polygonOffset: true, polygonOffsetFactor: -1,
+        })
+      );
+      edge.rotation.x = -Math.PI / 2;
+      edge.position.set(12, 0.065, s * 2.55);
+      edge.receiveShadow = true;
+      edge.userData.detail = 'lane-edge';
+      group.add(edge);
+      owned.push(edge);
+    }
+
     // Instanced ground detail, seated on the same height field as the slab.
     const grid = groundGrid(1000 + age);
     const pebbles = makeScatter(grid, new THREE.IcosahedronGeometry(0.09, 0),
-      PEBBLE_TINT[age] || PEBBLE_TINT[0], 220, 6000 + age, 0.6, 1.6);
+      PEBBLE_TINT[age] || PEBBLE_TINT[0], 260, 6000 + age, 0.6, 1.6);
     group.add(pebbles);
     owned.push(pebbles);
     const tufts = makeScatter(grid, new THREE.ConeGeometry(0.09, 0.4, 5),
-      TUFT_TINT[age] || TUFT_TINT[0], 260, 7000 + age, 0.5, 0.9);
+      TUFT_TINT[age] || TUFT_TINT[0], 320, 7000 + age, 0.5, 0.9);
     group.add(tufts);
     owned.push(tufts);
 
