@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { toMeters } from '../simulation/config.js';
 import {
-  pbr, basic, glowMat, solidify, cloneMats, makeHpBar, teamRing, emblemTexture, disposeDeep, SIDE_ACCENT, skinMat, clothMat, furMat, FLASH_HEX, FLASH_PEAK, mergeStatic,
+  pbr, basic, glowMat, solidify, cloneMats, makeHpBar, emblemTexture, disposeDeep, SIDE_ACCENT, skinMat, clothMat, furMat, FLASH_HEX, FLASH_PEAK, mergeStatic,
 } from '../core/pbr.js';
 import { getQuatTemplates, quatRoleFor, QuatUnitMesh, ensureQuatLoaded } from './gltf-cast.js';
 
@@ -1141,10 +1141,6 @@ export function UnitMesh(entity, ageIndex) {
   for (const m of mats) {
     if ('emissive' in m) { m.emissive = new THREE.Color('#000000'); m.transparent = true; }
   }
-  const ringR = THREE.MathUtils.clamp(rig.height * 0.35, 0.5, 1.5);
-  mesh.add(teamRing(ringR * heroS, accent));
-  if (entity.isHero) mesh.add(teamRing(ringR * heroS * 1.3, '#ffd23a', 0.9));
-
   let facing = entity.side === 'player' ? 0 : Math.PI;
   mesh.rotation.y = facing;
   // thrust rigs (lance, musket) drive the weapon forward; capture the rest

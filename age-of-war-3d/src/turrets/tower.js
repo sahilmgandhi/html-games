@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import {
-  pbr, basic, glowMat, glowSprite, solidify, disposeDeep, teamRing, SIDE_ACCENT,
+  pbr, basic, glowMat, glowSprite, solidify, disposeDeep, SIDE_ACCENT,
   makeCloth, mergeStatic,
 } from '../core/pbr.js';
 
@@ -164,7 +164,6 @@ export function TowerMesh(side, ageIndex) {
     }
   }
 
-  mesh.add(teamRing(3.4, accent));
   solidify(mesh);
   // Static shell merges; the pulsing beacon and rippling pennant stay live.
   mergeStatic(mesh, new Set([beacon, pennant]));

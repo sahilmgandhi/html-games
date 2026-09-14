@@ -9,7 +9,7 @@ import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
 import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
 import { toMeters } from '../simulation/config.js';
 import {
-  solidify, cloneMats, makeHpBar, teamRing, disposeDeep, SIDE_ACCENT,
+  solidify, cloneMats, makeHpBar, disposeDeep, SIDE_ACCENT,
   pbr, basic, glowMat, glowSprite, FLASH_HEX, FLASH_PEAK, mergeStatic,
 } from '../core/pbr.js';
 
@@ -695,10 +695,6 @@ export function QuatUnitMesh(entity, role, templates) {
   for (const m of mats) {
     if ('emissive' in m) { m.emissive = new THREE.Color('#000000'); m.transparent = true; }
   }
-  const ringR = THREE.MathUtils.clamp(height * 0.35, 0.5, 1.5);
-  mesh.add(teamRing(ringR * heroS, accent));
-  if (entity.isHero) mesh.add(teamRing(ringR * heroS * 1.3, '#ffd23a', 0.9));
-
   let facing = entity.side === 'player' ? 0 : Math.PI;
   mesh.rotation.y = facing;
   let lastWalkPhase = entity.walkPhase;
