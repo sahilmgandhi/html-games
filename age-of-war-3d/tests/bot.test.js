@@ -101,6 +101,43 @@ export default [
     },
   },
   {
+    name: 'losing bot turtles instead of feeding units',
+    run(t) {
+      const sim = new BattleSim({ seed: 11, autoAI: false, autoPlayer: false });
+      sim.playerBase.hp = 200;
+      let spawns = 0;
+      const orig = sim.spawnUnit.bind(sim);
+      sim.spawnUnit = (i) => { spawns++; return orig(i); };
+      for (let i = 0; i < 120; i++) {
+        sim.gold = 1e6;
+        sim.xp = 1e6;
+        sim.playerAI.decide();
+      }
+      t.assert('turtle buys all slots', sim.playerSlotsBought === 4,
+        `slots=${sim.playerSlotsBought}`);
+      t.assert('turtle fills turrets', sim.playerTurrets().length === 4,
+        `turrets=${sim.playerTurrets().length}`);
+      t.assert('turtle barely feeds', spawns <= 8, `spawns=${spawns}`);
+    },
+  },
+  {
+    name: 'even bot holds single spawns once it fields three',
+    run(t) {
+      const sim = new BattleSim({ seed: 11, autoAI: false, autoPlayer: false });
+      sim.gold = 1e6;
+      for (let i = 0; i < 5; i++) sim.spawnUnit(0);
+      let spawns = 5;
+      const orig = sim.spawnUnit.bind(sim);
+      sim.spawnUnit = (i) => { spawns++; return orig(i); };
+      for (let i = 0; i < 40; i++) {
+        sim.gold = 1e6;
+        sim.xp = 1e6;
+        sim.playerAI.decide();
+      }
+      t.assert('bot holds the line', spawns <= 6, `spawns=${spawns}`);
+    },
+  },
+  {
     name: 'bot-vs-AI resolves on every difficulty',
     run(t) {
       for (let d = 0; d < 4; d++) {

@@ -133,14 +133,30 @@ export class AI {
 
     this.analyzeThreats(foeUnits);
 
+    // Stance from base HP: the loser turtles (turrets grant no kill rewards,
+    // so turtling starves the winner's snowball), the clear winner techs up
+    // instead of piling on, everyone else fights in waves, not trickles.
+    const myHpFrac = this.myBase(g).hp / this.myBase(g).maxHp;
+    const foeHpFrac = this.foeBase(g).hp / this.foeBase(g).maxHp;
+    const losing = myHpFrac < 0.5;
+    const winning = !losing && foeHpFrac < myHpFrac - 0.2;
+
     if (this.trySpecial(g, foeUnits)) return;
     if (this.tryEvolve(g)) return;
+    if (losing || winning) {
+      if (this.tryTurret(g, age)) return;
+      if (this.tryBuildings(g)) return;
+      if (this.tryUpgrade(g)) return;
+      if (this.tryHero(g, age)) return;
+      if (this.tryWaveSpawn(g, age, myUnits, foeUnits)) return;
+      return;
+    }
     if (this.tryHero(g, age)) return;
     if (this.tryWaveSpawn(g, age, myUnits, foeUnits)) return;
     if (this.tryTurret(g, age)) return;
     if (this.tryBuildings(g)) return;
     if (this.tryUpgrade(g)) return;
-    if (this.tryUnitSpawn(g, age, foeUnits)) return;
+    if (myUnits.length < 3 && this.tryUnitSpawn(g, age, foeUnits)) return;
   }
 
   analyzeThreats(foeUnits) {
