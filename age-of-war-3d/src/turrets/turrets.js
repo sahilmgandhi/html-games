@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { toMeters } from '../simulation/config.js';
 import {
   pbr, basic, glowMat, glowSprite, jitterGeo, mottleGeo, rockMat, solidify, cloneMats, makeHpBar, disposeDeep, SIDE_ACCENT, FLASH_HEX, FLASH_PEAK, mergeStatic,
+  makeCloth,
 } from '../core/pbr.js';
 import { createEnvMesh, ensureEnvLoaded, getEnvTemplate } from './env-cast.js';
 
@@ -45,6 +46,18 @@ const WOOD_DK = '#4c3018';
 const STONE = '#8d8d94';
 const BONE = '#e8dcc0';
 const FUR = '#5a3d26';
+
+// Side pennon shared by every rig: short pole plus a rippling cloth so
+// deck guns read as crewed war machines. Flat quads do not ship.
+function turretPennon(head, x, y, z, accent) {
+  const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.07, 1.6, 7), pbr(WOOD_DK, 0.9));
+  pole.position.set(x, y + 0.8, z);
+  head.add(pole);
+  const pennon = makeCloth(0.7, 0.4, 5, pbr(accent, 0.7));
+  pennon.mesh.position.set(x, y + 1.35, z);
+  head.add(pennon.mesh);
+  return { pole, mesh: pennon.mesh, update: (tt) => pennon.update(tt) };
+}
 
 function platform(r) {
   const g = new THREE.Group();
@@ -1134,6 +1147,19 @@ export function TurretMesh(turret, ageIndex, anchor) {
     useEnvMesh = false;
     envMesh = null;
     seat(rig.root, rig.height);
+    // Pennon rides the head post-merge so the cloth stays live and yaws
+    // with the gun; the redoubt stance sits wider.
+    rig.pennon = turretPennon(rig.head, ageIndex === 2 ? -1.4 : -1.1, 0.2, -1.0, accent);
+    // Post-merge parts join the hit-flash registry on cloned materials so
+    // the flash decay tests (and night stills) see one uniform response.
+    for (const part of [rig.pennon.pole, rig.pennon.mesh]) {
+      part.material = part.material.clone();
+      const ms = Array.isArray(part.material) ? part.material : [part.material];
+      for (const m of ms) {
+        if ('emissive' in m) { m.emissive = new THREE.Color('#000000'); m.transparent = true; }
+      }
+      mats.push(...ms);
+    }
     const muzzle = rig.muzzle;
     muzzleFlash = createMuzzleFlash(rig, muzzle, 1);
     handle.muzzle = muzzle;
@@ -1226,6 +1252,7 @@ export function TurretMesh(turret, ageIndex, anchor) {
       if (useEnvMesh) {
         envMesh.update(dt);
       } else {
+        if (rig.pennon) rig.pennon.update(t);
         if (rig.flame) {
           const f = 1 + Math.sin(t * 13) * 0.15 + Math.sin(t * 29) * 0.08;
           rig.flame.scale.set(1 / Math.sqrt(f), f, 1 / Math.sqrt(f));
