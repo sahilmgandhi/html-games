@@ -67,6 +67,39 @@
       "verify": "seat anchored to Hips/Shoulders bones (rideH); rider straddles mid-back in dino-solo4.png; tests/mount-walk.test.js + gltf-cast dino seat green; stone battle 0 errors"
     },
     {
+      "id": "BUG-008",
+      "severity": "high",
+      "title": "env-path turret aim sets rotation.y to world-x meters instead of yaw",
+      "steps": "load any Renaissance/Modern turret once env models resolve; watch barrel yaw vs target",
+      "expected": "env turret yaws its head toward the target like procedural rigs",
+      "actual": "TurretMesh.aimAt env branch does envMesh.mesh.rotation.y = x (world meters, ~12rad spin)",
+      "status": "fixed-verified",
+      "shot": "",
+      "verify": "tests/turret-aim.test.js green; live probe 4 fires + kill, 0 errors; turrets showcase --strict clean (200 calls, 61fps)"
+    },
+    {
+      "id": "BUG-009",
+      "severity": "medium",
+      "title": "turret muzzle flash parked at stale build-time position",
+      "steps": "buy any turret, aim at a moving target, fire",
+      "expected": "flash/glow/smoke/sparks emit at the barrel tip as it yaws/recoils",
+      "actual": "createMuzzleFlash positions flashGroup once via getWorldPosition at build and parents to rig.root; never follows the muzzle",
+      "status": "fixed-verified",
+      "shot": "",
+      "verify": "tests/turret-aim.test.js green; live probe 4 fires + kill, 0 errors; turrets showcase --strict clean (200 calls, 61fps)"
+    },
+    {
+      "id": "BUG-010",
+      "severity": "medium",
+      "title": "first-shot turret muzzle FX dropped (sim emits before mesh syncs)",
+      "steps": "buy a turret with an enemy already in range",
+      "expected": "every sim fire event plays tm.fire() visuals",
+      "actual": "battle-view steps sim (emits projectile:fire) before syncMap creates the turret wrapper, so turrets.get(src.id) misses and tm.fire() never runs",
+      "status": "fixed-verified",
+      "shot": "",
+      "verify": "tests/turret-aim.test.js green; live probe 4 fires + kill, 0 errors; turrets showcase --strict clean (200 calls, 61fps)"
+    },
+    {
       "id": "BUG-007",
       "severity": "high",
       "title": "mounted (and foot) walks skate: 2 steps then slide",

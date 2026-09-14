@@ -23,6 +23,25 @@ import { createGoldAggregator } from './gold-agg.js';
 
 export { applyBattleAction } from './actions.js';
 
+// Sim emits projectile:fire while stepping, before the mesh sync below has
+// created that turret's wrapper. Missed visuals queue here and flush once
+// the wrapper exists, so the first shot after a purchase still flashes.
+export function createPendingFires() {
+  const ids = [];
+  return {
+    push(src) { if (src && src.id !== undefined) ids.push(src.id); },
+    flush(map) {
+      for (let i = ids.length - 1; i >= 0; i--) {
+        const w = map.get(ids[i]);
+        if (!w) continue;
+        ids.splice(i, 1);
+        try { w.fire(); } catch { /* cosmetic */ }
+      }
+    },
+    size() { return ids.length; },
+  };
+}
+
 const PROJ_HEIGHT = 1.1;
 
 function projHeight(p) {
@@ -36,6 +55,7 @@ export function attachBattleView(game, sim, fx, opts = {}) {
   const turrets = new Map();
   const buildings = new Map();
   const projectiles = new Map();
+  const pendingFires = createPendingFires();
 
   let playerBase = BaseMesh('player', sim.currentAge);
   playerBase.mesh.position.set(toMeters(sim.playerBase.x), 0, 0);
@@ -139,17 +159,16 @@ export function attachBattleView(game, sim, fx, opts = {}) {
     unsubs.push(bus.on('projectile:fire', (src) => {
       if (src && src.turretIndex !== undefined) {
         const tm = turrets.get(src.id);
-        if (tm) {
-          tm.fire();
-          // muzzle smoke + flash sparks at the barrel tip (world meters).
-          try {
-            tm.tm?.muzzle?.getWorldPosition(_muzzle);
-            if (fx?.burst) {
-              fx.burst(_muzzle.x, _muzzle.y, _muzzle.z, { color: 0xffd98a, count: 8, speed: 3, life: 0.35 });
-              fx.burst(_muzzle.x, _muzzle.y, _muzzle.z, { color: 0x8a8a8a, count: 5, speed: 1.2, life: 0.9, up: 1.2 });
-            }
-          } catch { /* cosmetic */ }
-        }
+        if (!tm) { pendingFires.push(src); return; }
+        tm.fire();
+        // muzzle smoke + flash sparks at the barrel tip (world meters).
+        try {
+          tm.tm?.muzzle?.getWorldPosition(_muzzle);
+          if (fx?.burst) {
+            fx.burst(_muzzle.x, _muzzle.y, _muzzle.z, { color: 0xffd98a, count: 8, speed: 3, life: 0.35 });
+            fx.burst(_muzzle.x, _muzzle.y, _muzzle.z, { color: 0x8a8a8a, count: 5, speed: 1.2, life: 0.9, up: 1.2 });
+          }
+        } catch { /* cosmetic */ }
       }
     }));
     unsubs.push(bus.on('projectile:hit', (hit) => {
@@ -344,6 +363,7 @@ export function attachBattleView(game, sim, fx, opts = {}) {
         },
         fire: () => tm.fire() };
     });
+    pendingFires.flush(turrets);
     syncMap(buildings, sim.buildings, (e) => {
       const bm = BuildingMesh(e);
       return { mesh: bm.mesh, dispose: () => bm.dispose(), update: (d) => bm.update(d) };

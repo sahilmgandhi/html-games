@@ -72,6 +72,12 @@ function flashSprite(scale = 1) {
   return s;
 }
 
+// Shared yaw so procedural heads and env-cast tubs aim identically:
+// bearing to the target in world space, mirrored for enemy sitters.
+export function turretYaw(from, tx, tz, side) {
+  return Math.atan2(-(tz - from.z), tx - from.x) - (side === 'player' ? 0 : Math.PI);
+}
+
 // Enhanced multi-layer muzzle flash with smoke and sparks
 function createMuzzleFlash(rig, muzzle, scale = 1) {
   const flashGroup = new THREE.Group();
@@ -118,9 +124,10 @@ function createMuzzleFlash(rig, muzzle, scale = 1) {
   sparks.visible = false;
   flashGroup.add(sparks);
   
-  // Position the group at muzzle
-  muzzle.getWorldPosition(flashGroup.position);
-  rig.root.add(flashGroup);
+  // Seated on the muzzle so the burst rides the barrel tip through
+  // yaw and recoil instead of hovering at build-time coords.
+  flashGroup.position.set(0, 0, 0);
+  muzzle.add(flashGroup);
   
   return {
     group: flashGroup,
@@ -1176,23 +1183,21 @@ export function TurretMesh(turret, ageIndex, anchor) {
     kind: ((TURRET_PROJECTILE[ageIndex] || TURRET_PROJECTILE[0])[turret.turretIndex]) || 'rock',
     muzzle: null,
     aimAt(x, y, z) {
-      if (useEnvMesh) {
-        envMesh.mesh.rotation.y = x; // simplified for env mesh
-      } else {
-        rig.muzzle.getWorldPosition(_v);
-        _v.set(x - _v.x, 0, z - _v.z);
-        if (_v.lengthSq() < 1e-6) return;
-        const target = Math.atan2(-_v.z, _v.x)
-          - (turret.side === 'player' ? 0 : Math.PI);
-        if (!yawInit) { yaw = target; yawInit = true; }
-        else {
-          let d = target - yaw;
-          while (d > Math.PI) d -= Math.PI * 2;
-          while (d < -Math.PI) d += Math.PI * 2;
-          yaw += d * 0.35;
-        }
-        rig.head.rotation.y = yaw;
+      const src = useEnvMesh ? envMesh.getMuzzle() : rig.muzzle;
+      if (src) src.getWorldPosition(_v);
+      else mesh.getWorldPosition(_v);
+      const dx = x - _v.x, dz = z - _v.z;
+      if (dx * dx + dz * dz < 1e-6) return;
+      const target = turretYaw({ x: _v.x, z: _v.z }, x, z, turret.side);
+      if (!yawInit) { yaw = target; yawInit = true; }
+      else {
+        let d = target - yaw;
+        while (d > Math.PI) d -= Math.PI * 2;
+        while (d < -Math.PI) d += Math.PI * 2;
+        yaw += d * 0.35;
       }
+      if (useEnvMesh) envMesh.mesh.rotation.y = yaw;
+      else rig.head.rotation.y = yaw;
     },
     fire() {
       recoilV += 7;
