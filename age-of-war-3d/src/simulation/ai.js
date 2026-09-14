@@ -151,6 +151,7 @@ export class AI {
       if (this.tryWaveSpawn(g, age, myUnits, foeUnits)) return;
       return;
     }
+    if (foeUnits.length === 0 && this.tryOpener(g, age)) return;
     if (this.tryHero(g, age)) return;
     if (this.tryWaveSpawn(g, age, myUnits, foeUnits)) return;
     if (this.tryTurret(g, age)) return;
@@ -322,6 +323,22 @@ export class AI {
       }
     }
     return false;
+  }
+
+  // Opening build order while no enemy contact: seat one defender in the
+  // owned slot before the first units march. Static defense on both sides
+  // blunts the all-in base race that ends games ~40s. Slot banking is left
+  // to the mid-game so opening armies stay full strength.
+  tryOpener(g, age) {
+    const seated = g.turrets.filter(t => t.side === this.side && t.alive).length;
+    if (seated > 0 || seated >= this.slotsBought(g)) return false;
+    const cheapest = age.turrets
+      .map((t, i) => i)
+      .filter((i) => this.myGold(g) >= age.turrets[i].cost)
+      .sort((a, b) => age.turrets[a].cost - age.turrets[b].cost)[0];
+    if (cheapest === undefined) return false;
+    this.spawnTurretForMe(g, cheapest);
+    return true;
   }
 
   tryHero(g, age) {

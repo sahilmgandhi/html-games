@@ -138,6 +138,24 @@ export default [
     },
   },
   {
+    name: 'opener seats a turret before first contact',
+    run(t) {
+      const sim = new BattleSim({ seed: 11, autoAI: false, autoPlayer: false });
+      const log = [];
+      const origUnit = sim.spawnUnit.bind(sim);
+      const origTurret = sim.spawnTurret.bind(sim);
+      sim.spawnUnit = (i) => { log.push('unit'); return origUnit(i); };
+      sim.spawnTurret = (i) => { log.push('turret'); return origTurret(i); };
+      for (let i = 0; i < 6; i++) {
+        sim.gold = 1e6;
+        sim.playerAI.decide();
+      }
+      t.assert('turret seated pre-contact', sim.playerTurrets().length >= 1,
+        `turrets=${sim.playerTurrets().length}`);
+      t.assert('defense before units', log[0] === 'turret', `first=${log[0]}`);
+    },
+  },
+  {
     name: 'bot-vs-AI resolves on every difficulty',
     run(t) {
       for (let d = 0; d < 4; d++) {
