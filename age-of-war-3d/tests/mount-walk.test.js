@@ -60,9 +60,11 @@ export function footBones(inst, skipFront) {
   return out;
 }
 
-// Visible sole motion: skinned-vertex mean for verts dominated by the foot
-// bone. Bone origins lie (flat rigs never translate them), the skin is truth.
-export function soleTracker(inst, footBone) {
+// Sole-vert selection shared by the slip tracker below and by direction
+// tests: verts dominated by the foot bone, narrowed to the hoof bottom
+// (lowest quartile by height; joint verts have ~17mm lever arms and cannot
+// see rotation).
+export function selectSoleVerts(inst, footBone) {
   let entry = null;
   inst.mesh.traverse((o) => {
     if (entry || !o.isSkinnedMesh) return;
@@ -70,7 +72,6 @@ export function soleTracker(inst, footBone) {
     if (k < 0) return;
     const si = o.geometry.attributes.skinIndex;
     const sw = o.geometry.attributes.skinWeight;
-    const pos = o.geometry.attributes.position;
     const idx = [];
     for (let i = 0; i < si.count; i++) {
       let bk = -1;
@@ -84,9 +85,6 @@ export function soleTracker(inst, footBone) {
     if (idx.length) entry = { mesh: o, idx, k };
   });
   if (!entry) return null;
-  // Hoof bottom, not ankle: among foot-weighted verts keep the lowest
-  // quartile by current height (dominant-weight picks joint verts whose
-  // lever arm is ~17mm and cannot see rotation).
   const ys = entry.idx.map((i) => {
     const p = new THREE.Vector3().fromBufferAttribute(entry.mesh.geometry.attributes.position, i);
     p.applyMatrix4(entry.mesh.matrixWorld);
@@ -94,35 +92,51 @@ export function soleTracker(inst, footBone) {
   });
   ys.sort((a, b) => a.y - b.y);
   entry.idx = ys.slice(0, Math.max(8, Math.floor(ys.length / 4))).map((e) => e.i);
-  const m = new THREE.Matrix4();
+  return entry;
+}
+
+const _skV = new THREE.Vector3();
+const _skW = new THREE.Vector3();
+const _skM = new THREE.Matrix4();
+
+// World position of one skinned vert: mesh * bindInverse * Σ w·B·bind·v.
+export function soleVertWorld(entry, i, out) {
+  _skV.fromBufferAttribute(entry.mesh.geometry.attributes.position, i);
+  const si = entry.mesh.geometry.attributes.skinIndex;
+  const sw = entry.mesh.geometry.attributes.skinWeight;
+  const sk = entry.mesh.skeleton;
+  _skW.set(0, 0, 0);
+  for (let j = 0; j < 4; j++) {
+    const bj = si.getComponent(i, j);
+    const wj = sw.getComponent(i, j);
+    if (wj <= 0) continue;
+    const bone = sk.bones[bj];
+    if (!bone) continue;
+    _skM.copy(bone.matrixWorld).multiply(sk.boneInverses[bj]);
+    const t = _skV.clone().applyMatrix4(entry.mesh.bindMatrix).applyMatrix4(_skM);
+    _skW.addScaledVector(t, wj);
+  }
+  _skW.applyMatrix4(entry.mesh.bindMatrixInverse).applyMatrix4(entry.mesh.matrixWorld);
+  out.copy(_skW);
+  return out;
+}
+
+// Visible sole motion: skinned-vertex mean for verts dominated by the foot
+// bone. Bone origins lie (flat rigs never translate them), the skin is truth.
+export function soleTracker(inst, footBone) {
+  const entry = selectSoleVerts(inst, footBone);
+  if (!entry) return null;
   const v = new THREE.Vector3();
-  const w = new THREE.Vector3();
   return {
     count: entry.idx.length,
     sample() {
-      const sk = entry.mesh.skeleton;
       inst.mesh.updateMatrixWorld(true);
       let sx = 0, sy = 0, sz = 0;
       for (const i of entry.idx) {
-        v.fromBufferAttribute(entry.mesh.geometry.attributes.position, i);
-        // world = mesh.matrixWorld * bindMatrixInverse * Σ w·B·bindMatrix·v
-        w.set(0, 0, 0);
-        const si = entry.mesh.geometry.attributes.skinIndex;
-        const sw = entry.mesh.geometry.attributes.skinWeight;
-        for (let j = 0; j < 4; j++) {
-          const bj = si.getComponent(i, j);
-          const wj = sw.getComponent(i, j);
-          if (wj <= 0) continue;
-          const bone = sk.bones[bj];
-          if (!bone) continue;
-          m.copy(bone.matrixWorld).multiply(sk.boneInverses[bj]);
-          const t = v.clone().applyMatrix4(entry.mesh.bindMatrix).applyMatrix4(m);
-          w.addScaledVector(t, wj);
-        }
-        w.applyMatrix4(entry.mesh.bindMatrixInverse).applyMatrix4(entry.mesh.matrixWorld);
-        sx += w.x;
-        sy += w.y;
-        sz += w.z;
+        soleVertWorld(entry, i, v);
+        sx += v.x;
+        sy += v.y;
+        sz += v.z;
       }
       return { x: sx / entry.idx.length, y: sy / entry.idx.length, z: sz / entry.idx.length };
     },
