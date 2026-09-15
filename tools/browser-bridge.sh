@@ -20,69 +20,121 @@ for c in "${CHROME_CANDIDATES[@]}"; do
 done
 if [[ -z "$CHROME_BIN" ]]; then CHROME_BIN="$(command -v google-chrome || command -v chromium || true)"; fi
 
-CHROME_PID=/tmp/game-bridge-chrome.pid
-SERVE_PID=/tmp/game-bridge-8081.pid
-VITE_PID=/tmp/game-bridge-3001.pid
+PIDDIR="${BRIDGE_PIDDIR:-/tmp}"
+CHROME_PORT="${BRIDGE_CHROME_PORT:-9222}"
+SERVE_PORT="${BRIDGE_SERVE_PORT:-8081}"
+VITE_PORT="${BRIDGE_VITE_PORT:-3001}"
+
+CHROME_PID=$PIDDIR/game-bridge-chrome.pid
+SERVE_PID=$PIDDIR/game-bridge-8081.pid
+VITE_PID=$PIDDIR/game-bridge-3001.pid
+CHROME_LOG=$PIDDIR/game-bridge-chrome.log
+SERVE_LOG=$PIDDIR/game-bridge-8081.log
+VITE_LOG=$PIDDIR/game-bridge-3001.log
 
 alive() { kill -0 "$1" 2>/dev/null; }
 port_open() { curl -sf -o /dev/null --max-time 2 "$1" 2>/dev/null; }
+# Listener PIDs for a TCP port (deduped). Empty when lsof is missing or none listen.
+pids_on_port() {
+  command -v lsof >/dev/null 2>&1 || return 0
+  lsof -tiTCP:"$1" -sTCP:LISTEN 2>/dev/null | grep -E '^[0-9]+$' | sort -nu || true
+}
 
-chrome_up() { port_open http://127.0.0.1:9222/json/version; }
-serve_up() { port_open http://127.0.0.1:8081/; }
-vite_up() { port_open http://127.0.0.1:3001/; }
+chrome_up() { port_open http://127.0.0.1:"$CHROME_PORT"/json/version; }
+serve_up() { port_open http://127.0.0.1:"$SERVE_PORT"/; }
+vite_up() { port_open http://127.0.0.1:"$VITE_PORT"/; }
+
+# Port is up but pidfile is gone/stale (reboot clears /tmp): adopt the
+# listener into the pidfile so stop works again. Prints adopted PIDs.
+adopt_pids() {
+  local pidfile="$1" port="$2"
+  local pids first rest
+  pids="$(pids_on_port "$port")"
+  if [[ -z "$pids" ]]; then echo "pid unknown"; return 0; fi
+  mkdir -p "$PIDDIR"
+  first="$(echo "$pids" | head -n 1)"
+  echo "$first" > "$pidfile"
+  rest="$(echo "$pids" | tail -n +2 | tr '\n' ' ')"
+  if [[ -n "${rest// }" ]]; then echo "adopted $first (also listening: ${rest% })";
+  else echo "adopted $first"; fi
+}
 
 start_chrome() {
-  if chrome_up; then echo "chrome :9222 already up"; return 0; fi
+  if chrome_up; then echo "chrome :$CHROME_PORT already up ($(adopt_pids "$CHROME_PID" "$CHROME_PORT"))"; return 0; fi
   if [[ -z "$CHROME_BIN" ]]; then echo "Error: no Chrome found" >&2; return 1; fi
-  mkdir -p "$PROFILE"
+  mkdir -p "$PROFILE" "$PIDDIR"
   # shellcheck disable=SC2086
   nohup "$CHROME_BIN" \
     --headless=new --no-sandbox --disable-dev-shm-usage \
-    --remote-debugging-port=9222 --remote-debugging-address=127.0.0.1 \
+    --remote-debugging-port="$CHROME_PORT" --remote-debugging-address=127.0.0.1 \
     --user-data-dir="$PROFILE" \
     --no-first-run --no-default-browser-check \
     --disable-extensions --disable-sync \
-    about:blank > /tmp/game-bridge-chrome.log 2>&1 &
+    about:blank > "$CHROME_LOG" 2>&1 &
   echo $! > "$CHROME_PID"
-  for _ in $(seq 1 30); do chrome_up && { echo "chrome :9222 up ($CHROME_BIN)"; return 0; }; sleep 0.5; done
-  echo "Error: chrome did not come up, see /tmp/game-bridge-chrome.log" >&2; return 1
+  for _ in $(seq 1 30); do chrome_up && { echo "chrome :$CHROME_PORT up ($CHROME_BIN)"; return 0; }; sleep 0.5; done
+  echo "Error: chrome did not come up, see $CHROME_LOG" >&2; return 1
 }
 
 start_serve() {
-  if serve_up; then echo "serve :8081 already up"; return 0; fi
-  nohup python3 -m http.server 8081 --bind 127.0.0.1 --directory "$ROOT" \
-    > /tmp/game-bridge-8081.log 2>&1 &
+  if serve_up; then echo "serve :$SERVE_PORT already up ($(adopt_pids "$SERVE_PID" "$SERVE_PORT"))"; return 0; fi
+  mkdir -p "$PIDDIR"
+  nohup python3 -m http.server "$SERVE_PORT" --bind 127.0.0.1 --directory "$ROOT" \
+    > "$SERVE_LOG" 2>&1 &
   echo $! > "$SERVE_PID"
-  for _ in $(seq 1 20); do serve_up && { echo "serve :8081 up ($ROOT)"; return 0; }; sleep 0.5; done
-  echo "Error: :8081 did not come up" >&2; return 1
+  for _ in $(seq 1 20); do serve_up && { echo "serve :$SERVE_PORT up ($ROOT)"; return 0; }; sleep 0.5; done
+  echo "Error: :$SERVE_PORT did not come up" >&2; return 1
 }
 
 start_vite() {
   if [[ ! -d "$GAME_3D" ]]; then echo "vite: no age-of-war-3d, skip"; return 0; fi
-  if vite_up; then echo "vite :3001 already up"; return 0; fi
-  nohup npm run dev --prefix "$GAME_3D" -- --host 127.0.0.1 --port 3001 --strictPort \
-    > /tmp/game-bridge-3001.log 2>&1 &
+  if vite_up; then echo "vite :$VITE_PORT already up ($(adopt_pids "$VITE_PID" "$VITE_PORT"))"; return 0; fi
+  mkdir -p "$PIDDIR"
+  nohup npm run dev --prefix "$GAME_3D" -- --host 127.0.0.1 --port "$VITE_PORT" --strictPort \
+    > "$VITE_LOG" 2>&1 &
   echo $! > "$VITE_PID"
-  for _ in $(seq 1 40); do vite_up && { echo "vite :3001 up"; return 0; }; sleep 0.5; done
-  echo "Error: :3001 did not come up, see /tmp/game-bridge-3001.log" >&2; return 1
+  for _ in $(seq 1 40); do vite_up && { echo "vite :$VITE_PORT up"; return 0; }; sleep 0.5; done
+  echo "Error: :$VITE_PORT did not come up, see $VITE_LOG" >&2; return 1
 }
 
 stop_one() {
-  local pidfile="$1" name="$2"
+  local pidfile="$1" name="$2" port="$3"
+  local pids="" pid
   if [[ -f "$pidfile" ]]; then
-    local pid; pid="$(cat "$pidfile")"
-    if alive "$pid"; then kill "$pid" 2>/dev/null || true; sleep 0.5; fi
-    rm -f "$pidfile"; echo "stopped $name ($pid)"
+    pid="$(cat "$pidfile" 2>/dev/null || true)"
+    if [[ "$pid" =~ ^[0-9]+$ ]] && [[ "$pid" != "$$" ]]; then pids="$pid"; fi
   fi
+  for pid in $(pids_on_port "$port"); do
+    if [[ ! "$pid" =~ ^[0-9]+$ ]] || [[ "$pid" == "$$" ]]; then continue; fi
+    if [[ " $pids " != *" $pid "* ]]; then pids="$pids $pid"; fi
+  done
+  if [[ -z "${pids// }" ]]; then
+    rm -f "$pidfile"; echo "$name :$port already free"; return 0
+  fi
+  for pid in $pids; do alive "$pid" && kill "$pid" 2>/dev/null || true; done
+  sleep 1
+  for pid in $pids; do alive "$pid" && kill -9 "$pid" 2>/dev/null || true; done
+  sleep 0.5
+  local dead="" left=""
+  for pid in $pids; do alive "$pid" && left="$left $pid" || dead="$dead $pid"; done
+  rm -f "$pidfile"
+  if [[ -n "${left// }" ]]; then
+    echo "stopped $name :$port (killed:${dead:- none}; still alive:${left})" >&2; return 1
+  fi
+  echo "stopped $name :$port (pids:$dead)"
 }
 
 stop_all() {
-  stop_one "$VITE_PID" vite; stop_one "$SERVE_PID" serve; stop_one "$CHROME_PID" chrome
+  local rc=0
+  stop_one "$VITE_PID" vite "$VITE_PORT" || rc=1
+  stop_one "$SERVE_PID" serve "$SERVE_PORT" || rc=1
+  stop_one "$CHROME_PID" chrome "$CHROME_PORT" || rc=1
+  return $rc
 }
 
 list_tabs() {
-  if ! chrome_up; then echo "tabs: chrome :9222 DOWN (no tab list)"; return 0; fi
-  curl -sf --max-time 2 http://127.0.0.1:9222/json/list 2>/dev/null | python3 -c \
+  if ! chrome_up; then echo "tabs: chrome :$CHROME_PORT DOWN (no tab list)"; return 0; fi
+  curl -sf --max-time 2 http://127.0.0.1:"$CHROME_PORT"/json/list 2>/dev/null | python3 -c \
     'import json,sys
 try: tabs = json.load(sys.stdin)
 except Exception: sys.exit("tabs: could not parse tab list")
@@ -92,9 +144,13 @@ for t in pages: print("- " + str(t.get("title", "?")) + " :: " + str(t.get("url"
 }
 
 cmd_status() {
-  chrome_up && echo "chrome :9222 OK" || echo "chrome :9222 DOWN"
-  serve_up && echo "serve  :8081 OK" || echo "serve  :8081 DOWN"
-  vite_up && echo "vite   :3001 OK" || echo "vite   :3001 DOWN"
+  local pids
+  pids="$(pids_on_port "$CHROME_PORT" | tr '\n' ' ')"
+  chrome_up && echo "chrome :$CHROME_PORT OK${pids:+ (pids: ${pids% })}" || echo "chrome :$CHROME_PORT DOWN"
+  pids="$(pids_on_port "$SERVE_PORT" | tr '\n' ' ')"
+  serve_up && echo "serve  :$SERVE_PORT OK${pids:+ (pids: ${pids% })}" || echo "serve  :$SERVE_PORT DOWN"
+  pids="$(pids_on_port "$VITE_PORT" | tr '\n' ' ')"
+  vite_up && echo "vite   :$VITE_PORT OK${pids:+ (pids: ${pids% })}" || echo "vite   :$VITE_PORT DOWN"
 }
 
 cmd_quiet() {
@@ -132,8 +188,14 @@ cmd="${1:-help}"
 case "$cmd" in
   start) start_chrome; start_serve; start_vite ;;
   stop) stop_all ;;
-  restart) "$0" stop || true; "$0" start ;;
-  logs) tail -n 50 /tmp/game-bridge-chrome.log /tmp/game-bridge-8081.log /tmp/game-bridge-3001.log 2>/dev/null || true ;;
+  restart)
+    "$0" stop || true
+    for _ in $(seq 1 20); do
+      if ! chrome_up && ! serve_up && ! vite_up; then break; fi
+      sleep 0.5
+    done
+    "$0" start ;;
+  logs) tail -n 50 "$CHROME_LOG" "$SERVE_LOG" "$VITE_LOG" 2>/dev/null || true ;;
   tabs) cmd_status; list_tabs ;;
   quiet) shift; cmd_quiet "${1:-}" ;;
   status) cmd_status ;;
