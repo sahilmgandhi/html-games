@@ -70,10 +70,8 @@ export default [
     run(t) {
       const turret = new Turret(140, 450, 'player', 0, 0, 0); // range 200
       const hash = new SpatialHash(128);
-      const ball = [];
       for (let i = 0; i < 5; i++) {
         const u = new Unit(240, 450, 'enemy', 0, 1, 0, false); // d=100
-        ball.push(u);
         hash.insert(u);
       }
       const hero = new Unit(280, 450, 'enemy', 0, 0, 0, true); // d=140, bonus

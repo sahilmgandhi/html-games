@@ -359,12 +359,12 @@ export class Turret {
       if (u instanceof Unit) {
         const d = dist(this.x, this.y, u.x, u.y);
         if (d > this.range) continue;
-        // Prefer high-value targets: heroes, then siege/armor, then elites.
-        // Score discounts beat raw distance so turrets don't plink at chaff
-        // while a knight rides past.
-        const score = d - (u.isHero ? 80 : 0)
-          - (u.type === 'siege' || u.type === 'armored' ? 50 : 0)
-          - (u.type === 'elite' ? 30 : 0);
+        // Prefer high-value targets, but only as a tiebreak: the bonus stays
+        // small so a ranged ball chewing at half the distance is engaged
+        // instead of masked by one heavy further out.
+        const score = d - (u.isHero ? 15 : 0)
+          - (u.type === 'siege' || u.type === 'armored' ? 10 : 0)
+          - (u.type === 'elite' ? 8 : 0);
         if (score < bestScore) {
           bestScore = score;
           closest = u;

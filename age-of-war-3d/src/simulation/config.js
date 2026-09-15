@@ -79,7 +79,7 @@ export const CONFIG = {
   AI_THINK_INTERVAL: 2500,
 
   DIFFICULTIES: [
-    { name: 'Easy', enemyHpMult: 0.8, enemyDmgMult: 0.8, enemyGoldMult: 0.8, aiThinkMult: 1.5 },
+    { name: 'Easy', enemyHpMult: 0.9, enemyDmgMult: 0.9, enemyGoldMult: 0.9, aiThinkMult: 1.2 },
     { name: 'Normal', enemyHpMult: 1.0, enemyDmgMult: 1.0, enemyGoldMult: 1.0, aiThinkMult: 1.0 },
     { name: 'Harder', enemyHpMult: 1.15, enemyDmgMult: 1.15, enemyGoldMult: 1.1, aiThinkMult: 0.8 },
     { name: 'Impossible', enemyHpMult: 1.3, enemyDmgMult: 1.3, enemyGoldMult: 1.2, aiThinkMult: 0.6 },

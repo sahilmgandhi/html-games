@@ -157,7 +157,9 @@ export class AI {
     if (this.tryTurret(g, age)) return;
     if (this.tryBuildings(g)) return;
     if (this.tryUpgrade(g)) return;
-    if (myUnits.length < 3 && this.tryUnitSpawn(g, age, foeUnits)) return;
+    // A ranged ball pulls counter reinforcements past the hold; everything
+    // else still holds at 3 (anti-base-race).
+    if ((myUnits.length < 3 || this.strategy === 'ranged') && this.tryUnitSpawn(g, age, foeUnits)) return;
   }
 
   analyzeThreats(foeUnits) {
@@ -201,18 +203,21 @@ export class AI {
       return false;
     }
 
+    // Enemy special odds mirror the original one tier up (the original has
+    // no Easy): Easy answers like orig Normal, Normal like orig Harder,
+    // Harder/Impossible fire unrestrained like orig Impossible.
     if (g.difficulty === 0) {
-      if ((hpRatio < 0.2 || nearBase >= 5) && this.rng() < 0.2) {
-        this.specialMe(g);
-        return true;
-      }
-    } else if (g.difficulty === 1) {
       if ((hpRatio < 0.3 || nearBase >= 4) && this.rng() < 0.3) {
         this.specialMe(g);
         return true;
       }
-    } else if (g.difficulty === 2) {
+    } else if (g.difficulty === 1) {
       if ((hpRatio < 0.4 || nearBase >= 3) && this.rng() < 0.5) {
+        this.specialMe(g);
+        return true;
+      }
+    } else if (g.difficulty === 2) {
+      if (hpRatio < 0.5 || nearBase >= 3) {
         this.specialMe(g);
         return true;
       }
@@ -423,7 +428,7 @@ export class AI {
         break;
       case 'ranged':
         if (unit.type === 'melee') w *= 1.5;
-        if (unit.type === 'fast') w *= 1.3;
+        if (unit.type === 'fast') w *= 2;
         break;
       case 'heavy':
         if (unit.type === 'armored' || unit.type === 'siege') w *= 2;
