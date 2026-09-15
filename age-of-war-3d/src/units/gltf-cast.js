@@ -632,7 +632,7 @@ export function QuatUnitMesh(entity, role, templates) {
     const ankW = new THREE.Vector3();
     foot.getWorldPosition(ankW);
     const legLen = Math.max(0.3, hipW.distanceTo(ankW));
-    const leg = { thigh: o, tax: axis, tsign: sign, trest,
+    const leg = { thigh: o, shin: shin || null, tax: axis, tsign: sign, trest,
       foot, fdir, fgain, fprest: fp0, legLen,
       off: (side === 'R' ? Math.PI : 0) + (fb === 'back' ? Math.PI : 0) };
     legs.push(leg);
