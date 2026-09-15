@@ -20,7 +20,7 @@ function stripImages(jsonText) {
   }
   return JSON.stringify(json);
 }
-async function loadTemplates() {
+export async function loadTemplates() {
   const shim = async (url) => {
     const file = path.join(QUAT, path.basename(url));
     return {
@@ -34,7 +34,7 @@ async function loadTemplates() {
   return fetchQuatCast(shim, `${QUAT}${path.sep}`);
 }
 
-function fakeEntity(over = {}) {
+export function fakeEntity(over = {}) {
   return {
     side: 'player', type: 'fast', isHero: false, speed: 1.4,
     hp: 100, maxHp: 100, hitFlash: 0, dying: false, alive: true,
@@ -102,7 +102,7 @@ export function soleTracker(inst, footBone) {
     sample() {
       const sk = entry.mesh.skeleton;
       inst.mesh.updateMatrixWorld(true);
-      let sx = 0, sy = 0;
+      let sx = 0, sy = 0, sz = 0;
       for (const i of entry.idx) {
         v.fromBufferAttribute(entry.mesh.geometry.attributes.position, i);
         // world = mesh.matrixWorld * bindMatrixInverse * Σ w·B·bindMatrix·v
@@ -122,8 +122,9 @@ export function soleTracker(inst, footBone) {
         w.applyMatrix4(entry.mesh.bindMatrixInverse).applyMatrix4(entry.mesh.matrixWorld);
         sx += w.x;
         sy += w.y;
+        sz += w.z;
       }
-      return { x: sx / entry.idx.length, y: sy / entry.idx.length };
+      return { x: sx / entry.idx.length, y: sy / entry.idx.length, z: sz / entry.idx.length };
     },
   };
 }
